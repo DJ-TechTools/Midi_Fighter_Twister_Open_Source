@@ -1,0 +1,1150 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>7.0</ProjectVersion>
+    <ProjectGuid>{1b227ead-881d-432e-bed0-2ccda343697d}</ProjectGuid>
+    <Name>Midi_Fighter_Twister</Name>
+    <AssemblyName>$(MSBuildProjectName)</AssemblyName>
+    <RootNamespace>$(MSBuildProjectName)</RootNamespace>
+    <AsfFrameworkConfig>
+      <framework-data>
+  <options>
+    <option id="common.boards" value="Add" config="" content-id="Atmel.ASF" />
+    <option id="common.drivers.nvm" value="Add" config="no_extmem" content-id="Atmel.ASF" />
+    <option id="common.services.basic.clock" value="Add" config="" content-id="Atmel.ASF" />
+    <option id="common.services.delay" value="Add" config="" content-id="Atmel.ASF" />
+    <option id="common.services.basic.fifo" value="Add" config="" content-id="Atmel.ASF" />
+    <option id="common.services.ioport" value="Add" config="" content-id="Atmel.ASF" />
+    <option id="common.services.basic.serial" value="Add" config="" content-id="Atmel.ASF" />
+    <option id="common.utils.interrupt" value="Add" config="" content-id="Atmel.ASF" />
+    <option id="xmega.drivers.dma" value="Add" config="" content-id="Atmel.ASF" />
+    <option id="xmega.drivers.tc" value="Add" config="" content-id="Atmel.ASF" />
+    <option id="xmega.drivers.usart" value="Add" config="" content-id="Atmel.ASF" />
+    <option id="xmega.drivers.wdt" value="Add" config="" content-id="Atmel.ASF" />
+    <option id="lufa.drivers.usb" value="Add" config="" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <option id="lufa.platform" value="Add" config="" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+  </options>
+  <configurations>
+    <configuration key="config.xmega.drivers.twi.mode" value="both" default="both" content-id="Atmel.ASF" />
+    <configuration key="lufa.drivers.usb.class.android.mode" value="host" default="host" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <configuration key="lufa.drivers.usb.class.audio.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <configuration key="lufa.drivers.usb.class.cdc.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <configuration key="lufa.drivers.usb.class.hid.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <configuration key="lufa.drivers.usb.class.ms.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <configuration key="lufa.drivers.usb.class.midi.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <configuration key="lufa.drivers.usb.class.printer.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <configuration key="lufa.drivers.usb.class.rndis.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <configuration key="lufa.drivers.usb.class.si.mode" value="host" default="host" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+  </configurations>
+  <files>
+    <file path="src/main.c" framework="" version="" source="common/applications/user_application/main.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/config/conf_board.h" framework="" version="" source="common/applications/user_application/user_board/config/conf_board.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/boards/user_board/init.c" framework="" version="" source="common/boards/user_board/init.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/boards/user_board/user_board.h" framework="" version="" source="common/boards/user_board/user_board.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/boards/board.h" framework="" version="3.9.1" source="common\boards\board.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/fifo/fifo.c" framework="" version="3.9.1" source="common\services\fifo\fifo.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/fifo/fifo.h" framework="" version="3.9.1" source="common\services\fifo\fifo.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/hugemem/avr8/avr8_hugemem.c" framework="" version="3.9.1" source="common\services\hugemem\avr8\avr8_hugemem.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/hugemem/hugemem.h" framework="" version="3.9.1" source="common\services\hugemem\hugemem.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/hugemem/avr8/hugemem.h" framework="" version="3.9.1" source="common\services\hugemem\avr8\hugemem.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/hugemem/generic/hugemem.h" framework="" version="3.9.1" source="common\services\hugemem\generic\hugemem.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/utils/make/Makefile.avr.in" framework="" version="3.9.1" source="common\utils\make\Makefile.avr.in" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/cpu/ccp.s" framework="" version="3.9.1" source="xmega\drivers\cpu\ccp.s" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/cpu/xmega_reset_cause.h" framework="" version="3.9.1" source="xmega\drivers\cpu\xmega_reset_cause.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/cpu/ccp.h" framework="" version="3.9.1" source="xmega\drivers\cpu\ccp.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/dma/dma.c" framework="" version="3.9.1" source="xmega\drivers\dma\dma.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/dma/dma.h" framework="" version="3.9.1" source="xmega\drivers\dma\dma.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/nvm/nvm.c" framework="" version="3.9.1" source="xmega\drivers\nvm\nvm.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/nvm/nvm_asm.s" framework="" version="3.9.1" source="xmega\drivers\nvm\nvm_asm.s" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/nvm/nvm.h" framework="" version="3.9.1" source="xmega\drivers\nvm\nvm.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/pmic/pmic.h" framework="" version="3.9.1" source="xmega\drivers\pmic\pmic.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/sleep/sleep.h" framework="" version="3.9.1" source="xmega\drivers\sleep\sleep.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/tc/tc.c" framework="" version="3.9.1" source="xmega\drivers\tc\tc.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/tc/tc.h" framework="" version="3.9.1" source="xmega\drivers\tc\tc.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/wdt/wdt.c" framework="" version="3.9.1" source="xmega\drivers\wdt\wdt.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/wdt/wdt.h" framework="" version="3.9.1" source="xmega\drivers\wdt\wdt.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/drivers/nvm/xmega/xmega_nvm.c" framework="" version="3.9.1" source="common\drivers\nvm\xmega\xmega_nvm.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/drivers/nvm/common_nvm.h" framework="" version="3.9.1" source="common\drivers\nvm\common_nvm.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/Config/conf_nvm.h" framework="" version="3.9.1" source="common\drivers\nvm\xmega\module_config\conf_nvm.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/clock/xmega/sysclk.c" framework="" version="3.9.1" source="common\services\clock\xmega\sysclk.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/clock/pll.h" framework="" version="3.9.1" source="common\services\clock\pll.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/clock/genclk.h" framework="" version="3.9.1" source="common\services\clock\genclk.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/clock/osc.h" framework="" version="3.9.1" source="common\services\clock\osc.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/clock/xmega/pll.h" framework="" version="3.9.1" source="common\services\clock\xmega\pll.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/clock/xmega/sysclk.h" framework="" version="3.9.1" source="common\services\clock\xmega\sysclk.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/clock/xmega/osc.h" framework="" version="3.9.1" source="common\services\clock\xmega\osc.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/clock/sysclk.h" framework="" version="3.9.1" source="common\services\clock\sysclk.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/Config/conf_clock.h" framework="" version="3.9.1" source="common\services\clock\xmega\module_config_usb\conf_clock.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/delay/delay.h" framework="" version="3.9.1" source="common\services\delay\delay.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/delay/xmega/cycle_counter.h" framework="" version="3.9.1" source="common\services\delay\xmega\cycle_counter.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/ioport/xmega/ioport_compat.c" framework="" version="3.9.1" source="common\services\ioport\xmega\ioport_compat.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/ioport/xmega/ioport_compat.h" framework="" version="3.9.1" source="common\services\ioport\xmega\ioport_compat.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/ioport/xmega/ioport.h" framework="" version="3.9.1" source="common\services\ioport\xmega\ioport.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/ioport/ioport.h" framework="" version="3.9.1" source="common\services\ioport\ioport.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/serial/usart_serial.c" framework="" version="3.9.1" source="common\services\serial\usart_serial.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/serial/xmega_usart/usart_serial.h" framework="" version="3.9.1" source="common\services\serial\xmega_usart\usart_serial.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/serial/serial.h" framework="" version="3.9.1" source="common\services\serial\serial.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/Config/conf_usart_serial.h" framework="" version="3.9.1" source="common\services\serial\xmega_usart\module_config\conf_usart_serial.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/sleepmgr/xmega/sleepmgr.c" framework="" version="3.9.1" source="common\services\sleepmgr\xmega\sleepmgr.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/sleepmgr/sleepmgr.h" framework="" version="3.9.1" source="common\services\sleepmgr\sleepmgr.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/services/sleepmgr/xmega/sleepmgr.h" framework="" version="3.9.1" source="common\services\sleepmgr\xmega\sleepmgr.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/Config/conf_sleepmgr.h" framework="" version="3.9.1" source="common\services\sleepmgr\xmega\module_config\conf_sleepmgr.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/utils/interrupt.h" framework="" version="3.9.1" source="common\utils\interrupt.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/utils/interrupt/interrupt_avr8.h" framework="" version="3.9.1" source="common\utils\interrupt\interrupt_avr8.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/common/utils/parts.h" framework="" version="3.9.1" source="common\utils\parts.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/usart/usart.c" framework="" version="3.9.1" source="xmega\drivers\usart\usart.c" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/drivers/usart/usart.h" framework="" version="3.9.1" source="xmega\drivers\usart\usart.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/utils/progmem.h" framework="" version="3.9.1" source="xmega\utils\progmem.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/utils/assembler.h" framework="" version="3.9.1" source="xmega\utils\assembler.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/utils/bit_handling/clz_ctz.h" framework="" version="3.9.1" source="xmega\utils\bit_handling\clz_ctz.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/utils/preprocessor/preprocessor.h" framework="" version="3.9.1" source="xmega\utils\preprocessor\preprocessor.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/utils/preprocessor/stringz.h" framework="" version="3.9.1" source="xmega\utils\preprocessor\stringz.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/utils/preprocessor/tpaste.h" framework="" version="3.9.1" source="xmega\utils\preprocessor\tpaste.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/utils/compiler.h" framework="" version="3.9.1" source="xmega\utils\compiler.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/utils/status_codes.h" framework="" version="3.9.1" source="xmega\utils\status_codes.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/utils/preprocessor/mrepeat.h" framework="" version="3.9.1" source="xmega\utils\preprocessor\mrepeat.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/ASF/xmega/utils/assembler/gas.h" framework="" version="3.9.1" source="xmega\utils\assembler\gas.h" changed="False" content-id="Atmel.ASF" />
+    <file path="src/LUFA/LUFA/Drivers/USB/USB.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\USB.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/Config/LUFAConfig.h" framework="" version="14.03.02" source="LUFA\CodeTemplates\LUFAConfig.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Common/Attributes.h" framework="" version="14.03.02" source="LUFA\Common\Attributes.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Common/Common.h" framework="" version="14.03.02" source="LUFA\Common\Common.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Version.h" framework="" version="14.03.02" source="LUFA\Version.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Common/Endianness.h" framework="" version="14.03.02" source="LUFA\Common\Endianness.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Common/Architectures.h" framework="" version="14.03.02" source="LUFA\Common\Architectures.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Common/CompilerSpecific.h" framework="" version="14.03.02" source="LUFA\Common\CompilerSpecific.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Common/BoardTypes.h" framework="" version="14.03.02" source="LUFA\Common\BoardTypes.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Common/ArchitectureSpecific.h" framework="" version="14.03.02" source="LUFA\Common\ArchitectureSpecific.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/AndroidAccessoryClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\AndroidAccessoryClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/AndroidAccessoryClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\AndroidAccessoryClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/AndroidAccessoryClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\AndroidAccessoryClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/AndroidAccessoryClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\AndroidAccessoryClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/AudioClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\AudioClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/AudioClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\AudioClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/AudioClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\AudioClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/AudioClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\AudioClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/AudioClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\AudioClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/AudioClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\AudioClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/CDCClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\CDCClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/CDCClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\CDCClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/CDCClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\CDCClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/CDCClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\CDCClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/CDCClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\CDCClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/CDCClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\CDCClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/HIDClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\HIDClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/HIDClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\HIDClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/HIDClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\HIDClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/HIDClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\HIDClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/HIDClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\HIDClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/HIDClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\HIDClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/MIDIClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\MIDIClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/MIDIClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\MIDIClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/MIDIClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\MIDIClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/MIDIClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\MIDIClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/MIDIClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\MIDIClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/MIDIClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\MIDIClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/MassStorageClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\MassStorageClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/MassStorageClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\MassStorageClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/MassStorageClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\MassStorageClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/MassStorageClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\MassStorageClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/MassStorageClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\MassStorageClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/MassStorageClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\MassStorageClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/PrinterClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\PrinterClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/PrinterClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\PrinterClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/PrinterClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\PrinterClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/PrinterClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\PrinterClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/PrinterClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\PrinterClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/PrinterClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\PrinterClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/RNDISClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\RNDISClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/RNDISClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\RNDISClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/RNDISClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\RNDISClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/RNDISClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\RNDISClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/RNDISClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\RNDISClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/RNDISClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\RNDISClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/StillImageClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\StillImageClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/StillImageClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\StillImageClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/StillImageClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\StillImageClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/StillImageClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\StillImageClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/HostStandardReq.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\HostStandardReq.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/USBTask.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\USBTask.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/DeviceStandardReq.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\DeviceStandardReq.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/HIDParser.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\HIDParser.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/ConfigDescriptors.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\ConfigDescriptors.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/Events.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Events.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/ConfigDescriptors.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\ConfigDescriptors.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/Device.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Device.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/Endpoint.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Endpoint.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/EndpointStream.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\EndpointStream.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/USBController.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\USBController.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/OTG.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\OTG.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/USBInterrupt.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\USBInterrupt.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/USBMode.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\USBMode.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/HIDParser.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\HIDParser.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/PipeStream.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\PipeStream.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/HIDReportData.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\HIDReportData.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/Pipe.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Pipe.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/StdRequestType.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\StdRequestType.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/DeviceStandardReq.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\DeviceStandardReq.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/HostStandardReq.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\HostStandardReq.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/Events.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Events.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/Host.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Host.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/USBTask.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\USBTask.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/StdDescriptors.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\StdDescriptors.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_RW.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Template\Template_Endpoint_RW.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_Control_R.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Template\Template_Endpoint_Control_R.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_Control_W.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Template\Template_Endpoint_Control_W.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Endpoint_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Endpoint_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBInterrupt_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\USBInterrupt_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/EndpointStream_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\EndpointStream_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Device_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Device_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBController_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\USBController_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Pipe_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Pipe_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBController_XMEGA.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\USBController_XMEGA.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Device_XMEGA.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Device_XMEGA.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Endpoint_XMEGA.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Endpoint_XMEGA.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/EndpointStream_XMEGA.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\EndpointStream_XMEGA.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBInterrupt_XMEGA.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\USBInterrupt_XMEGA.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Platform/Platform.h" framework="" version="14.03.02" source="LUFA\Platform\Platform.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+    <file path="src/LUFA/LUFA/Platform/XMEGA/ClockManagement.h" framework="" version="14.03.02" source="LUFA\Platform\XMEGA\ClockManagement.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+  </files>
+  <documentation help="http://asf.atmel.com/docs/3.9.1/common.applications.user_application.user_board.xmegaau/html/index.html" />
+  <offline-documentation help="" />
+  <dependencies>
+    <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.22.0" />
+    <content-extension eid="0e160d5c-e331-48d9-850b-e0387912171b" uuidref="0e160d5c-e331-48d9-850b-e0387912171b" version="14.03.02" />
+  </dependencies>
+  <project id="common.applications.user_application.user_board.xmegaau" value="Add" config="" content-id="Atmel.ASF" />
+  <board id="board.user_board.xmegaau" value="Add" config="" content-id="Atmel.ASF" />
+</framework-data>
+    </AsfFrameworkConfig>
+    <avrdevice>ATxmega128A4U</avrdevice>
+    <avrdeviceseries>xmegaau</avrdeviceseries>
+    <Language>C</Language>
+    <ToolchainName>com.Atmel.AVRGCC8.C</ToolchainName>
+    <AvrGccProjectExtensions />
+    <OutputDirectory>$(MSBuildProjectDirectory)\$(Configuration)</OutputDirectory>
+    <OutputFileName>$(MSBuildProjectName)</OutputFileName>
+    <OutputFileExtension>.elf</OutputFileExtension>
+    <OutputType>Executable</OutputType>
+    <ToolchainFlavour>Native</ToolchainFlavour>
+    <KeepTimersRunning>true</KeepTimersRunning>
+    <OverrideVtor>false</OverrideVtor>
+    <CacheFlash>true</CacheFlash>
+    <ProgFlashFromRam>true</ProgFlashFromRam>
+    <RamSnippetAddress>0x20000000</RamSnippetAddress>
+    <UncachedRange />
+    <OverrideVtorValue>exception_table</OverrideVtorValue>
+    <BootSegment>2</BootSegment>
+    <eraseonlaunchrule>0</eraseonlaunchrule>
+    <avrtool>com.atmel.avrdbg.tool.simulator</avrtool>
+    <avrtoolinterface>PDI</avrtoolinterface>
+    <com_atmel_avrdbg_tool_jtagicemkii>
+      <ToolOptions>
+        <InterfaceProperties>
+          <JtagEnableExtResetOnStartSession>false</JtagEnableExtResetOnStartSession>
+        </InterfaceProperties>
+        <InterfaceName>PDI</InterfaceName>
+      </ToolOptions>
+      <ToolType>com.atmel.avrdbg.tool.jtagicemkii</ToolType>
+      <ToolNumber>00B000005458</ToolNumber>
+      <ToolName>JTAGICE mkII</ToolName>
+    </com_atmel_avrdbg_tool_jtagicemkii>
+    <com_atmel_avrdbg_tool_jtagice3plus>
+      <ToolOptions>
+        <InterfaceProperties>
+          <JtagEnableExtResetOnStartSession>false</JtagEnableExtResetOnStartSession>
+          <PdiClock>0</PdiClock>
+        </InterfaceProperties>
+        <InterfaceName>PDI</InterfaceName>
+      </ToolOptions>
+      <ToolType>com.atmel.avrdbg.tool.jtagice3plus</ToolType>
+      <ToolNumber>J30200025592</ToolNumber>
+      <ToolName>JTAGICE3</ToolName>
+    </com_atmel_avrdbg_tool_jtagice3plus>
+    <preserveEEPROM>True</preserveEEPROM>
+    <avrtoolserialnumber />
+    <avrdeviceexpectedsignature>0x1E9746</avrdeviceexpectedsignature>
+    <avrtoolinterfaceclock>0</avrtoolinterfaceclock>
+    <com_atmel_avrdbg_tool_simulator>
+      <ToolOptions xmlns="">
+        <InterfaceProperties>
+        </InterfaceProperties>
+        <InterfaceName>PDI</InterfaceName>
+      </ToolOptions>
+      <ToolType xmlns="">com.atmel.avrdbg.tool.simulator</ToolType>
+      <ToolNumber xmlns="">
+      </ToolNumber>
+      <ToolName xmlns="">Simulator</ToolName>
+    </com_atmel_avrdbg_tool_simulator>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <ToolchainSettings>
+      <AvrGcc>
+        <avrgcc.common.Device>-mmcu=atxmega128a4u -B "%24(PackRepoDir)\atmel\XMEGAA_DFP\1.0.38\gcc\dev\atxmega128a4u"</avrgcc.common.Device>
+        <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
+        <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
+        <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
+        <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
+        <avrgcc.common.outputfiles.usersignatures>False</avrgcc.common.outputfiles.usersignatures>
+        <avrgcc.compiler.symbols.DefSymbols>
+          <ListValues>
+            <Value>F_USB=48000000UL</Value>
+            <Value>F_CPU=32000000UL</Value>
+            <Value>BOARD=USER_BOARD</Value>
+            <Value>USE_LUFA_CONFIG_HEADER</Value>
+            <Value>ARCH=ARCH_XMEGA</Value>
+          </ListValues>
+        </avrgcc.compiler.symbols.DefSymbols>
+        <avrgcc.compiler.directories.IncludePaths>
+          <ListValues>
+            <Value>../src</Value>
+            <Value>../src/ASF/common/boards/user_board</Value>
+            <Value>../src/config</Value>
+            <Value>../src/ASF/common/boards</Value>
+            <Value>../src/ASF/common/services/fifo</Value>
+            <Value>../src/ASF/common/services/hugemem</Value>
+            <Value>../src/ASF/xmega/drivers/cpu</Value>
+            <Value>../src/ASF/xmega/drivers/dma</Value>
+            <Value>../src/ASF/xmega/drivers/nvm</Value>
+            <Value>../src/ASF/xmega/drivers/pmic</Value>
+            <Value>../src/ASF/xmega/drivers/sleep</Value>
+            <Value>../src/ASF/xmega/drivers/tc</Value>
+            <Value>../src/ASF/xmega/drivers/wdt</Value>
+            <Value>../src/ASF/common/drivers/nvm</Value>
+            <Value>../src/ASF/common/services/clock</Value>
+            <Value>../src/ASF/common/services/delay</Value>
+            <Value>../src/ASF/common/services/ioport</Value>
+            <Value>../src/ASF/common/services/serial/xmega_usart</Value>
+            <Value>../src/ASF/common/services/serial</Value>
+            <Value>../src/ASF/common/services/sleepmgr</Value>
+            <Value>../src/ASF/common/utils</Value>
+            <Value>../src/ASF/xmega/drivers/usart</Value>
+            <Value>../src/ASF/xmega/utils/preprocessor</Value>
+            <Value>../src/ASF/xmega/utils</Value>
+            <Value>../src/LUFA/.</Value>
+            <Value>%24(PackRepoDir)\atmel\XMEGAA_DFP\1.0.38\include</Value>
+          </ListValues>
+        </avrgcc.compiler.directories.IncludePaths>
+        <avrgcc.compiler.optimization.level>Optimize for size (-Os)</avrgcc.compiler.optimization.level>
+        <avrgcc.compiler.optimization.OtherFlags>-fdata-sections</avrgcc.compiler.optimization.OtherFlags>
+        <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+        <avrgcc.compiler.miscellaneous.OtherFlags>-std=gnu99 -fno-strict-aliasing -Wstrict-prototypes -Wmissing-prototypes -Werror-implicit-function-declaration -Wpointer-arith -mrelax -lc</avrgcc.compiler.miscellaneous.OtherFlags>
+        <avrgcc.linker.libraries.Libraries>
+          <ListValues>
+            <Value>libm</Value>
+          </ListValues>
+        </avrgcc.linker.libraries.Libraries>
+        <avrgcc.linker.libraries.LibrarySearchPaths>
+          <ListValues>
+            <Value>../../../../WinAVR-20100110/avr/lib</Value>
+          </ListValues>
+        </avrgcc.linker.libraries.LibrarySearchPaths>
+        <avrgcc.linker.miscellaneous.LinkerFlags>-Wl,--relax</avrgcc.linker.miscellaneous.LinkerFlags>
+        <avrgcc.assembler.general.AssemblerFlags>-mrelax -DBOARD=USER_BOARD</avrgcc.assembler.general.AssemblerFlags>
+        <avrgcc.assembler.general.IncludePaths>
+          <ListValues>
+            <Value>../src</Value>
+            <Value>../src/ASF/common/boards/user_board</Value>
+            <Value>../src/config</Value>
+            <Value>../src/ASF/common/boards</Value>
+            <Value>../src/ASF/common/services/fifo</Value>
+            <Value>../src/ASF/common/services/hugemem</Value>
+            <Value>../src/ASF/xmega/drivers/cpu</Value>
+            <Value>../src/ASF/xmega/drivers/dma</Value>
+            <Value>../src/ASF/xmega/drivers/nvm</Value>
+            <Value>../src/ASF/xmega/drivers/pmic</Value>
+            <Value>../src/ASF/xmega/drivers/sleep</Value>
+            <Value>../src/ASF/xmega/drivers/tc</Value>
+            <Value>../src/ASF/xmega/drivers/wdt</Value>
+            <Value>../src/ASF/common/drivers/nvm</Value>
+            <Value>../src/ASF/common/services/clock</Value>
+            <Value>../src/ASF/common/services/delay</Value>
+            <Value>../src/ASF/common/services/ioport</Value>
+            <Value>../src/ASF/common/services/serial/xmega_usart</Value>
+            <Value>../src/ASF/common/services/serial</Value>
+            <Value>../src/ASF/common/services/sleepmgr</Value>
+            <Value>../src/ASF/common/utils</Value>
+            <Value>../src/ASF/xmega/drivers/usart</Value>
+            <Value>../src/ASF/xmega/utils/preprocessor</Value>
+            <Value>../src/ASF/xmega/utils</Value>
+            <Value>../src/LUFA/.</Value>
+            <Value>%24(PackRepoDir)\atmel\XMEGAA_DFP\1.0.38\include</Value>
+          </ListValues>
+        </avrgcc.assembler.general.IncludePaths>
+      </AvrGcc>
+    </ToolchainSettings>
+    <MemorySettings />
+    <GenerateHexFile>True</GenerateHexFile>
+    <GenerateMapFile>True</GenerateMapFile>
+    <GenerateListFile>True</GenerateListFile>
+    <GenerateEepFile>True</GenerateEepFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <ToolchainSettings>
+      <AvrGcc>
+        <avrgcc.common.Device>-mmcu=atxmega128a4u -B "%24(PackRepoDir)\atmel\XMEGAA_DFP\1.0.38\gcc\dev\atxmega128a4u"</avrgcc.common.Device>
+        <avrgcc.common.outputfiles.hex>True</avrgcc.common.outputfiles.hex>
+        <avrgcc.common.outputfiles.lss>True</avrgcc.common.outputfiles.lss>
+        <avrgcc.common.outputfiles.eep>True</avrgcc.common.outputfiles.eep>
+        <avrgcc.common.outputfiles.srec>True</avrgcc.common.outputfiles.srec>
+        <avrgcc.common.outputfiles.usersignatures>False</avrgcc.common.outputfiles.usersignatures>
+        <avrgcc.compiler.symbols.DefSymbols>
+          <ListValues>
+            <Value>DEBUG</Value>
+            <Value>F_USB=48000000UL</Value>
+            <Value>F_CPU=32000000UL</Value>
+            <Value>BOARD=USER_BOARD</Value>
+            <Value>USE_LUFA_CONFIG_HEADER</Value>
+            <Value>ARCH=ARCH_XMEGA</Value>
+          </ListValues>
+        </avrgcc.compiler.symbols.DefSymbols>
+        <avrgcc.compiler.directories.IncludePaths>
+          <ListValues>
+            <Value>../src</Value>
+            <Value>../src/ASF/common/boards/user_board</Value>
+            <Value>../src/config</Value>
+            <Value>../src/ASF/common/boards</Value>
+            <Value>../src/ASF/common/services/fifo</Value>
+            <Value>../src/ASF/common/services/hugemem</Value>
+            <Value>../src/ASF/xmega/drivers/cpu</Value>
+            <Value>../src/ASF/xmega/drivers/dma</Value>
+            <Value>../src/ASF/xmega/drivers/nvm</Value>
+            <Value>../src/ASF/xmega/drivers/pmic</Value>
+            <Value>../src/ASF/xmega/drivers/sleep</Value>
+            <Value>../src/ASF/xmega/drivers/tc</Value>
+            <Value>../src/ASF/xmega/drivers/wdt</Value>
+            <Value>../src/ASF/common/drivers/nvm</Value>
+            <Value>../src/ASF/common/services/clock</Value>
+            <Value>../src/ASF/common/services/delay</Value>
+            <Value>../src/ASF/common/services/ioport</Value>
+            <Value>../src/ASF/common/services/serial/xmega_usart</Value>
+            <Value>../src/ASF/common/services/serial</Value>
+            <Value>../src/ASF/common/services/sleepmgr</Value>
+            <Value>../src/ASF/common/utils</Value>
+            <Value>../src/ASF/xmega/drivers/usart</Value>
+            <Value>../src/ASF/xmega/utils/preprocessor</Value>
+            <Value>../src/ASF/xmega/utils</Value>
+            <Value>../src/LUFA/.</Value>
+            <Value>%24(PackRepoDir)\atmel\XMEGAA_DFP\1.0.38\include</Value>
+          </ListValues>
+        </avrgcc.compiler.directories.IncludePaths>
+        <avrgcc.compiler.optimization.level>Optimize more (-O2)</avrgcc.compiler.optimization.level>
+        <avrgcc.compiler.optimization.OtherFlags>-fdata-sections</avrgcc.compiler.optimization.OtherFlags>
+        <avrgcc.compiler.optimization.PrepareDataForGarbageCollection>False</avrgcc.compiler.optimization.PrepareDataForGarbageCollection>
+        <avrgcc.compiler.optimization.DebugLevel>Maximum (-g3)</avrgcc.compiler.optimization.DebugLevel>
+        <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
+        <avrgcc.compiler.miscellaneous.OtherFlags>-std=gnu99 -fno-strict-aliasing -Wstrict-prototypes -Wmissing-prototypes -Werror-implicit-function-declaration -Wpointer-arith -mrelax</avrgcc.compiler.miscellaneous.OtherFlags>
+        <avrgcc.linker.libraries.Libraries>
+          <ListValues>
+            <Value>libm</Value>
+          </ListValues>
+        </avrgcc.linker.libraries.Libraries>
+        <avrgcc.linker.miscellaneous.LinkerFlags>-Wl,--relax</avrgcc.linker.miscellaneous.LinkerFlags>
+        <avrgcc.assembler.general.AssemblerFlags>-mrelax -DBOARD=USER_BOARD</avrgcc.assembler.general.AssemblerFlags>
+        <avrgcc.assembler.general.IncludePaths>
+          <ListValues>
+            <Value>../src</Value>
+            <Value>../src/ASF/common/boards/user_board</Value>
+            <Value>../src/config</Value>
+            <Value>../src/ASF/common/boards</Value>
+            <Value>../src/ASF/common/services/fifo</Value>
+            <Value>../src/ASF/common/services/hugemem</Value>
+            <Value>../src/ASF/xmega/drivers/cpu</Value>
+            <Value>../src/ASF/xmega/drivers/dma</Value>
+            <Value>../src/ASF/xmega/drivers/nvm</Value>
+            <Value>../src/ASF/xmega/drivers/pmic</Value>
+            <Value>../src/ASF/xmega/drivers/sleep</Value>
+            <Value>../src/ASF/xmega/drivers/tc</Value>
+            <Value>../src/ASF/xmega/drivers/wdt</Value>
+            <Value>../src/ASF/common/drivers/nvm</Value>
+            <Value>../src/ASF/common/services/clock</Value>
+            <Value>../src/ASF/common/services/delay</Value>
+            <Value>../src/ASF/common/services/ioport</Value>
+            <Value>../src/ASF/common/services/serial/xmega_usart</Value>
+            <Value>../src/ASF/common/services/serial</Value>
+            <Value>../src/ASF/common/services/sleepmgr</Value>
+            <Value>../src/ASF/common/utils</Value>
+            <Value>../src/ASF/xmega/drivers/usart</Value>
+            <Value>../src/ASF/xmega/utils/preprocessor</Value>
+            <Value>../src/ASF/xmega/utils</Value>
+            <Value>../src/LUFA/.</Value>
+            <Value>%24(PackRepoDir)\atmel\XMEGAA_DFP\1.0.38\include</Value>
+          </ListValues>
+        </avrgcc.assembler.general.IncludePaths>
+        <avrgcc.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcc.assembler.debugging.DebugLevel>
+      </AvrGcc>
+    </ToolchainSettings>
+    <MemorySettings />
+    <GenerateHexFile>True</GenerateHexFile>
+    <GenerateMapFile>True</GenerateMapFile>
+    <GenerateListFile>True</GenerateListFile>
+    <GenerateEepFile>True</GenerateEepFile>
+    <UsesExternalMakeFile>False</UsesExternalMakeFile>
+    <BuildTarget>all</BuildTarget>
+    <CleanTarget>clean</CleanTarget>
+    <ExternalMakeFilePath>C:\CODE\TWISTER_LED_TEST\TWISTER_LED_TEST\src\makefile</ExternalMakeFilePath>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="src\ASF\common\boards\board.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\drivers\nvm\common_nvm.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\common\drivers\nvm\xmega\xmega_nvm.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\common\services\clock\pll.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\services\clock\genclk.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\services\clock\osc.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\services\clock\xmega\pll.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\services\clock\xmega\osc.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\services\clock\sysclk.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\common\services\clock\xmega\sysclk.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\common\services\clock\xmega\sysclk.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\services\delay\delay.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\services\delay\xmega\cycle_counter.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\common\services\fifo\fifo.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\common\services\fifo\fifo.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\common\services\hugemem\avr8\avr8_hugemem.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\common\services\hugemem\hugemem.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\services\hugemem\avr8\hugemem.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\services\hugemem\generic\hugemem.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\xmega\drivers\cpu\ccp.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\services\ioport\xmega\ioport.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\services\ioport\ioport.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\common\services\ioport\xmega\ioport_compat.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\common\services\ioport\xmega\ioport_compat.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\services\serial\serial.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\common\services\serial\usart_serial.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\common\services\serial\xmega_usart\usart_serial.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\services\sleepmgr\sleepmgr.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\common\services\sleepmgr\xmega\sleepmgr.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\common\services\sleepmgr\xmega\sleepmgr.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\utils\interrupt.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\utils\interrupt\interrupt_avr8.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\utils\parts.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\xmega\drivers\cpu\ccp.s">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\xmega\drivers\cpu\xmega_reset_cause.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\xmega\drivers\dma\dma.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\xmega\drivers\dma\dma.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\xmega\drivers\nvm\nvm.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\xmega\drivers\nvm\nvm.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\xmega\drivers\nvm\nvm_asm.s">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\xmega\drivers\pmic\pmic.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\xmega\drivers\sleep\sleep.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\xmega\drivers\tc\tc.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\xmega\drivers\tc\tc.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\xmega\drivers\usart\usart.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\xmega\drivers\usart\usart.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\xmega\drivers\wdt\wdt.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\xmega\drivers\wdt\wdt.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\xmega\utils\progmem.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\xmega\utils\assembler.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\xmega\utils\bit_handling\clz_ctz.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\xmega\utils\preprocessor\preprocessor.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\xmega\utils\preprocessor\stringz.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\xmega\utils\preprocessor\tpaste.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\xmega\utils\compiler.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\xmega\utils\status_codes.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\xmega\utils\preprocessor\mrepeat.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\xmega\utils\assembler\gas.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\colorMap.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\config.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\config.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\config\conf_nvm.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\config\conf_clock.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\config\conf_usart_serial.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\config\conf_sleepmgr.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\config\LUFAConfig.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\constants.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\eeprom.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\eeprom.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\jump_to_bootloader.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\jump_to_bootloader.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\USB.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Common\Attributes.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Common\Common.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Version.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Common\Endianness.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Common\Architectures.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Common\CompilerSpecific.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Common\BoardTypes.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Common\ArchitectureSpecific.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Common\AndroidAccessoryClassCommon.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\AndroidAccessoryClass.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Common\AudioClassCommon.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\AudioClass.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\CDCClass.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Common\CDCClassCommon.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Common\HIDClassCommon.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Common\MIDIClassCommon.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Common\MassStorageClassCommon.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Common\PrinterClassCommon.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Common\RNDISClassCommon.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Common\StillImageClassCommon.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Common\HIDParser.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Common\HIDParser.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Common\HIDReportData.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Device\AudioClassDevice.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Device\AudioClassDevice.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Device\CDCClassDevice.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Device\CDCClassDevice.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Device\HIDClassDevice.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Device\HIDClassDevice.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\HIDClass.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Device\MassStorageClassDevice.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Device\MassStorageClassDevice.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Device\MIDIClassDevice.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Device\MIDIClassDevice.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Device\PrinterClassDevice.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Device\PrinterClassDevice.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Device\RNDISClassDevice.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Device\RNDISClassDevice.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Host\AndroidAccessoryClassHost.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Host\AndroidAccessoryClassHost.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Host\AudioClassHost.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Host\AudioClassHost.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Host\CDCClassHost.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Host\CDCClassHost.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Host\HIDClassHost.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Host\HIDClassHost.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Host\MassStorageClassHost.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Host\MassStorageClassHost.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Host\MIDIClassHost.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\MIDIClass.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Host\MIDIClassHost.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\MassStorageClass.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Host\PrinterClassHost.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Host\PrinterClassHost.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\PrinterClass.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Host\RNDISClassHost.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Host\RNDISClassHost.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\RNDISClass.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Class\Host\StillImageClassHost.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\Host\StillImageClassHost.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Class\StillImageClass.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Core\ConfigDescriptors.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\ConfigDescriptors.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\Device.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Core\DeviceStandardReq.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\Endpoint.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\EndpointStream.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\DeviceStandardReq.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Core\Events.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\Events.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\Host.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Core\HostStandardReq.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\USBController.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\OTG.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\USBInterrupt.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\USBMode.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\PipeStream.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\Pipe.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\StdRequestType.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\HostStandardReq.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\StdDescriptors.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Core\USBTask.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\USBTask.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\Device_XMEGA.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\Device_XMEGA.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\EndpointStream_XMEGA.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\EndpointStream_XMEGA.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\Endpoint_XMEGA.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\Endpoint_XMEGA.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\Pipe_XMEGA.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\Template\Template_Endpoint_Control_R.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\Template\Template_Endpoint_Control_W.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\Template\Template_Endpoint_RW.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\USBController_XMEGA.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\USBController_XMEGA.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\USBInterrupt_XMEGA.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\USBInterrupt_XMEGA.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Platform\Platform.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\LUFA\LUFA\Platform\XMEGA\ClockManagement.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\self_test.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\self_test.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\sequencer.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\sequencer.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\sequencer_display.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\sequencer_display.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\sequencer_input.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\sequencer_input.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\sysex.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\sysex.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\side_switch.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\side_switch.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\colorMap.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\encoders.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\encoders.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\midi.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\midi.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\encoder_types.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Descriptors.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\Descriptors.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\display_driver.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\display_driver.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\input.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\input.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\main.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\ASF\common\boards\user_board\init.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\asf.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\utils\make\Makefile.avr.in">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\config\conf_board.h">
+      <SubType>compile</SubType>
+    </None>
+    <None Include="src\ASF\common\boards\user_board\user_board.h">
+      <SubType>compile</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="src\" />
+    <Folder Include="src\ASF\" />
+    <Folder Include="src\ASF\common\" />
+    <Folder Include="src\ASF\common\boards\" />
+    <Folder Include="src\ASF\common\boards\user_board\" />
+    <Folder Include="src\ASF\common\drivers\" />
+    <Folder Include="src\ASF\common\drivers\nvm\" />
+    <Folder Include="src\ASF\common\drivers\nvm\xmega\" />
+    <Folder Include="src\ASF\common\services\" />
+    <Folder Include="src\ASF\common\services\clock\" />
+    <Folder Include="src\ASF\common\services\clock\xmega\" />
+    <Folder Include="src\ASF\common\services\delay\" />
+    <Folder Include="src\ASF\common\services\delay\xmega\" />
+    <Folder Include="src\ASF\common\services\fifo\" />
+    <Folder Include="src\ASF\common\services\hugemem\" />
+    <Folder Include="src\ASF\common\services\hugemem\avr8\" />
+    <Folder Include="src\ASF\common\services\hugemem\generic\" />
+    <Folder Include="src\ASF\common\services\ioport\" />
+    <Folder Include="src\ASF\common\services\ioport\xmega\" />
+    <Folder Include="src\ASF\common\services\serial\" />
+    <Folder Include="src\ASF\common\services\serial\xmega_usart\" />
+    <Folder Include="src\ASF\common\services\sleepmgr\" />
+    <Folder Include="src\ASF\common\services\sleepmgr\xmega\" />
+    <Folder Include="src\ASF\common\utils\" />
+    <Folder Include="src\ASF\common\utils\interrupt\" />
+    <Folder Include="src\ASF\common\utils\make\" />
+    <Folder Include="src\ASF\xmega\" />
+    <Folder Include="src\ASF\xmega\drivers\" />
+    <Folder Include="src\ASF\xmega\drivers\cpu\" />
+    <Folder Include="src\ASF\xmega\drivers\dma\" />
+    <Folder Include="src\ASF\xmega\drivers\nvm\" />
+    <Folder Include="src\ASF\xmega\drivers\pmic\" />
+    <Folder Include="src\ASF\xmega\drivers\sleep\" />
+    <Folder Include="src\ASF\xmega\drivers\tc\" />
+    <Folder Include="src\ASF\xmega\drivers\usart\" />
+    <Folder Include="src\ASF\xmega\drivers\wdt\" />
+    <Folder Include="src\ASF\xmega\utils\" />
+    <Folder Include="src\ASF\xmega\utils\assembler\" />
+    <Folder Include="src\ASF\xmega\utils\bit_handling\" />
+    <Folder Include="src\ASF\xmega\utils\preprocessor\" />
+    <Folder Include="src\config\" />
+    <Folder Include="src\LUFA\" />
+    <Folder Include="src\LUFA\LUFA\" />
+    <Folder Include="src\LUFA\LUFA\Common\" />
+    <Folder Include="src\LUFA\LUFA\Drivers\" />
+    <Folder Include="src\LUFA\LUFA\Drivers\USB\" />
+    <Folder Include="src\LUFA\LUFA\Drivers\USB\Class\" />
+    <Folder Include="src\LUFA\LUFA\Drivers\USB\Class\Common\" />
+    <Folder Include="src\LUFA\LUFA\Drivers\USB\Class\Device\" />
+    <Folder Include="src\LUFA\LUFA\Drivers\USB\Class\Host\" />
+    <Folder Include="src\LUFA\LUFA\Drivers\USB\Core\" />
+    <Folder Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\" />
+    <Folder Include="src\LUFA\LUFA\Drivers\USB\Core\XMEGA\Template\" />
+    <Folder Include="src\LUFA\LUFA\Platform\" />
+    <Folder Include="src\LUFA\LUFA\Platform\XMEGA\" />
+  </ItemGroup>
+  <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\AvrGCC.targets" />
+</Project>
