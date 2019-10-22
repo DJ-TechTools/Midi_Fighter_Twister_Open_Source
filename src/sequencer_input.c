@@ -56,9 +56,11 @@ void process_sequencer_input(void)
 			if ((i>11) && (i < 16) && (sequencerDisplayState == DEFAULT) && (encoder_is_in_detent(sequencerRawValue[i]))) {
 				seq_detent_counter[i-12] += new_value;
 				if (seq_detent_counter[i-12] > detent_size){
-					sequencerRawValue[i] = 6500;
-					} else if (seq_detent_counter[i-12] < -detent_size) {
-					sequencerRawValue[i] = 6200;
+					sequencerRawValue[i] = encoder_detent_limit_high;
+					//sequencerRawValue[i] = 6500;
+				} else if (seq_detent_counter[i-12] < -detent_size) {
+					sequencerRawValue[i] = encoder_detent_limit_low;
+					//sequencerRawValue[i] = 6200;
 				}
 			} else if (encoder_is_in_deadzone(sequencerRawValue[i])) {
 				// The encoder is in a end zone, only change the encoder value once we have

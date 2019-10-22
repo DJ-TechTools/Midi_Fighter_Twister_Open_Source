@@ -30,14 +30,14 @@
 
 /** \file
  *
- *  USB Device Descriptors, for library use when in USB device mode. Descriptors are special
+ *  USB Device Descriptors, for library use whe--n in USB device mode. Descriptors are special
  *  computer-readable structures which the host requests upon device enumeration, to determine
  *  the device's capabilities and functions.
  */
 
 #include "Descriptors.h"
 
-#define USE_ALTERNATE_ID 0 // Summer2016Update: Alternate USB IDs
+#define USE_ALTERNATE_ID 0 // Alternate USB ID Selection Constant
 #if USE_ALTERNATE_ID != 0
 	#warning ALTERNATE USB ID is in USE!!!
 #endif
@@ -59,11 +59,15 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor =
 	.Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
 
 	.VendorID               = 0x2580,
-#if USE_ALTERNATE_ID == 0
-	.ProductID              = 0x0007,
-#else
-	.ProductID              = 0x1007, // !Summer2016Update: 0x1007
-#endif
+	#if USE_ALTERNATE_ID == 0
+		.ProductID              = 0x0007,
+	#elif USE_ALTERNATE_ID == 1
+		.ProductID              = 0x1007,
+	#elif USE_ALTERNATE_ID == 2
+		.ProductID              = 0x2007,
+	#else // USE_ALTERNATE_ID == 3
+		.ProductID              = 0x3007,
+	#endif
 	.ReleaseNumber          = VERSION_BCD(0,0,1),
 
 	.ManufacturerStrIndex   = STRING_ID_Manufacturer,
@@ -90,9 +94,9 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
 			.ConfigurationNumber      = 1,
 			.ConfigurationStrIndex    = NO_DESCRIPTOR,
 
-			.ConfigAttributes         = (USB_CONFIG_ATTR_RESERVED | USB_CONFIG_ATTR_SELFPOWERED),
+			.ConfigAttributes         = (USB_CONFIG_ATTR_RESERVED),
 
-			.MaxPowerConsumption      = USB_CONFIG_POWER_MA(100)
+			.MaxPowerConsumption      = USB_CONFIG_POWER_MA(480)
 		},
 
 	.Audio_ControlInterface =
@@ -211,7 +215,7 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
 					.EndpointAddress     = MIDI_STREAM_OUT_EPADDR,
 					.Attributes          = (EP_TYPE_BULK | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_DATA),
 					.EndpointSize        = MIDI_STREAM_EPSIZE,
-					.PollingIntervalMS   = 0x05
+					.PollingIntervalMS   = 0x00
 				},
 
 			.Refresh                  = 0,
@@ -236,7 +240,7 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor =
 					.EndpointAddress     = MIDI_STREAM_IN_EPADDR,
 					.Attributes          = (EP_TYPE_BULK | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_DATA),
 					.EndpointSize        = MIDI_STREAM_EPSIZE,
-					.PollingIntervalMS   = 0x05
+					.PollingIntervalMS   = 0x00
 				},
 
 			.Refresh                  = 0,
@@ -281,17 +285,50 @@ const USB_Descriptor_String_t PROGMEM ManufacturerString =
  */
 const USB_Descriptor_String_t PROGMEM ProductString =
 {
-	.Header                 = {.Size = USB_STRING_LEN(20), .Type = DTYPE_String},
 
+	#if USE_ALTERNATE_ID == 0
+	.Header                 = {.Size = USB_STRING_LEN(20), .Type = DTYPE_String},
 	.UnicodeString          = L"Midi Fighter Twister"
+	
+	#elif USE_ALTERNATE_ID == 1
+	.Header                 = {.Size = USB_STRING_LEN(22), .Type = DTYPE_String},
+	.UnicodeString          = L"Midi Fighter Twister 2"
+	
+	#elif USE_ALTERNATE_ID == 2
+	.Header                 = {.Size = USB_STRING_LEN(22), .Type = DTYPE_String},
+	.UnicodeString          = L"Midi Fighter Twister 3"
+	
+	#else //if USE_ALTERNATE_ID == 3
+	.Header                 = {.Size = USB_STRING_LEN(22), .Type = DTYPE_String},
+	.UnicodeString          = L"Midi Fighter Twister 4"
+	
+	#endif
+	//Address = &ProductString;
+	//Size    = pgm_read_byte(&ProductString.Header.Size);
+	//#else
+	//Address = &ProductString_Alternate;
+	//Size    = pgm_read_byte(&ProductString_Alternate.Header.Size);
+	//#endif
 };
 
-const USB_Descriptor_String_t PROGMEM ProductString_Alternate = // !Summer2016Update: USB String Modification
+/** Device Serial Numbers - We have four to allow users to user multiple MF3Ds at once
+ */ 
+const USB_Descriptor_String_t PROGMEM SerialString =
 {
-	.Header                 = {.Size = USB_STRING_LEN(20), .Type = DTYPE_String},
-
-	.UnicodeString          = L"Midi Fighter TWISTER"
+	.Header                 = {.Size = USB_STRING_LEN(8), 
+							   .Type = DTYPE_String},
+	.UnicodeString          = L"6666666A"
 };
+
+
+//const USB_Descriptor_String_t PROGMEM ProductString_Alternate = // !Summer2016Update: USB String Modification
+//{
+//
+	////.Header                 = {.Size = USB_STRING_LEN(20), .Type = DTYPE_String},
+	////.UnicodeString          = L"Midi Fighter TWISTER"
+	//.Header                 = {.Size = USB_STRING_LEN(22), .Type = DTYPE_String},
+	//.UnicodeString          = L"Midi Fighter Twister 2"
+//};
 
 
 /** This function is called by the library when in device mode, and must be overridden (see library "USB Descriptors"
@@ -332,18 +369,20 @@ uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue,
 					Size    = pgm_read_byte(&ManufacturerString.Header.Size);
 					break;
 				case STRING_ID_Product:
-				#if USE_ALTERNATE_ID == 0
 					Address = &ProductString;
-					Size    = pgm_read_byte(&ProductString.Header.Size);				
-				#else
-					Address = &ProductString_Alternate;
-					Size    = pgm_read_byte(&ProductString_Alternate.Header.Size);
-				#endif
+					Size    = pgm_read_byte(&ProductString.Header.Size);
+				//#if USE_ALTERNATE_ID == 0
+					//Address = &ProductString;
+					//Size    = pgm_read_byte(&ProductString.Header.Size);				
+				//#else
+					//Address = &ProductString_Alternate;
+					//Size    = pgm_read_byte(&ProductString_Alternate.Header.Size);
+				//#endif
 					break;
-				/*case STRING_ID_Serial:  // !Summer2016Update: could add serial number to descriptors (not necessary, used additional Product IDs)
+				case STRING_ID_Serial:  // !Summer2016Update: could add serial number to descriptors (not necessary, used additional Product IDs)
 					Address = &SerialString;
 					Size    = pgm_read_byte(&SerialString.Header.Size);
-					break;*/
+					break;
 				
 			}
 

@@ -92,7 +92,7 @@ side_sw_settings_t* get_side_switch_config(void)
  * action for that switch.
  */
 
-void process_side_switch_input(void)
+void process_side_switch_input(void)  // MIDI Output: Digital Inputs -> Side Switches
 {
 	update_side_switch_state();
 	
@@ -100,7 +100,7 @@ void process_side_switch_input(void)
 	
 	uint8_t bit = 0x01;
 
-	uint8_t enc_bank = current_encoder_bank();
+	//uint8_t enc_bank = current_encoder_bank();
 	
 	// Check for Sequencer Activation Combination (Both Middle at same time)
 	if ((get_side_switch_state() & 0x12) == 0x12){
@@ -193,8 +193,9 @@ void do_side_switch_function(uint8_t switch_num, switch_event_t state)
 			// The switch increments the global bank setting
 			if((state == SW_DOWN) && (current_encoder_bank() < (NUM_BANKS-1))){
 				// Send bank change MIDI output
+				uint8_t next_bank = (current_encoder_bank()+1 >= NUM_BANKS) ? NUM_BANKS-1 : current_encoder_bank()+1;
 				midi_stream_raw_cc(midi_system_channel, current_encoder_bank(), 0);
-				change_encoder_bank(current_encoder_bank()+1);
+				change_encoder_bank(next_bank);
 				midi_stream_raw_cc(midi_system_channel, current_encoder_bank(), 127);
 			}
 						
@@ -203,8 +204,9 @@ void do_side_switch_function(uint8_t switch_num, switch_event_t state)
 			// The switch decrements the global bank setting
 			if((state == SW_DOWN) && (current_encoder_bank() > 0)){
 				// Send bank change MIDI output
+				uint8_t next_bank = (current_encoder_bank()-1 >= NUM_BANKS) ? 0 : current_encoder_bank()-1;
 				midi_stream_raw_cc(midi_system_channel, current_encoder_bank(), 0);
-				change_encoder_bank(current_encoder_bank()-1);
+				change_encoder_bank(next_bank);
 				midi_stream_raw_cc(midi_system_channel, current_encoder_bank(), 127);
 			}
 		} break;
@@ -249,7 +251,7 @@ void do_side_switch_function(uint8_t switch_num, switch_event_t state)
 			if(state == SW_DOWN){
 				// Send bank change MIDI output
 				midi_stream_raw_cc(midi_system_channel, current_encoder_bank(), 0);
-				if(current_encoder_bank() == (NUM_BANKS-1)){
+				if(current_encoder_bank() >= (NUM_BANKS-1)){
 					change_encoder_bank(0);
 				} else {
 					change_encoder_bank(current_encoder_bank()+1);

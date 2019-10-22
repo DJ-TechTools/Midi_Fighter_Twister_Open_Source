@@ -39,6 +39,13 @@
 	#include "sysex.h"
 	#include "sequencer.h"
 
+
+/* Constants: */
+	#define ENABLE_LEGACY_MIDI_USART_OUTPUT 0 // Causes issues with USB Enumeration, when a computer first boots up when enabled.
+	#define ENABLE_USB_MIDI_READ_ACTIVE_DELAY	1
+	#define USB_RX_FAIL_LIMIT 120
+	#define USB_RX_PACKET_LIMIT 512
+	
 /*	Macros: */
 
 	// Define Midi Port Control Pins
@@ -115,6 +122,9 @@
 	void	midi_stream_raw_cc(const uint8_t channel,
 							   const uint8_t cc,
 							   const uint8_t value);
+							   
+	void	midi_stream_raw_pitchbend(const uint8_t channel, const uint16_t value);
+
 
 	void	midi_stream_sysex (const uint8_t length, uint8_t* data);
 
@@ -137,10 +147,12 @@
 	
 	void set_midi_serial(void);
 	
+	#if ENABLE_LEGACY_MIDI_USART_OUTPUT > 0
 	void MIDI_send_legacy_packet(const MIDI_EventPacket_t* const Event);
-
+	void process_legacy_packet(void);
+	#endif 
+	
 	void process_midi_packet(MIDI_EventPacket_t input_event);
 	
-	void process_legacy_packet(void);
 
 #endif // _MIDI_H_INCLUDED

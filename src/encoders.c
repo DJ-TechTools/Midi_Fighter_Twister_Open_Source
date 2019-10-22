@@ -33,7 +33,12 @@
 
 #include <encoders.h>
 
+// Constants
+const uint16_t encoder_detent_limit_low = 6240; // 6240 - ok for all modes (6250 causes high res mode to hit '64' on the way up)
+const uint16_t encoder_detent_limit_high = 6450; // 6450 - ok for all modes, (note: scale_encoder_value adds 50 to these "raw" values in velocity calc)
+
 // Locals
+
 uint8_t indicator_value_buffer[NUM_BANKS][16];	 // Holds the 7 bit indicator value
 
 uint8_t switch_color_buffer[NUM_BANKS][16];      // Holds the switch color setting 
@@ -62,7 +67,7 @@ uint16_t shift_mode_midi_override[2];		    // Bit field to track the midi state 
 
 // - this is necessary because some parameters are shared between 'shifted' and 'non-shifted' encoders.
 
-int8_t encoder_detent_counter[PHYSICAL_ENCODERS]; // !review: could be expanded to VIRTUAL_ENCODERS, but should not be necessary
+int8_t encoder_detent_counter[PHYSICAL_ENCODERS]; 
 //~ input_map_t input_map[BANKED_ENCODERS]; // !Summer2016Update: Removed in favor of expanding encoder_settings
 int16_t  raw_encoder_value[VIRTUAL_ENCODERS]; // !Summer2016Update: Expanded to store values for all banks and shifted encoders
 // - indexed by Virtual Encoder ID
@@ -75,19 +80,22 @@ int16_t  raw_encoder_value[VIRTUAL_ENCODERS]; // !Summer2016Update: Expanded to 
 // --- 96-111: Encoders Bank 3 (Shifted)
 // --- 112-127: Encoders Bank 4 (Shifted)
 
-static int8_t encoder_bank = 0;
+static uint8_t encoder_bank = 0;
 static int8_t g_detent_size;
 static int8_t g_dead_zone_size;
 //static encoder_config_t encoder_settings[PHYSICAL_ENCODERS];
 encoder_config_t encoder_settings[BANKED_ENCODERS];
 //static encoder_config_t encoder_settings_transfer_buffer[1];
 
-
 // Private Functions
-uint8_t get_virtual_encoder_id (uint8_t encoder_bank, uint8_t encoder_id);
+uint8_t get_virtual_encoder_id (uint8_t bank, uint8_t encoder_id);
 void encoderConfig(encoder_config_t *settings);
+bool switch_value_from_encoder_value_enabled(uint8_t banked_encoder_idx);
+uint8_t adjust_switch_value_by_encoder_value(uint8_t banked_encoder_idx, uint8_t value, bool state);
+
 void send_element_midi(enc_control_type_t type, uint8_t banked_encoder_index, uint8_t value, bool state);
 void send_encoder_midi(uint8_t banked_encoder_idx, uint8_t value, bool state, bool shifted);
+//void send_encoder_pitchbend(uint8_t banked_encoder_idx, uint16_t value, bool shifted);
 uint8_t scale_encoder_value(int16_t value);
 int16_t clamp_encoder_raw_value(int16_t value);
 bool encoder_is_in_detent(int16_t value);
@@ -99,17 +107,22 @@ void transfer_encoder_values_to_other_banks(uint8_t current_bank);
 // - Animation Related
 bool animation_is_encoder_indicator(uint8_t animation_value);
 bool animation_is_switch_rgb(uint8_t animation_value);
-bool animation_buffer_conflict_exists(uint8_t encoder_bank, uint8_t encoder);
+bool animation_buffer_conflict_exists(uint8_t bank, uint8_t encoder);
+
+#if VELOCITY_CALC_METHOD > VELOCITY_CALC_M_NONE 
+	uint16_t convert_ticks_per_scan_to_value_multiplier(uint8_t tick_count, uint16_t cycles_count);
+	void send_midi_velocity_sensitive_encoder(uint8_t encoder_id, uint16_t output_value);
+#endif
+
+
 /** 
  *  Initializes all encoder buffers and EEPROM settings
 **/
 
-uint8_t get_virtual_encoder_id (uint8_t encoder_bank, uint8_t encoder_id){
+uint8_t get_virtual_encoder_id (uint8_t bank, uint8_t encoder_id){
 	uint8_t virtual_encoder_id = encoder_id;
-	//uint8_t bank = 0;
-	//uint8_t shifted = encoder_is_in_shift_state(encoder_bank, i);
-	virtual_encoder_id += encoder_bank*16;
-	if (encoder_is_in_shift_state(encoder_bank, encoder_id))
+	uint8_t this_bank = bank;
+	if (encoder_is_in_shift_state(this_bank, encoder_id))
 		{virtual_encoder_id += 64;}
 	return virtual_encoder_id;
 }
@@ -121,7 +134,7 @@ bool encoder_maps_match(uint8_t this_banked_encoder_id, uint8_t that_banked_enco
 		{ return false; }
 	if (encoder_settings[this_banked_encoder_id].encoder_midi_type != encoder_settings[that_banked_encoder_id].encoder_midi_type)
 		{ return false; }
-	if (encoder_settings[this_banked_encoder_id].encoder_midi_type == SEND_REL_ENC) // Don't Transfer values for relative encoders
+	if (encoder_settings[this_banked_encoder_id].encoder_midi_type == SEND_REL_ENC || encoder_settings[this_banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_DRAG || encoder_settings[this_banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_SCROLL) // Don't Transfer values for relative encoders
 		{ return false; }
 	return true;
 }
@@ -279,7 +292,7 @@ void get_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_ptr
 	cfg_ptr->indicator_display_type = buffer[5] & 0x03;
 	cfg_ptr->movement				= (buffer[5] >> 2) & 0x03;
 	cfg_ptr->encoder_shift_midi_channel = (buffer[5] >> 4) & 0x0F; // !Summer2016Update: Shifted Encoder MIDI Channel
-	cfg_ptr->encoder_midi_type		= buffer[6] & 0x03;
+	cfg_ptr->encoder_midi_type		= buffer[6] & 0x07; // !Spring2019Update: Added Switch Velocity Control and Mouse Emulation
 	cfg_ptr->encoder_midi_channel   = (buffer[6] >> 4) & 0x0F;
 	cfg_ptr->encoder_midi_number	= buffer[7] & 0x7F;
 	cfg_ptr->is_super_knob          = (buffer[7] >> 7) & 0x01;
@@ -312,7 +325,7 @@ void save_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_pt
 {	
 	// Record the new setting to RAM first
 	uint8_t virtual_encoder_id = get_virtual_encoder_id (bank, encoder);
-	encoder_settings[virtual_encoder_id] = *cfg_ptr; // !review: might be '&' instead of *
+	encoder_settings[virtual_encoder_id] = *cfg_ptr;
 	
 	// Create a tempory page_buffer;
 	uint8_t page_buffer[EEPROM_PAGE_SIZE];
@@ -383,8 +396,8 @@ void save_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_pt
 	
 	// Encoder MIDI Type & MIDI channel are saved in the 7th byte
 	if (cfg_ptr->encoder_midi_type < 0x80){
-		*buffer_ptr &= ~0x03;
-		*buffer_ptr |= (0x03 & cfg_ptr->encoder_midi_type);
+		*buffer_ptr &= ~0x07; // !Spring2019Update: Added Switch Velocity Control and Mouse Emulation
+		*buffer_ptr |= (0x07 & cfg_ptr->encoder_midi_type); // !Spring2019Update: Added Switch Velocity Control and Mouse Emulation
 	}
 	if (cfg_ptr->encoder_midi_channel < 0x80){
 		*buffer_ptr &= ~0xF0;
@@ -443,10 +456,6 @@ void factory_reset_encoder_config(void)
 	uint8_t active_colors[NUM_BANKS] = {DEF_ACTIVE_COLOR_BANK1, DEF_ACTIVE_COLOR_BANK2, DEF_ACTIVE_COLOR_BANK3, DEF_ACTIVE_COLOR_BANK4};
 	uint8_t inactive_colors[NUM_BANKS] = {DEF_INACTIVE_COLOR_BANK1, DEF_INACTIVE_COLOR_BANK2, DEF_INACTIVE_COLOR_BANK3, DEF_INACTIVE_COLOR_BANK4};
 
-	// !review: encoder_settings[] is being reset, it appears by a USB Disconnection/ Reconnection
-	// - verify this, or add a routine to re-initialize encoder_settings
-
-
 	/* We then fill a page buffer with the compressed settings for 4 encoders
 	   (each encoder has 8 bytes of data allocated for its setting) */
 	uint8_t page_buffer[EEPROM_PAGE_SIZE];
@@ -489,7 +498,7 @@ void factory_reset_encoder_config(void)
 		*buffer_ptr++ = data_byte;
 		
 		// Encoder MIDI Type & MIDI channel are saved in the 7th byte
-		data_byte  = (0x03 & enc_default.encoder_midi_type);
+		data_byte  = (0x07 & enc_default.encoder_midi_type); // !Spring2019Update: Switch Velocity Control and Mouse Emulation
 		data_byte |= (0xF0 & (enc_default.encoder_midi_channel << 4));
 		*buffer_ptr++ = data_byte;
 		
@@ -534,202 +543,322 @@ void factory_reset_encoder_config(void)
 		page_index++;
 	}
 }
-
 //void adjust_
+#if VELOCITY_CALC_METHOD > VELOCITY_CALC_M_NONE 
 
+uint16_t convert_ticks_per_scan_to_value_multiplier(uint8_t tick_count, uint16_t cycles_count) {
+	float multiplier = velocity_calc_slope*(float)(tick_count)/(float)(cycles_count) + velocity_calc_offset;
+	if (multiplier > VELOCITY_CALC_MAX_MULTIPLIER) {
+		multiplier = VELOCITY_CALC_MAX_MULTIPLIER;
+	} else if (multiplier < VELOCITY_CALC_MIN_MULTIPLIER) {
+		multiplier = VELOCITY_CALC_MIN_MULTIPLIER;
+	}
+	return (uint16_t)(multiplier);
+}
+
+void send_midi_velocity_sensitive_encoder(uint8_t encoder_id, uint16_t output_value) { // DEPRECATED?
+	#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+		uint8_t midi_channel = 0x0F;
+		uint16_t multiplier = convert_ticks_per_scan_to_value_multiplier(1, output_value+1); // !review: '1' no guarantee only 1 tick
+		midi_stream_raw_pitchbend(midi_channel, multiplier);
+	#endif
+}
+#endif
+
+
+// ======================== Process Encoder Input Functions======================
 /**
  * Contains the main encoder task, this checks encoder hardware for change
  * then translates this change into a MIDI value based on the encoders
  * settings, if the MIDI value changes then the updated value is sent
  * and saved into the MIDI state buffer.
  */                                                                
-void   process_encoder_input(void)
+void process_encoder_input(void)  // MIDI Output: Digital Inputs -> Encoders (Output)
 {
-	
-	int16_t new_value;
 	uint16_t bit = 0x0001;
-	uint8_t virtual_encoder_id, banked_encoder_id;
 	// Update the current encoder switch states
 	update_encoder_switch_state();
 	
 	for (uint8_t i=0;i<16;i++) {
-		
-		// First we check for movement on each encoder
-		new_value = get_encoder_value(i);  // !review: int8 return is being assigned to int16	
-		
-		// Get Virtual Encoder ID (for Value storage)
-		virtual_encoder_id = get_virtual_encoder_id(encoder_bank, i);
-		banked_encoder_id = virtual_encoder_id & BANKED_ENCODER_MASK;
-				
-		if (new_value) {
-			
-			if ((encoder_settings[banked_encoder_id].has_detent) && 
-			     encoder_is_in_detent(raw_encoder_value[virtual_encoder_id])) {	
-					
-				// The encoder is in de-tent, only change the encoder value
-				//   once we have moved out of the de-tent region set by global
-				//   setting g_detent_size. 
-				encoder_detent_counter[i] += new_value;
-				if (encoder_detent_counter[i] > g_detent_size){
-					raw_encoder_value[virtual_encoder_id] = 6500;
-				} else if (encoder_detent_counter[i] < -g_detent_size) {
-					raw_encoder_value[virtual_encoder_id] = 6200;
-				}
-				
-			} else if (encoder_is_in_deadzone(raw_encoder_value[virtual_encoder_id]) && (!(encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC))) { // && (!encoder_is_in_shift_state(encoder_bank, i))) { // !error: allows overflow for shifted encoders
-				// The encoder is in a end zone, only change the encoder value
-				//   once we have moved out of the dead zone. 
-				
-				if( ((raw_encoder_value[virtual_encoder_id] < 100) && (new_value > 0)) ||
-					((raw_encoder_value[virtual_encoder_id] > 12600) && (new_value < 0)) ) {
-					
-					encoder_detent_counter[i] += new_value;
-				}
-				
-				if ((encoder_detent_counter[i] > g_dead_zone_size) &&  
-				    (raw_encoder_value[virtual_encoder_id] < 100)) {
-					
-					raw_encoder_value[virtual_encoder_id] = 100;
-					encoder_detent_counter[i] = 0;
-					
-				} else if ((encoder_detent_counter[i] < -g_dead_zone_size) &&
-				           (raw_encoder_value[virtual_encoder_id] > 12600)) {
-					
-					raw_encoder_value[virtual_encoder_id] = 12600;
-					encoder_detent_counter[i] = 0;
-				}
-			} else { 
-				// TODO TIDY THIS ALL UP - NEED TO RETHINK FUNCTION TOPOGRAPHY FOR ENCODERS *?*?*?*?*?*?*?*?*?
-				// The encoder is not in a dead zone so send MIDI
-				if(encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC){
-					// Calculate Output Value 
-					// new_value will be 1 or -1 if it gets here(though technically it could hold values higher)
-					uint8_t output_value;// = 64 + new_value;	// Relative: Bin Offset
-					if (encoder_settings[banked_encoder_id].switch_action_type == ENC_FINE_ADJUST &&
-					    get_enc_switch_state() & bit) { // !Summer2016Update: Relative Encoder Fine Adjustment Added
-						static int16_t relative_fine_value[PHYSICAL_ENCODERS] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  // Counter
-						relative_fine_value[i] += new_value;
-						output_value = 64;
-						while (relative_fine_value[i] >= 4)  { // Adjust for Clockwise Output -> 4=ENC_REL_FINE_LIMIT
-							relative_fine_value[i] -= 4;
-							output_value++;
-						}
-						while (relative_fine_value[i] <= -4)  { // Adjust for CounterClockwise Output -> 4=ENC_REL_FINE_LIMIT
-							relative_fine_value[i] += 4;
-							output_value--;
-						}
-					}
-					else {	// Case: Normal 
-						output_value = 64 + new_value;	// Relative: Bin Offset
-					}
+		uint8_t virtual_encoder_id = get_virtual_encoder_id(encoder_bank, i);
+		uint8_t banked_encoder_id = virtual_encoder_id & BANKED_ENCODER_MASK;
+		process_encoder_input_rotary(i, virtual_encoder_id, banked_encoder_id, bit);  // First we check for movement on each encoder
+		process_encoder_input_switch(i, virtual_encoder_id, banked_encoder_id, bit); // Then we check the movement of each switch
+		bit <<= 1;
+	}
+}
+void process_encoder_input_rotary(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, uint16_t bit) { // i = encoder_id
+	int16_t new_value;
+	#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+	uint16_t cycle_count;
+	#endif
+	//uint8_t virtual_encoder_id, banked_encoder_id;
 
-					//uint8_t output_value = (uint8_t)(new_value) & 0x7F;	// Relative: Two's Complement
-					uint8_t midi_channel;
-					if (!encoder_is_in_shift_state(encoder_bank, i)){ // !Summer2016Update Shifted Encoders Midi Channel
-						midi_channel = encoder_settings[banked_encoder_id].encoder_midi_channel;
-					} else{
-						midi_channel = encoder_settings[banked_encoder_id].encoder_shift_midi_channel;
-						//midi_channel = encoder_settings[banked_encoder_id].switch_midi_channel;
-					}
-					//uint8_t output_value = 64 + new_value;// !djtt original
-					// Send Message
-					/* midi_stream_raw_cc(encoder_settings[banked_encoder_id].encoder_midi_channel, 
-								   encoder_settings[banked_encoder_id].encoder_midi_number, 
-								   output_value); */  // !djtt original
-					// Relative output does not need to call 'Send Encoder' as it just always outputs 'CC' 
-					if (output_value != 64) { // !Summer2016Update: Relative Encoder Fine Adjustment Bugfix, disallow non-moving
-						midi_stream_raw_cc(midi_channel, 
-								   encoder_settings[banked_encoder_id].encoder_midi_number, 
-								   output_value);	
-					}
-				} else {
-					
-					// The encoder is not current in any detent or end zone
-				
-					/* If the switch action is fine adjust we change the raw
-					   value by 25 per enc step, otherwise we change by 100
-					   per step for the direct movement type and 178 for the 
-					   emulation movement type. The emulation movement type
-					   gives the full CC range over 270 degrees so the encoder
-					   responds like an analog potentiometer. */
-					 
-					int16_t scaled_value;
-					 
-					if (encoder_settings[banked_encoder_id].switch_action_type == ENC_FINE_ADJUST &&
-					    get_enc_switch_state() & bit) {
-						// Fine adjust sensitivity, 1 pulse = 1/4 a CC step	
-						scaled_value = new_value*25; 
-						
-					} else if(encoder_settings[banked_encoder_id].movement == DIRECT) {
-							// Standard sensitivity, 1 pulse = 1 CC step
-							scaled_value = new_value*100; 
-							
-					} else  {
-							// Emulated sensitivity, 270 degress rotation = 127 CC steps
-						   scaled_value = new_value*178;   
-						   //scaled_value = new_value*200;   
-					}
-			
-					if (encoder_is_in_shift_state(encoder_bank, i)){  // !Summer2016Update: encoder_is_in_shift_state
-						// !review: should be able to merge this if-else, since shift is now dealt with
-						// - in get_virtual_encoder_id, only send_indicator_midi will differ (via a boolean declaration
-						// !Summer2016Update: Shifted Encoders MIDI Channel/ Encoder Value Expansion
-						raw_encoder_value[virtual_encoder_id] += scaled_value;
-						raw_encoder_value[virtual_encoder_id] = clamp_encoder_raw_value(raw_encoder_value[virtual_encoder_id]);
-						// Translate the raw value into a MIDI value, send & save the new value 	
-						uint8_t control_change_value = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
-						//send_element_midi(SWITCH, i, control_change_value, true);
-						send_encoder_midi(banked_encoder_id, control_change_value, true, true); // !Summer2016Update: Shifted Encoders now always output as Encoders
-						indicator_value_buffer[encoder_bank][i]=control_change_value;
-						
-					} else {
-						// !Summer2016Update: Shifted Encoders MIDI Channel/ Encoder Value Expansion
-						raw_encoder_value[virtual_encoder_id] += scaled_value;
-						raw_encoder_value[virtual_encoder_id] = clamp_encoder_raw_value(raw_encoder_value[virtual_encoder_id]);
-						// Translate the raw value into a MIDI value, send & save the new value 	
-						uint8_t control_change_value = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
-						//send_element_midi(ENCODER, i, control_change_value, true);
-						send_encoder_midi(banked_encoder_id, control_change_value, true, false);
-						//if(!(bit & enc_indicator_overide[encoder_bank])) {
-							indicator_value_buffer[encoder_bank][i]=control_change_value;
-						//}	
-					}	
-				}
+	#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+	cpu_irq_disable(); // disable interrupts to ensure we don't lose any data by reading midstream.
+	new_value = get_encoder_value(i);  // !review: int8 return is being assigned to int16
+	cycle_count = get_encoder_cycle_count(i);
+	cpu_irq_enable();
+	#else
+	new_value = get_encoder_value(i);  // !review: int8 return is being assigned to int16
+	#endif
+
+	if (new_value) { // if Encoder Has Moved
+		// --- Detents and Deadzones
+		#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+		if (process_encoder_input_rotary_detent(i, virtual_encoder_id, banked_encoder_id, new_value, cycle_count)) { }
+		#else
+		if (process_encoder_input_rotary_detent(i, virtual_encoder_id, banked_encoder_id, new_value)) { }
+		#endif
+		// everything has been done in 'pei_detent', if that function returned true
+		#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+		else if (process_encoder_input_rotary_deadzone(i, virtual_encoder_id, banked_encoder_id, new_value, cycle_count)) {}
+		#else
+		else if (process_encoder_input_rotary_deadzone(i, virtual_encoder_id, banked_encoder_id, new_value)) {}
+		#endif
+		// everything has been done in 'pei_deadzone', if that function returned true
+		else { // Encoder Event Occurred, and Encoder is not in a Detent or Deadzone.
+			// TODO TIDY THIS ALL UP - NEED TO RETHINK FUNCTION TOPOGRAPHY FOR ENCODERS *?
+			#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+			if(process_encoder_input_rotary_relative(i, virtual_encoder_id, banked_encoder_id, new_value, bit, cycle_count)) {}
+			// everything has been done in 'pei_relative', if that function returned true
+			#else
+			if(process_encoder_input_rotary_relative(i, virtual_encoder_id, banked_encoder_id, new_value, bit)) {}
+			// everything has been done in 'pei_relative', if that function returned true
+			#endif
+
+			else { // The encoder is not relataive nor in any detent or end zone
+				#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+				process_encoder_input_rotary_absolute(i, virtual_encoder_id, banked_encoder_id, new_value, bit, cycle_count);
+				// everything has been done in 'pei_absolute', if that function returned true
+				#else
+				process_encoder_input_rotary_absolute(i, virtual_encoder_id, banked_encoder_id, new_value, bit);
+				// everything has been done in 'pei_absolute', if that function returned true
+				#endif
 			}
 		}
+	}
+
+}
+
+#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value, uint16_t cycle_count)
+#else
+bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value)
+#endif
+{
+	if (!encoder_settings[banked_encoder_id].has_detent) {
+		//midi_stream_raw_cc(9,99,1);
+		return false;
+	} else if (!encoder_is_in_detent(raw_encoder_value[virtual_encoder_id])) {
+		//midi_stream_raw_cc(9,99,2);
+		return false;
+	}
+
+
+	encoder_detent_counter[i] += new_value;
+	if (encoder_detent_counter[i] > g_detent_size){ // Exiting detent (CW)
+		//raw_encoder_value[virtual_encoder_id] = 6500;
+		raw_encoder_value[virtual_encoder_id] = encoder_detent_limit_high;
+		//midi_stream_raw_cc(9,99,11);
+	} else if (encoder_detent_counter[i] < -g_detent_size) { // Exiting detent (CCW)
+		//raw_encoder_value[virtual_encoder_id] = 6200;
+		raw_encoder_value[virtual_encoder_id] = encoder_detent_limit_low;
+		//midi_stream_raw_cc(9,99,12);
+	} else { // Still In Detent
+		//midi_stream_raw_cc(9,99,13);
+		// Patch: Ensure the Detent LED is set even for higher resolution modes, like velocity sensitivity
+		indicator_value_buffer[encoder_bank][i] = 63;
+	}
+	return true;
+}
+
+// - Rotary Sub Function
+#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+  bool process_encoder_input_rotary_deadzone(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value, uint16_t cycle_count)
+#else
+  bool process_encoder_input_rotary_deadzone(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value)
+#endif
+{
+	uint16_t value = raw_encoder_value[virtual_encoder_id];
+	if (encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC || encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_DRAG || encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_SCROLL) {
+		return false;
+	} else if (!encoder_is_in_deadzone(value)) {
+		return false;
+	}
+	// The encoder is in a end zone, only change the encoder value
+	//   once we have moved out of the dead zone.
+	if( ((raw_encoder_value[virtual_encoder_id] < 100) && (new_value > 0)) ||
+	((raw_encoder_value[virtual_encoder_id] > 12600) && (new_value < 0)) ) {
 		
-		if (bit & get_enc_switch_down() || bit & get_enc_switch_up()) {
-		// If the switch state has changed do its action
-			switch (encoder_settings[banked_encoder_id].switch_action_type)
-			{
-				case CC_TOGGLE:{}
-				// cascade to the next case ... NO BREAK ON PURPOSE
-				case NOTE_TOGGLE:{
-					if(bit & get_enc_switch_down()) {
-						// Toggle the MIDI state
-						enc_switch_midi_state[encoder_bank][i] = enc_switch_midi_state[encoder_bank][i] ? 
-																 0 : 127;
-						// Update the display
-						if (!color_overide_active(encoder_bank,i)) {
-							switch_color_buffer[encoder_bank][i] = enc_switch_midi_state[encoder_bank][i] ?
-							encoder_settings[banked_encoder_id].active_color : encoder_settings[banked_encoder_id].inactive_color;
-						}
-						// And send any MIDI
-						send_element_midi(SWITCH, banked_encoder_id, enc_switch_midi_state[encoder_bank][i],
-						enc_switch_midi_state[encoder_bank][i]);
-					}
-				}
-				break;
+		encoder_detent_counter[i] += new_value;
+	}
+	// - Allow movement to get us out of the dead zone, if we've traveled enough.
+	if ((encoder_detent_counter[i] > g_dead_zone_size) &&
+	(raw_encoder_value[virtual_encoder_id] < 100)) { // CW
+		
+		raw_encoder_value[virtual_encoder_id] = 100;
+		encoder_detent_counter[i] = 0;
+		
+	} else if ((encoder_detent_counter[i] < -g_dead_zone_size) &&
+	(raw_encoder_value[virtual_encoder_id] > 12600)) {  // CCW
+		
+		raw_encoder_value[virtual_encoder_id] = 12600;
+		encoder_detent_counter[i] = 0;
+	}
+	return true;
+}
+
+
+#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+  bool process_encoder_input_rotary_relative(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value, uint16_t bit, uint16_t cycle_count)
+#else
+  bool process_encoder_input_rotary_relative(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value, uint16_t bit)
+#endif
+{
+	if (!(encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC || encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_DRAG || encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_SCROLL)) {
+		return false;
+	}
+
+	// Calculate Output Value 
+	// new_value will be 1 or -1 if it gets here(though technically it could hold values higher)
+	uint8_t output_value;// = 64 + new_value;	// Relative: Bin Offset
+	// Case A: Relative Encoder Fine Adjustments
+	if (encoder_settings[banked_encoder_id].switch_action_type == ENC_FINE_ADJUST && get_enc_switch_state() & bit) { // !Summer2016Update: Relative Encoder Fine Adjustment Added
+		static int16_t relative_fine_value[PHYSICAL_ENCODERS] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  // Counter
+		relative_fine_value[i] += new_value;
+		output_value = 64;
+		while (relative_fine_value[i] >= 4)  { // Adjust for Clockwise Output -> 4=ENC_REL_FINE_LIMIT
+			relative_fine_value[i] -= 4;
+			output_value++;
+		}
+		while (relative_fine_value[i] <= -4)  { // Adjust for CounterClockwise Output -> 4=ENC_REL_FINE_LIMIT
+			relative_fine_value[i] += 4;
+			output_value--;
+		}
+	}
+	else {	// Case B: Normal Relative Encoders
+		#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_NONE
+			output_value = 64 + new_value;	// Relative: Bin Offset
+		#elif VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+			if(encoder_settings[banked_encoder_id].movement == VELOCITY_SENSITIVE_ENC) {
+				int8_t tick_count = new_value < 0 ? -1*new_value : new_value;
+				//uint16_t cycle_count = encoder_event_cycle_counts[i];
+				uint16_t base_multiplier = convert_ticks_per_scan_to_value_multiplier(tick_count , cycle_count);
+				int16_t scaled_mult = 1 + ((base_multiplier >> 4) & 0x1F); // 0-16
+				output_value = 64 + new_value*scaled_mult;	// Relative: Bin Offset
+			} else {
+				output_value = 64 + new_value;	// Relative: Bin Offset
+			}
 				
-				case CC_HOLD:{
-				}
-				// cascade to the next case ... NO BREAK ON PURPOSE
-				case NOTE_HOLD:{
-					if (bit & get_enc_switch_down()) {
-						enc_switch_midi_state[encoder_bank][i] = 127;
-					} else {
-						enc_switch_midi_state[encoder_bank][i] = 0;
-					}
+		#endif
+	}
+
+	//uint8_t output_value = (uint8_t)(new_value) & 0x7F;	// Relative: Two's Complement
+	uint8_t midi_channel;
+	uint8_t this_bank = encoder_bank;
+	if (!encoder_is_in_shift_state(this_bank, i)){ // !Summer2016Update Shifted Encoders Midi Channel
+		midi_channel = encoder_settings[banked_encoder_id].encoder_midi_channel;
+	} else{
+		midi_channel = encoder_settings[banked_encoder_id].encoder_shift_midi_channel;
+		// !revision use the unused switch midi number: midi_number = encoder_settings[banked_encoder_id].switch_midi_number ? 20190806
+		//midi_channel = encoder_settings[banked_encoder_id].switch_midi_channel;
+	}
+	// Send Message
+	// Relative output does not need to call 'Send Encoder' as it just always outputs 'CC' 
+	if (output_value != 64) { // !Summer2016Update: Relative Encoder Fine Adjustment Bugfix, disallow non-moving
+		midi_stream_raw_cc(midi_channel, 
+					encoder_settings[banked_encoder_id].encoder_midi_number, 
+					output_value);	
+	}
+	return true;
+}
+
+#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+  bool process_encoder_input_rotary_absolute(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value, uint16_t bit, uint16_t cycle_count) {
+	uint16_t base_multiplier;
+	int16_t scaled_value;
+	bool fine_adj = (encoder_settings[banked_encoder_id].switch_action_type == ENC_FINE_ADJUST && get_enc_switch_state() & bit);
+	
+	// Calculate Value adjustment
+	if(encoder_settings[banked_encoder_id].movement == VELOCITY_SENSITIVE_ENC) { // Velocity Sensitive
+		int8_t tick_count = new_value < 0 ? -1*new_value : new_value;
+		base_multiplier = convert_ticks_per_scan_to_value_multiplier(tick_count , cycle_count);
+		if (fine_adj || base_multiplier < ENCODER_VALUE_SCALAR_VELOCITY_MIN) { // Velocity Sensitive-Fine
+			base_multiplier = ENCODER_VALUE_SCALAR_VELOCITY_MIN;  // TODO: 14-bit will have a min for 14-bit and 7-bit operations
+		} else if (base_multiplier > ENCODER_VALUE_SCALAR_VELOCITY_MAX) {
+			base_multiplier = ENCODER_VALUE_SCALAR_VELOCITY_MAX;  // TODO: 14-bit will have a min for 14-bit and 7-bit operations
+		}
+	}
+	else if (fine_adj) { // Standard-Fine
+		base_multiplier = ENCODER_VALUE_SCALAR_DIRECT_FINE; 
+	}
+	else if(encoder_settings[banked_encoder_id].movement == DIRECT) {  // Standard, 1 CC value per tick
+		base_multiplier = ENCODER_VALUE_SCALAR_DIRECT;
+	} else  {  // Quick Moving, 1.78 CC values per tick
+		base_multiplier = ENCODER_VALUE_SCALAR_EMULATION; 
+	}
+	// Calculate Value to write into raw_encoder_value
+	scaled_value = new_value*base_multiplier;
+
+	// Update the Stored raw_encoder_value
+	raw_encoder_value[virtual_encoder_id] += scaled_value;
+	raw_encoder_value[virtual_encoder_id] = clamp_encoder_raw_value(raw_encoder_value[virtual_encoder_id]);
+	// Translate the raw value into a MIDI value, send & save the new value
+	uint8_t control_change_value = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
+	//send_element_midi(SWITCH, i, control_change_value, true);
+	uint8_t this_bank = encoder_bank;// banked_encoder_id >> 4; // !review !test this_bank
+	bool shifted = encoder_is_in_shift_state(this_bank, i);
+	send_encoder_midi(banked_encoder_id, control_change_value, true, shifted); // !Summer2016Update: Shifted Encoders now always output as Encoders
+	indicator_value_buffer[encoder_bank][i]=control_change_value;
+	return true;
+  }
+#else
+  bool process_encoder_input_rotary_absolute(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value, uint16_t bit) {
+	int16_t scaled_value;
+		
+	if (encoder_settings[banked_encoder_id].switch_action_type == ENC_FINE_ADJUST &&
+		get_enc_switch_state() & bit) {
+		// Fine adjust sensitivity, 1 pulse = 1/4 a CC step	
+		scaled_value = new_value*ENCODER_VALUE_SCALAR_DIRECT_FINE; 
+		
+	} else if(encoder_settings[banked_encoder_id].movement == DIRECT) {
+			// Standard sensitivity, 1 pulse = 1 CC step
+			scaled_value = new_value*ENCODER_VALUE_SCALAR_DIRECT; 
+			
+	} else  {
+			// Emulated sensitivity, 270 degress rotation = 127 CC steps
+			scaled_value = new_value*ENCODER_VALUE_SCALAR_EMULATION;   
+			//scaled_value = new_value*200;   
+	}
+	// Update the Stored raw_encoder_value
+	raw_encoder_value[virtual_encoder_id] += scaled_value;
+	raw_encoder_value[virtual_encoder_id] = clamp_encoder_raw_value(raw_encoder_value[virtual_encoder_id]);
+	// Translate the raw value into a MIDI value, send & save the new value 	
+	uint8_t control_change_value = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
+	//send_element_midi(SWITCH, i, control_change_value, true);
+	uint8_t this_bank = encoder_bank;// banked_encoder_id >> 4; // !review !test this_bank
+	bool shifted = encoder_is_in_shift_state(this_bank, i);
+	send_encoder_midi(banked_encoder_id, control_change_value, true, shifted); // !Summer2016Update: Shifted Encoders now always output as Encoders
+	indicator_value_buffer[encoder_bank][i]=control_change_value;
+	return true;
+}
+#endif
+
+void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, uint16_t bit) {
+
+
+	if (bit & get_enc_switch_down() || bit & get_enc_switch_up()) {
+	// If the switch state has changed due its action
+		switch (encoder_settings[banked_encoder_id].switch_action_type)
+		{
+			case CC_TOGGLE:{}
+			// cascade to the next case ... NO BREAK ON PURPOSE
+			case NOTE_TOGGLE:{
+				if(bit & get_enc_switch_down()) {
+					// Toggle the MIDI state
+					enc_switch_midi_state[encoder_bank][i] = enc_switch_midi_state[encoder_bank][i] ? 
+																0 : 127;
 					// Update the display
 					if (!color_overide_active(encoder_bank,i)) {
 						switch_color_buffer[encoder_bank][i] = enc_switch_midi_state[encoder_bank][i] ?
@@ -739,55 +868,122 @@ void   process_encoder_input(void)
 					send_element_midi(SWITCH, banked_encoder_id, enc_switch_midi_state[encoder_bank][i],
 					enc_switch_midi_state[encoder_bank][i]);
 				}
-				break;
-				
-				/*	The fine adjust action is handled in the encoder code, the
-					LED does not change state with this action */
-				case ENC_FINE_ADJUST:{}
-				break;	
-				
-				case ENC_RESET_VALUE:{
-					// Reset the encoder value
-					uint8_t control_change_value; // = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
-					if (encoder_settings[banked_encoder_id].has_detent){
-						raw_encoder_value[virtual_encoder_id] = 6300;
-						control_change_value = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
-					} else {
-						raw_encoder_value[virtual_encoder_id] = 0;
-						control_change_value = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
-					}
-					// Send the updated encoder value
-					encoder_detent_counter[i] = 0;
-					send_element_midi(ENCODER, banked_encoder_id, control_change_value, true);  // Last Encoder call to 'send_element_midi', all others upgraded to 'send_encoder_midi'
-					indicator_value_buffer[encoder_bank][i]=control_change_value;
-					// Then send the switch action
-					if (bit & get_enc_switch_down()) {						
-						send_element_midi(SWITCH, banked_encoder_id , 127, true);
-					} else if (bit & get_enc_switch_up()){
-						send_element_midi(SWITCH, banked_encoder_id , 0, false);
-					}
+			}
+			break;
+			
+			case CC_HOLD:{
+			}
+			// cascade to the next case ... NO BREAK ON PURPOSE
+			case NOTE_HOLD:{
+				if (bit & get_enc_switch_down()) {
+					enc_switch_midi_state[encoder_bank][i] = 127;
+				} else {
+					enc_switch_midi_state[encoder_bank][i] = 0;
 				}
-				break;
-				case ENC_SHIFT_HOLD:{
-					if (bit & get_enc_switch_down()){
-						// Update the display with the active color
+				// Update the display
+				if (!color_overide_active(encoder_bank,i)) {
+					switch_color_buffer[encoder_bank][i] = enc_switch_midi_state[encoder_bank][i] ?
+					encoder_settings[banked_encoder_id].active_color : encoder_settings[banked_encoder_id].inactive_color;
+				}
+				// And send any MIDI
+				send_element_midi(SWITCH, banked_encoder_id, enc_switch_midi_state[encoder_bank][i],
+				enc_switch_midi_state[encoder_bank][i]);
+			}
+			break;
+			
+			/*	The fine adjust action is handled in the encoder code, the
+				LED does not change state with this action */
+			case ENC_FINE_ADJUST:{}
+			break;	
+			
+			case ENC_RESET_VALUE:{
+				// Reset the encoder value
+				uint8_t control_change_value; // = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
+				if (encoder_settings[banked_encoder_id].has_detent){
+					raw_encoder_value[virtual_encoder_id] = 6300;
+					control_change_value = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
+				} else {
+					raw_encoder_value[virtual_encoder_id] = 0;
+					control_change_value = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
+				}
+				// Send the updated encoder value
+				encoder_detent_counter[i] = 0;
+				send_element_midi(ENCODER, banked_encoder_id, control_change_value, true);  // Last Encoder call to 'send_element_midi', all others upgraded to 'send_encoder_midi'
+				indicator_value_buffer[encoder_bank][i]=control_change_value;
+				// Then send the switch action
+				if (bit & get_enc_switch_down()) {						
+					send_element_midi(SWITCH, banked_encoder_id , 127, true);
+				} else if (bit & get_enc_switch_up()){
+					send_element_midi(SWITCH, banked_encoder_id , 0, false);
+				}
+			}
+			break;
+			case ENC_SHIFT_HOLD:{
+				if (bit & get_enc_switch_down()){
+					// Update the display with the active color
+					if (!color_overide_active(encoder_bank,i)) { // 20160622 - Allow midi feedback override of RGB Indicator.
+						switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_id].active_color;
+					}
+					//switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_id].active_color;
+					
+					// Update the indicator display with the shift value
+					indicator_value_buffer[encoder_bank][i]=(uint8_t)(raw_encoder_value[virtual_encoder_id]/100);
+					// Send a Note On
+					//midi_stream_raw_note(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
+					midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
+					encoder_settings[banked_encoder_id].switch_midi_number,
+					//midi_stream_raw_note(encoder_settings[banked_encoder_id].encoder_midi_channel,
+					//encoder_settings[banked_encoder_id].encoder_midi_number,
+					//true,
+					127);
+					
+				} else if (bit & get_enc_switch_up()) {
+					// Update the display the inactive color
+					if (!color_overide_active(encoder_bank,i)) { // 20160622 - Allow midi feedback override of RGB Indicator.
+						switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_id].inactive_color;
+					}
+					//switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_id].inactive_color;
+					
+					// Update the indicator display with the base encoder value
+					indicator_value_buffer[encoder_bank][i]=(uint8_t)(raw_encoder_value[virtual_encoder_id]/100);
+					// Send a Note Off
+					//midi_stream_raw_note(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
+					midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
+					encoder_settings[banked_encoder_id].switch_midi_number,
+					//midi_stream_raw_note(encoder_settings[banked_encoder_id].encoder_midi_channel,
+					//encoder_settings[banked_encoder_id].encoder_midi_number,
+					//false,
+					0);
+				}
+			}
+			break;
+			
+			case ENC_SHIFT_TOGGLE:{
+				if (bit & get_enc_switch_down()){
+					// Toggle state
+					enc_switch_toggle_state[encoder_bank] ^= bit;
+					virtual_encoder_id = get_virtual_encoder_id(encoder_bank, i); // !Summer2016Update Re-Read virtual_encoder_id
+													// - now that toggle_state has been updated
+					// - this case is change indicator display before change value access to back to the 'non-shifted encoder'		
+					if (bit & enc_switch_toggle_state[encoder_bank]){
+						// Update the display the active color
 						if (!color_overide_active(encoder_bank,i)) { // 20160622 - Allow midi feedback override of RGB Indicator.
 							switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_id].active_color;
 						}
 						//switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_id].active_color;
-						
+
 						// Update the indicator display with the shift value
 						indicator_value_buffer[encoder_bank][i]=(uint8_t)(raw_encoder_value[virtual_encoder_id]/100);
-						// Send a Note On
-						//midi_stream_raw_note(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
-						midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
+						
+						// Send a CC
+						// !Summer2016Update: Encoder Shift Switches now output CCs on Switch Channel like other special function switches
+						//midi_stream_raw_note(encoder_settings[banked_encoder_id].switch_midi_channel,
+						midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel,
 						encoder_settings[banked_encoder_id].switch_midi_number,
-						//midi_stream_raw_note(encoder_settings[banked_encoder_id].encoder_midi_channel,
-						//encoder_settings[banked_encoder_id].encoder_midi_number,
 						//true,
 						127);
 						
-					} else if (bit & get_enc_switch_up()) {
+					} else {
 						// Update the display the inactive color
 						if (!color_overide_active(encoder_bank,i)) { // 20160622 - Allow midi feedback override of RGB Indicator.
 							switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_id].inactive_color;
@@ -796,70 +992,25 @@ void   process_encoder_input(void)
 						
 						// Update the indicator display with the base encoder value
 						indicator_value_buffer[encoder_bank][i]=(uint8_t)(raw_encoder_value[virtual_encoder_id]/100);
-						// Send a Note Off
-						//midi_stream_raw_note(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
-						midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
+						
+						// Send a CC
+						// !Summer2016Update: Encoder Shift Switches now output CCs on Switch Channel like other special function switches
+						//midi_stream_raw_note(encoder_settings[banked_encoder_id].switch_midi_channel,
+						midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel, 
 						encoder_settings[banked_encoder_id].switch_midi_number,
-						//midi_stream_raw_note(encoder_settings[banked_encoder_id].encoder_midi_channel,
-						//encoder_settings[banked_encoder_id].encoder_midi_number,
 						//false,
 						0);
+						
 					}
 				}
-				break;
-				
-				case ENC_SHIFT_TOGGLE:{
-					if (bit & get_enc_switch_down()){
-						// Toggle state
-						enc_switch_toggle_state[encoder_bank] ^= bit;
-						virtual_encoder_id = get_virtual_encoder_id(encoder_bank, i); // !Summer2016Update Re-Read virtual_encoder_id
-														// - now that toggle_state has been updated
-						// - this case is change indicator display before change value access to back to the 'non-shifted encoder'		
-						if (bit & enc_switch_toggle_state[encoder_bank]){
-							// Update the display the active color
-							if (!color_overide_active(encoder_bank,i)) { // 20160622 - Allow midi feedback override of RGB Indicator.
-								switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_id].active_color;
-							}
-							//switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_id].active_color;
-
-							// Update the indicator display with the shift value
-							indicator_value_buffer[encoder_bank][i]=(uint8_t)(raw_encoder_value[virtual_encoder_id]/100);
-							
-							// Send a CC
-							// !Summer2016Update: Encoder Shift Switches now output CCs on Switch Channel like other special function switches
-							//midi_stream_raw_note(encoder_settings[banked_encoder_id].switch_midi_channel,
-							midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel,
-							encoder_settings[banked_encoder_id].switch_midi_number,
-							//true,
-							127);
-							
-						} else {
-							// Update the display the inactive color
-							if (!color_overide_active(encoder_bank,i)) { // 20160622 - Allow midi feedback override of RGB Indicator.
-								switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_id].inactive_color;
-							}
-							//switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_id].inactive_color;
-							
-							// Update the indicator display with the base encoder value
-							indicator_value_buffer[encoder_bank][i]=(uint8_t)(raw_encoder_value[virtual_encoder_id]/100);
-							
-							// Send a CC
-							// !Summer2016Update: Encoder Shift Switches now output CCs on Switch Channel like other special function switches
-							//midi_stream_raw_note(encoder_settings[banked_encoder_id].switch_midi_channel,
-							midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel, 
-							encoder_settings[banked_encoder_id].switch_midi_number,
-							//false,
-							0);
-							
-						}
-					}
-				}
-				break;
 			}
+			break;
 		}
-		bit <<=1;
 	}
 }
+// ======================== Process Encoder Input Functions==================END=
+
+
 
 /**
  * Shift mode is an alternate operation mode which is accessed by the side buttons
@@ -914,13 +1065,17 @@ void run_shift_mode(uint8_t page){
 	if(idx > 15){idx = 0;}
 }
 
+//void send_encoder_pitchbend(uint8_t midi_channel, uint16_t value, bool state, bool shifted) {
+//	
+//}
 
 void send_encoder_midi(uint8_t banked_encoder_idx, uint8_t value, bool state, bool shifted)
 {
 	uint8_t midi_channel = shifted ? encoder_settings[banked_encoder_idx].encoder_shift_midi_channel: encoder_settings[banked_encoder_idx].encoder_midi_channel;
+	// !revision resuse unused switch midi number for shifts: midi_number = shifted? encoder_midi_num/ switch_midi_num 20190806 
 	// Sending encoder as note is not useful so this can likely be simplified
 	// once incremental messages are added
-	if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_CC)
+	if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_CC || encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_SWITCH_VEL_CONTROL)
 	{
 		midi_stream_raw_cc(midi_channel,
 		encoder_settings[banked_encoder_idx].encoder_midi_number,
@@ -937,7 +1092,7 @@ void send_encoder_midi(uint8_t banked_encoder_idx, uint8_t value, bool state, bo
 			MIDI_Device_Flush(g_midi_interface_info);
 					
 			//midi_stream_raw_cc(encoder_settings[banked_encoder_idx].encoder_midi_channel,
-			midi_stream_raw_cc(midi_channel,  // !Summer2016Update: !Review: should 'super knob' use shift midi channel
+			midi_stream_raw_cc(midi_channel, 
 			encoder_settings[banked_encoder_idx].encoder_midi_number+64,
 			(uint8_t)secondary_value);		
 		}			
@@ -948,6 +1103,26 @@ void send_encoder_midi(uint8_t banked_encoder_idx, uint8_t value, bool state, bo
 		value);
 	}
 }
+
+bool switch_value_from_encoder_value_enabled(uint8_t banked_encoder_idx) {
+	if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_SWITCH_VEL_CONTROL) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+uint8_t adjust_switch_value_by_encoder_value(uint8_t banked_encoder_idx, uint8_t value, bool state) {
+	if (!state) {
+		return value;
+	} else if (!switch_value_from_encoder_value_enabled(banked_encoder_idx)) {
+		return value;
+	} else {
+		uint8_t enc_val = scale_encoder_value(raw_encoder_value[banked_encoder_idx]); // virtual encoder id not used, because shift buttons have no value
+		return enc_val;
+	}
+}
+
 
 /**
  * Sends MIDI for a given encoder or switch. Because MIDI can only be SENT
@@ -975,7 +1150,7 @@ void send_element_midi(enc_control_type_t type, uint8_t banked_encoder_idx, uint
 		case ENCODER:{
 			// Sending encoder as note is not useful so this can likely be simplified
 			// once incremental messages are added
-			if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_CC)
+			if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_CC || encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_SWITCH_VEL_CONTROL)
 			{
 				midi_stream_raw_cc(encoder_settings[banked_encoder_idx].encoder_midi_channel,
 										   encoder_settings[banked_encoder_idx].encoder_midi_number,
@@ -1002,7 +1177,7 @@ void send_element_midi(enc_control_type_t type, uint8_t banked_encoder_idx, uint
 								     encoder_settings[banked_encoder_idx].encoder_midi_number, 
 								     true,
 									 value);
-			} else if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_REL_ENC){ 
+			} else if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_REL_ENC  || encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_DRAG || encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_SCROLL){ 
 				midi_stream_raw_cc(encoder_settings[banked_encoder_idx].encoder_midi_channel,
 										   encoder_settings[banked_encoder_idx].encoder_midi_number,
 										   value);
@@ -1016,17 +1191,39 @@ void send_element_midi(enc_control_type_t type, uint8_t banked_encoder_idx, uint
 				encoder_settings[banked_encoder_idx].switch_action_type == ENC_SHIFT_TOGGLE ||
 				encoder_settings[banked_encoder_idx].switch_action_type == ENC_RESET_VALUE){
 					
-				midi_stream_raw_cc(encoder_settings[banked_encoder_idx].switch_midi_channel, 
-								   encoder_settings[banked_encoder_idx].switch_midi_number, 
-								   value);
-								   
+				uint8_t adj_val = adjust_switch_value_by_encoder_value(banked_encoder_idx, value, state);
+				//midi_stream_raw_cc(encoder_settings[banked_encoder_idx].switch_midi_channel, 
+				//		encoder_settings[banked_encoder_idx].switch_midi_number,
+				//		adj_val);
+		
+				uint8_t midi_channel = encoder_settings[banked_encoder_idx].switch_midi_channel;
+				uint8_t midi_number = encoder_settings[banked_encoder_idx].switch_midi_number;
+				midi_stream_raw_cc(midi_channel, midi_number, adj_val);
+				// Allow direct Bank Changes from appropriately matched switches: 20190807
+				if (value) { // only change bank on 'press' not 'release'
+					if (midi_channel == midi_system_channel) {
+						if (midi_number < NUM_BANKS) {
+							uint8_t i = banked_encoder_idx & 0x0F; // NUM_ENCODERS_SINGLE_BANK_MASK
+							// Turn LED Off, leads to hung 'on' indicators leds if you don't...
+							// Reset the MIDI state
+							enc_switch_midi_state[encoder_bank][i] = 0;
+							// Reset the display state to 'inactive
+							if (!color_overide_active(encoder_bank,i)) {
+								switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_idx].inactive_color;
+							}
+							// Actually change the bank
+							change_encoder_bank(midi_number);
+						}
+					}
+				}		   
 			} else if (encoder_settings[banked_encoder_idx].switch_action_type == NOTE_HOLD ||
-				       encoder_settings[banked_encoder_idx].switch_action_type == NOTE_TOGGLE) {
+						encoder_settings[banked_encoder_idx].switch_action_type == NOTE_TOGGLE) {
 					
+				uint8_t adj_val = adjust_switch_value_by_encoder_value(banked_encoder_idx, value, state);
 				midi_stream_raw_note(encoder_settings[banked_encoder_idx].switch_midi_channel, 
-								   encoder_settings[banked_encoder_idx].switch_midi_number, 
-								   state,
-								   value);						   
+						encoder_settings[banked_encoder_idx].switch_midi_number, 
+						state,
+						adj_val);						   
 			} 
 		}
 		break;
@@ -1034,22 +1231,6 @@ void send_element_midi(enc_control_type_t type, uint8_t banked_encoder_idx, uint
 
 		}
 		break;
-		/*
-	    case SHIFT:{	
-			
-			if (false)// SHOULD SHIFT PAGES BE CC OR NOTE?)
-			{
-				midi_stream_raw_cc(SHIFT_CHANNEL, SHIFT_OFFSET + banked_encoder_idx, value);
-			} else {
-				midi_stream_raw_note(SHIFT_CHANNEL, SHIFT_OFFSET + banked_encoder_idx , state, value);
-			}
-			
-		}
-		break;*/
-		//case DEFAULT:{
-		//	
-		//}
-		//break;
 	}	
 }
 
@@ -1070,14 +1251,9 @@ void send_element_midi(enc_control_type_t type, uint8_t banked_encoder_idx, uint
  * 
  */
 
-// !review: does this really need to be here?
-// - only if the user has access to a 'Send All Encoder Values' Function
-// - or if we wish to support multiple encoders in the same bank with the same mapping (which is frivolous)
-// -- Otherwise the Change Bank (change_encoder_bank) will take care of transferring these values.
 #define ENABLE_DUPLICATE_INPUT_MAPPINGS 1
 
-// Midi Feedback - Main Routine
-void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t value, uint8_t state)
+void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t value, uint8_t state) // Midi Feedback - Main Routine
 {
 	// If the incoming midi is in the system channel then its mapping is fixed 
 	if (channel == midi_system_channel) {
@@ -1095,19 +1271,19 @@ void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t
 					shift_mode_switch_state[bank] &= ~(0x0001 << index);
 				}
 			}
-		}
+		} 
 	} else {
 		// Otherwise the input is re mappable so scan through the input map for a match
 		for(uint8_t i=0;i<64;++i){
 			// Search the input map for a match
-			if(encoder_settings[i].encoder_midi_number == number){
+			if(encoder_settings[i].encoder_midi_number == number){  // !revision: reuse unused switch midi number for shifted encoder midi number
 				uint8_t output_type = encoder_settings[i].encoder_midi_type;
 				// Check Encoder Mapping for a Match
 				if(encoder_settings[i].encoder_midi_channel == channel){
 					// Matched to an encoder indicator
 					// - !Summer2016Update: MIDI Type Filtering for MIDI Feedback
 					if(type == SEND_CC){  
-						if (output_type == SEND_CC || output_type == SEND_REL_ENC) // Ensure MIDI Type Matches
+						if (output_type == SEND_CC || output_type == SEND_SWITCH_VEL_CONTROL || output_type == SEND_REL_ENC || output_type == SEND_REL_ENC_MOUSE_EMU_DRAG || output_type == SEND_REL_ENC_MOUSE_EMU_SCROLL) // Ensure MIDI Type Matches
 						{
 							process_indicator_update(i, value, 0); // !Summer2016Update: 0 = non-shifted encoder
 						}
@@ -1127,7 +1303,7 @@ void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t
 					// Matched to an shifted encoder's indicator
 					// - !Summer2016Update: MIDI Type Filtering for MIDI Feedback
 					if(type == SEND_CC){ 
-						if (output_type == SEND_CC || output_type == SEND_REL_ENC){
+						if (output_type == SEND_CC || output_type == SEND_SWITCH_VEL_CONTROL || output_type == SEND_REL_ENC || output_type == SEND_REL_ENC_MOUSE_EMU_DRAG){
 							process_indicator_update(i, value, 1); // !Summer2016Update: 1 = shifted encoder
 						}
 					}
@@ -1239,8 +1415,7 @@ void process_indicator_update(uint8_t idx, uint8_t value, uint8_t rx_msg_shifted
 	}
 }
 
-// Midi Feedback - Switch State Indicators (RGB LEDs)
-void process_sw_rgb_update(uint8_t idx, uint8_t value)
+void process_sw_rgb_update(uint8_t idx, uint8_t value) // Midi Feedback - Switch State Indicators (RGB LEDs)
 {
 	uint8_t bank = idx / 16;
 	uint8_t encoder = idx % 16;
@@ -1249,7 +1424,7 @@ void process_sw_rgb_update(uint8_t idx, uint8_t value)
 	if (value == 0){
 		// Disable the color over ride
 		switch_color_overide[bank] &= ~(0x01<<encoder);
-		switch_color_buffer[bank][encoder] = encoder_settings[encoder].inactive_color;
+		switch_color_buffer[bank][encoder] = encoder_settings[idx].inactive_color;
 	} else if (value >0 && value < 126) { // Exclude 126 as we don't allow user to set color to white
 		// Enable the override and set the color to value
 		switch_color_overide[bank] |= (0x01<<encoder);
@@ -1260,13 +1435,6 @@ void process_sw_rgb_update(uint8_t idx, uint8_t value)
 		// Enable the override and set the color to active
 		switch_color_overide[bank] |= (0x01<<encoder);
 		switch_color_buffer[bank][encoder] = encoder_settings[idx].active_color;
-		
-		//// Read from EEPROM
-		//// Enable the override and set the color to active
-		//switch_color_overide[bank] |= (0x01<<encoder);
-		//encoder_config_t temp_config;
-		//get_encoder_config(bank, encoder, &temp_config);  // !revision: no need to read from EEPROM anymore with expanded encoder_settings, change this to a local read
-		//switch_color_buffer[bank][encoder] = temp_config.active_color;
 	}
 }
 
@@ -1291,7 +1459,7 @@ void process_sw_toggle_update(uint8_t idx, uint8_t value)
 
 	}
 	else if (action_type == ENC_SHIFT_HOLD){
-		// Change active encodcer
+		// Change active encoder
 		
 	}*/
 }
@@ -1367,9 +1535,9 @@ bool animation_is_encoder_indicator(uint8_t animation_value) { // !Summer2016Upd
 // Detect if two Animations Buffers are both attempting to animate the same item
 // - Switch Animations 1-48, 127
 // - Indicator Animations 49-96
-bool animation_buffer_conflict_exists(uint8_t encoder_bank, uint8_t encoder) {
-	uint8_t this_animation = switch_animation_buffer[encoder_bank][encoder];
-	uint8_t that_animation = encoder_animation_buffer[encoder_bank][encoder];
+bool animation_buffer_conflict_exists(uint8_t bank, uint8_t encoder) {
+	uint8_t this_animation = switch_animation_buffer[bank][encoder];
+	uint8_t that_animation = encoder_animation_buffer[bank][encoder];
 	
 	if (!this_animation || !that_animation) { // Case: this or that animation is OFF
 		return false;
@@ -1451,7 +1619,7 @@ void update_encoder_display(void)
 	}
 
 	// Run Switch Animation, or set the indicator to the last set color.
-	if (!animation_buffer_conflict_exists(encoder_bank, idx)) {  // !start here: test me! Animation buffer conflicts
+	if (!animation_buffer_conflict_exists(encoder_bank, idx)) { 
 		// Run The Encoder Value Display Animation
 		currentValue = switch_animation_buffer[encoder_bank][idx];
 		if (currentValue) { // !review: could make this more robust by limiting currentValue to only Encoder related animatinos 
@@ -1571,14 +1739,20 @@ int16_t clamp_encoder_raw_value(int16_t value)
 	return value;
 }
 
+
+
 bool encoder_is_in_detent(int16_t value)
 {
-	if (value > 6200 && value < 6500)
-	{
+	//if (value > 6200 && value < 6500) // values of 62 do not trigger the 'detent' led routines, so we need to be sure value is at least 6300
+	//if (value >= 6300 && value < 6500)
+	if (value > encoder_detent_limit_low && value < encoder_detent_limit_high) 
+	{									// - so to get value '64' to output in velocity sensing mode, we need to get down this low.
 		return true;
 	}
 	return false;
 }
+
+
 
 bool encoder_is_in_deadzone(int16_t value)
 {
@@ -1613,6 +1787,7 @@ bool encoder_is_in_shift_state(uint8_t bank, uint8_t encoder)
 {
 	uint8_t banked_encoder_idx = encoder + bank*PHYSICAL_ENCODERS;				
 	uint16_t bit = 0x0001 << encoder;
+
 	/*if ((encoder_settings[encoder].switch_action_type == ENC_SHIFT_HOLD ||
 		 encoder_settings[encoder].switch_action_type == ENC_SHIFT_TOGGLE) &&
 	   ((get_enc_switch_state() & bit) || (enc_switch_toggle_state[bank] & bit)))*/ 
@@ -1628,7 +1803,7 @@ bool encoder_is_in_shift_state(uint8_t bank, uint8_t encoder)
 bool encoder_midi_type_is_relative(uint8_t encoder) 
 {
 	uint8_t banked_encoder_idx = encoder + encoder_bank*PHYSICAL_ENCODERS;				
-	if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_REL_ENC){
+	if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_REL_ENC || encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_DRAG || encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_SCROLL){
 		return true;
 	}
 	else{

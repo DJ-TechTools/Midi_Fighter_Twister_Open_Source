@@ -37,8 +37,13 @@
 
 	// DMA Constants
 	#define DMA_CHANNEL	        0
-	//#define DMA_BUFFER_SIZE    4096
-	#define DMA_BUFFER_SIZE    3072
+	//#define DMA_BUFFER_SIZE    4096  // 128 Frames
+	//#define DMA_BUFFER_SIZE    3072 // 96 Frames
+	#define DMA_BUFFER_SIZE    2560 // 80 Frames
+	//#define DMA_BUFFER_SIZE    2048 // 64 Frames
+	//#define DMA_BUFFER_SIZE    1024 // 32 Frames
+	//#define DMA_BUFFER_SIZE    512 // 16 Frames
+	//#define DMA_BUFFER_SIZE    128 // 4 Frames - Visibly glitchy
 	#define DMA_FRAME_SIZE     32
 	#define NUM_OF_FRAMES	   (DMA_BUFFER_SIZE/DMA_FRAME_SIZE)
 	
@@ -61,9 +66,9 @@
 	// Structure which holds two LED patterns (bit masks) and their respective
 	// brightness settings.
 	typedef struct {
-		uint16_t pattern_A;
+		uint16_t pattern_A;		// Pattern A is a series of White LEDs (dimmed/PWM'ed), With a Second LED (Blue) at the Detent, lit solid
 		uint8_t  pattern_A_brightness;
-		uint16_t pattern_B;
+		uint16_t pattern_B;       // Pattern B appears to be is series of White LEDs (lit solid), with a a Second LED (Red) at the Detent
 		uint8_t  pattern_B_brightness;
 	} indicator_bit_mask_t;
 		

@@ -274,7 +274,7 @@ void sysExCmdBulkXfer(uint8_t length, uint8_t* buffer) // Process/ParseSysexMess
 			// easier to check for errors when debugging
 			
 			uint8_t config_data[] = { 10 , enc_cfg.has_detent,
-									  11, enc_cfg.movement,
+									  11, enc_cfg.movement, // movement: aka sensitivity
 									 12, enc_cfg.switch_action_type,
 									 13, enc_cfg.switch_midi_channel+1,
 									 14, enc_cfg.switch_midi_number,

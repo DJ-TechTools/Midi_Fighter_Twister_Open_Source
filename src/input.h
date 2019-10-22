@@ -31,6 +31,7 @@
 	#define SWITCH_DEBOUNCE_BUFFER_SIZE	10
 	
 	#define ENCODER_INACTIVE_THRESHOLD 100
+	#define ENCODER_INACTIVE_MAXIMUM 255
 
 	// Input Pin Definitions
 	#define SIDE_SW6		IOPORT_CREATE_PIN(PORTA, 5)
@@ -50,7 +51,46 @@
 	#define D_CLK 0x02
 	#define D_DATA 0x03
 	
+	// ===== Velocity Calculation Method ==================
+	#define VELOCITY_CALC_M_NONE 0
+	//#define VELOCITY_CALC_M_IDLE_COUNTER 1
+	//#define VELOCITY_CALC_M_TICKS_PER_SCAN 2
+	#define VELOCITY_CALC_M_TPS_BLOCKS 3
+	//#define VELOCITY_CALC_M_ROLLING_PERIOD 4
+	#define VELOCITY_CALC_METHOD 	VELOCITY_CALC_M_TPS_BLOCKS
+
+
+	// These constants calibrate the velocity sensitive feature of the encoders.
+	// - Put Simply, the "convert_ticks_per_scan_to_value_multiplier" function converts the encoder speed in 'ticks per second' into a multiplier using these constants. 
+	// - That multiplier is allowed to vary between VELOCITY_CALC_MIN_MULTIPLIER (turning slowly) and VELOCITY_CALC_MAX_MULTIPLIER (turning quickly) based on the 'ticks per second'.
+	// -- Changing the value of the constants below, allows customization of how fast the encoders accelerate when turned quickly.
+	#if VELOCITY_CALC_METHOD > VELOCITY_CALC_M_NONE
+	#define VELOCITY_CALC_MIN_MULTIPLIER 1
+	#define VELOCITY_CALC_MAX_MULTIPLIER 256 // sweeps 14-bit value in 48 ticks (half turn) 
+	//#define VELOCITY_CALC_TPS_MIN 0.0121f // 1.21ms per sample, 10 Ticks per second -> 1 tick every 81.64 samples
+	#define VELOCITY_CALC_TPS_MIN 0.0363f // 1.21ms per sample, 30 Ticks per second -> 1 tick every 27.55 samples
+	#define VELOCITY_CALC_TPS_MAX 0.3025f // 1.21ms per sample, 250 Ticks per second -> 1 tick every 3.31 samples
+	#endif
+
 /* Global Variables */
+
+	const float velocity_calc_slope; //= (VELOCITY_CALC_MAX_MULTIPLIER-VELOCITY_CALC_MIN_MULTIPLIER)/(VELOCITY_CALC_TPS_MAX-VELOCITY_CALC_TPS_MIN);
+	const float velocity_calc_offset;
+
+	//#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TICKS_PER_SCAN
+		//#define ENCODER_DEBOUNCE_CYCLE_TIMEOUT 6
+		//#define MAX_ENCODER_EVENTS 16
+		//int8_t encoder_event_buffer[16][MAX_ENCODER_EVENTS]; // 16 encoders, 16 events (requires no more than 16 encoder ISR scans per main loop iteration)
+		//int8_t encoder_last_movement[16];
+		//uint8_t encoder_event_counts[16];
+	#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+		#define ENCODER_DEBOUNCE_CYCLE_TIMEOUT 6 // Can't change direction faster than this (approx. ms)
+		int8_t encoder_last_movement[16];
+		uint16_t encoder_event_cycle_counts[16];
+	#endif
+
+
+
 
 /* Function Prototypes */
 
@@ -58,6 +98,10 @@
 	
 	void encoder_scan(void);
 	int8_t get_encoder_value(uint8_t encoder);
+
+	#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+	uint16_t get_encoder_cycle_count(uint8_t encoder);
+	#endif
 	
 	uint16_t update_encoder_switch_state(void);
 
@@ -76,5 +120,6 @@
 	uint16_t get_side_switch_state(void);
 	uint16_t get_side_switch_down(void);
 	uint16_t get_side_switch_up(void);
+
 
 #endif /* INPUT_H_ */

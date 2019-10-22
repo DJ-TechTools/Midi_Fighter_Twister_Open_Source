@@ -51,14 +51,47 @@ uint8_t  g_side_switch_up;
 uint8_t  g_side_switch_down;
 
 // The relative movement of the 16 encoders
-int8_t  encoder_state[16];
+int8_t  encoder_state[16];  // the number of encoder steps since last time get_encoder_value was called
 
 // The previous encoder pin states
 uint16_t encoder_cha_state_prev = 0;
 uint16_t encoder_chb_state_prev = 0;
-
-// The encoder inactivity counter
 uint8_t encoder_inactive_counter[16];
+// ===== Velocity Calculation Method ==================
+
+#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+int8_t encoder_last_movement[16];
+uint16_t encoder_event_cycle_counts[16];
+#endif
+
+
+// - If velocity is less than 10 ticks per second, multiplier = 1
+// - If velocity is greater than 10 ticks per second, mutliplier = 1 + multiplier adjustment
+// -- multiplier adjustment is a number between 0-255.
+
+// --- Method 1: Calculate Velocity based on cycles between movement 'events', debounce events that change direction too quickly
+// ------ We collect packets through interrupts while the mainloop runs. To handle cycles with multiple events, just sum the events together.
+// ------ TPS Blocks
+
+
+// - Velocity Measurements (ms per tick)
+// -- Ticks per 360-degrees: 96  
+// -- Encoder Poll Time (interrupt): measured as 1.21ms
+// -- Very slow turn: 200-500ms (1 multiplier)  (2 to 5 ticks-per-second)
+// -- slow turn: 200-100ms (1 multiplier)  		(5 to 10 ticks-per-second)
+// -- med turn: ~50ms							(20 ticks-per-second)
+// -- quick turn: ~25ms							(40 ticks-per-second)
+// -- super fast turn: 1-4ms per tick 			(250-1000 ticks-per-second)
+// ---- (1/2 turn (48-ticks) should span full range maybe 2/3rds (64-ticks))
+// ---- 7-bit: 2.67 multiplier (1/2), 2.00 multiplier (2/3) 
+// ---- 14-bit: 341.3 muliplier (1/2), 256 multiplier (2/3)
+
+#if VELOCITY_CALC_METHOD > VELOCITY_CALC_M_NONE 
+const float velocity_calc_slope = (VELOCITY_CALC_MAX_MULTIPLIER-VELOCITY_CALC_MIN_MULTIPLIER)/(VELOCITY_CALC_TPS_MAX-VELOCITY_CALC_TPS_MIN);
+const float velocity_calc_offset = -1*(VELOCITY_CALC_MIN_MULTIPLIER + 
+				(VELOCITY_CALC_MAX_MULTIPLIER-VELOCITY_CALC_MIN_MULTIPLIER)/(VELOCITY_CALC_TPS_MAX-VELOCITY_CALC_TPS_MIN)*VELOCITY_CALC_TPS_MIN);
+#endif
+// ===== Velocity Calculation Method ==============END=
 
 static uint16_t timer_cca_value = 125;
 static uint16_t timer_ccb_value = 0;
@@ -111,6 +144,12 @@ void input_init(void)
 	//Clear out the state variables
 	memset(encoder_state, 0x00, 16);
 	
+	#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+		memset(encoder_last_movement, 0x00, 16); // 0 is "unknown movement"
+		memset(encoder_event_cycle_counts, 0xFF, 32); // memset works in units of uint8_t so double the members for a uint16_t array 0xFF -> 255ms+
+	#endif
+	
+	
 	g_enc_prev_switch_state  = 0;
 	g_enc_switch_state		 = 0;
 	g_enc_switch_up			 = 0;
@@ -143,9 +182,9 @@ void input_init(void)
 	// Set Timer 1 CCA match value to 40 (1mS)
 	tc_write_cc(&TCC1, TC_CCA, INPUT_SCAN_RATE);
 	// Set Timer 1 CCA interrupt level to low
-	tc_set_cca_interrupt_level(&TCC1, TC_INT_LVL_HI);
+	tc_set_cca_interrupt_level(&TCC1, TC_INT_LVL_HI);  // Interrupt Priority: Buttons 1
 	// Disable the CCB interrupt
-	tc_set_ccb_interrupt_level(&TCC1, TC_INT_LVL_OFF);
+	tc_set_ccb_interrupt_level(&TCC1, TC_INT_LVL_OFF); // Interrupt Priority: Buttons 2 (inert) (used by schedule_task)
 	// Enable interrupts
 	cpu_irq_enable();
 	// Set the Timer 1 clock source to system / 1024
@@ -168,7 +207,7 @@ static bool task_is_scheduled = false;
 
 void do_task(void)
 {
-	tc_set_ccb_interrupt_level(&TCC1, TC_INT_LVL_OFF);
+	tc_set_ccb_interrupt_level(&TCC1, TC_INT_LVL_OFF); // Interrupt Priority: Buttons 2 (inert)
 	task_is_scheduled = false;
 	scheduled_task();
 }
@@ -199,7 +238,7 @@ bool schedule_task(void (*task)(void), uint16_t time)
 	
 		// Write the compare value into its register and enable the interrupt
 		tc_write_cc(&TCC1, TC_CCB, compare_value);
-		tc_set_ccb_interrupt_level(&TCC1, TC_INT_LVL_MED);
+		tc_set_ccb_interrupt_level(&TCC1, TC_INT_LVL_MED);	// Interrupt Priority: Buttons 2 (ACTIVE)
 		
 		return true;
 	} else {
@@ -207,10 +246,11 @@ bool schedule_task(void (*task)(void), uint16_t time)
 	}
 }
 
-bool cancel_task() // !review: this is set to 'bool' but returns nothing
+bool cancel_task() 
 {
 	task_is_scheduled = false;
-	tc_set_ccb_interrupt_level(&TCC1, TC_INT_LVL_OFF);
+	tc_set_ccb_interrupt_level(&TCC1, TC_INT_LVL_OFF);	// Interrupt Priority: Buttons 2 (inert)
+	return true;
 }
 
 
@@ -231,20 +271,32 @@ uint32_t get_ms_timer(void)
  *  relative movements which are stored in the encoder_state array.
  */
 static uint8_t enc_switch_buffer_pos = 0;
+// #define ENCODER_INTERPRET_VERSION_ORIG 0 
+// #define ENCODER_INTERPRET_VERSION_STATE_TABLE 1
+// #define ENCODER_INTERPRET_VERSION ENCODER_INTERPRET_VERSION_STATE_TABLE
 
-void encoder_scan(void)
+// #if ENCODER_INTERPRET_VERSION == ENCODER_INTERPRET_VERSION_STATE_TABLE
+// Receives 4 bit value, [0]:last chan a, [1]: last chan b, [2]: current chan a, [3]: current chan b
+// Returns: 0 = idle, -127 = Ambiguous, 1 = Increment Once, -1 = Decrement Once
+const int8_t EncoderActionByState[16] = {	
+	0, -1, 1, -127,
+	1, 0, -127, -1,
+	-1, -127, 0, 1,
+	-127, 1, -1, 0
+};
+// #endif
+
+void encoder_scan(void)   // MIDI Output: Digital Inputs -> Encoders (Read Pins)
 {
 	// Increment the timer compare value
 	timer_cca_value += INPUT_SCAN_RATE;
 	tc_write_cc(&TCC1, TC_CCA, timer_cca_value);
-	
 	// Increment the ms_timer count
 	ms_timer++;
 	
 	// Latch the encoder data into the shift registers, latching data also 
 	// presents first bit to ENC_DATA so no need to clk in the first bit
 	ioport_set_pin_level(ENC_LATCH, true);
-	
 	uint16_t current_enc_switch_state = 0;
 	uint16_t bit   = 0x8000;
 	
@@ -261,7 +313,6 @@ void encoder_scan(void)
 	// buffer pos.
 	enc_switch_debounce_buffer[enc_switch_buffer_pos] = current_enc_switch_state;
 	enc_switch_buffer_pos = (enc_switch_buffer_pos + 1) % SWITCH_DEBOUNCE_BUFFER_SIZE;
-
 	uint16_t encoder_cha_state = 0;
 	uint16_t encoder_chb_state = 0;
 	bit   = 0x8000;
@@ -283,68 +334,73 @@ void encoder_scan(void)
 	// Process the encoder channel state data
 	bit = 0x00001;
 	for (uint8_t i = 0; i < 16;++i) {
-		
-		if((encoder_cha_state & bit) != (encoder_cha_state_prev & bit)) {	
-		// First check to see if Channel A has changed.
-		
-			if ((encoder_cha_state & bit) && !(encoder_cha_state_prev & bit)) {
-			// If rising edge on A
-				if (encoder_chb_state & bit) {
-				// And B is currently high
-					encoder_state[i]--;
-				} else {
-				// or B is low
-					encoder_state[i]++;
-				}
-			} else {
-			// else it was a falling edge on A
-				if (encoder_chb_state & bit) {
-				// And B is currently high
-					encoder_state[i]++;
-				} else {
-				// or B is low
-					encoder_state[i]--;
-				}
-			}
-			
-			//Reset inactivity counter
-			encoder_inactive_counter[i] = 0;
-			
-		} else if ((encoder_chb_state & bit) != (encoder_chb_state_prev & bit)) {
-		// if Channel A didn't change check to see if Channel B did
-		
-			if ((encoder_chb_state & bit) && !(encoder_chb_state_prev & bit)) {
-			// If rising Edge on B
-				if (encoder_cha_state & bit) {
-				// and A is currently high
-					encoder_state[i]++;
-				} else {
-				// or A is low
-					encoder_state[i]--;
-				}
-			} else {
-			// else it was a falling edge on B
-				if (encoder_cha_state & bit){
-				// and A is currently high
-					encoder_state[i]--;
-				} else {
-				// or A is low
-					encoder_state[i]++;
-				}
-			}
-			
-			//Reset inactivity counter
-			encoder_inactive_counter[i] = 0;
-			
-		} else {
-		// neither channel changed so increment the time since last update
-			if ( encoder_inactive_counter[i] < ENCODER_INACTIVE_THRESHOLD ){
+		//#if ENCODER_INTERPRET_VERSION == ENCODER_INTERPRET_VERSION_STATE_TABLE
+		// Calculate the index for the EncoderActionByState table
+		uint8_t this_encoder_state = ((encoder_cha_state & bit) ? 0x04 : 0x00) | ((encoder_chb_state & bit) ? 0x08 : 0x00) |
+					 ((encoder_cha_state_prev & bit) ? 0x01 : 0x00) | ((encoder_chb_state_prev & bit) ? 0x02 : 0x00);
+		int8_t encoder_action = EncoderActionByState[this_encoder_state]; // Get Encoder Action for current state
+		if (encoder_action == 0 || encoder_action <= -127) { // Encoder is Idle
+			// TODO: Handle the -127 'ambiguous' state more gracefully (presuming direction by momentum for example)
+			if ( encoder_inactive_counter[i] < ENCODER_INACTIVE_THRESHOLD ){ // For determining when an encoder is inactive
 				encoder_inactive_counter[i]++;
-			}	
+			}
+
+		} //else if (enocder_action <= -127) { // Encoder is in an ambiguous state
+		//} 
+		else if (encoder_action < 0) { // Event! Moving CCW
+			// encoder event table: mark event type +store event cycle count + increment event counter
+			#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+				uint16_t cycle_count = encoder_inactive_counter[i] + 1;
+				int8_t last_move = encoder_last_movement[i]; 
+				if (cycle_count >= ENCODER_DEBOUNCE_CYCLE_TIMEOUT) { // event spacing was reasonable, allow to travel freely in either direction
+					// Add event to the tally
+					encoder_state[i]--;
+					encoder_event_cycle_counts[i] += cycle_count; // cycles for this event to occur.
+					encoder_last_movement[i] = -1;
+				} else if (last_move == -1) { // Moving fast but in a consistent direction
+					// Add event to the tally
+					encoder_state[i]--;
+					encoder_event_cycle_counts[i] += cycle_count; // cycles for this event to occur.
+					//redundant encoder_last_movement[i] = -1;
+				} else { // moving fast in a different direction
+					// Reject Event, but change direction to allow subsequent events to pass if in same direction
+					encoder_last_movement[i] = -1;
+				}
+				encoder_inactive_counter[i] = 0; // clear the inactive counter for all states
+			#else // original code
+				encoder_state[i]--; 
+				encoder_inactive_counter[i] = 0; // clear the inactive counter
+			#endif
+		} else { // Event! Moving CW
+			// !mark encoder event table: mark event type +store event cycle count + increment event counter
+			#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+				uint16_t cycle_count = encoder_inactive_counter[i] + 1;
+				int8_t last_move = encoder_last_movement[i];
+				if (cycle_count >= ENCODER_DEBOUNCE_CYCLE_TIMEOUT) { // event spacing was reasonable, allow to travel freely in either direction
+					// Add event to the tally
+					encoder_state[i]++;
+					encoder_event_cycle_counts[i] += cycle_count; // cycles for this event to occur.
+					encoder_last_movement[i] = 1;
+				} else if (last_move == 1) { // Moving fast but in a consistent direction
+					// Add event to the tally
+					encoder_state[i]++;
+					encoder_event_cycle_counts[i] += cycle_count; // cycles for this event to occur.
+					//redundant encoder_last_movement[i] = 1;
+				} else { // moving fast in a different direction
+					// Reject Event, but change direction to allow subsequent events to pass
+					encoder_last_movement[i] = 1;
+				}
+				encoder_inactive_counter[i] = 0; // clear the inactive counter for all states
+			#else // original code
+				encoder_state[i]++;
+				encoder_inactive_counter[i] = 0; // clear the inactive counter
+			#endif
 		}
 		bit <<= 1;
+		// endif ENCODER_INTERPRET_VERSION == ENCODER_INTERPRET_VERSION_STATE_TABLE
+		//#elif ENCODER_INTERPRET_VERSION == ENCODER_INTERPRET_VERSION_ORIG
+		//#endif
 	}
-	
 	// Store current state for future comparisons
 	encoder_cha_state_prev = encoder_cha_state;
 	encoder_chb_state_prev = encoder_chb_state;
@@ -359,7 +415,13 @@ int8_t get_encoder_value(uint8_t encoder)
 	encoder_state[encoder] = 0;
 	return return_value;
 }
-
+#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+uint16_t get_encoder_cycle_count(uint8_t encoder) {
+	uint16_t return_value = encoder_event_cycle_counts[encoder];
+	encoder_event_cycle_counts[encoder] = 0;
+	return return_value;
+}
+#endif
 
 /**
  * Scans the encoder switch registers and returns the de-bounced 

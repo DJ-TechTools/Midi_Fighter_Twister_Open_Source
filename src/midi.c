@@ -96,9 +96,11 @@ void midi_init(void)
 // Maximum task scheduling window is ~2 seconds, this is to short to reliably
 // detect no USB connection, because of this we use a counter variable allow
 // a longer window of ~8 seconds
-static uint8_t counts = 0;
+//static uint8_t counts = 0;
 
 /* Sets MIDI to use serial (legacy) */
+#if ENABLE_LEGACY_MIDI_USART_OUTPUT > 0
+#warning MIDI SERIAL ENABLED!!! SHOULD NOT BE!!!
 void set_midi_serial(void)
 {
 	if (counts >= 3)	{
@@ -131,6 +133,12 @@ void set_midi_serial(void)
 		counts++;
 	}
 }
+#else //if ENABLE_LEGACY_MIDI_USART_OUTPUT = 0
+void set_midi_serial(void) {
+	//midi_port_mode = SERIAL_CONNECTION;
+}
+#endif //ENABLE_LEGACY_MIDI_USART_OUTPUT > 0
+
 
 /**
  *  Returns true if using USB MIDI, false if using Legacy MIDI
@@ -303,7 +311,9 @@ void midi_stream_raw_note(const uint8_t channel,
 		}
 		
 	} else {
-		MIDI_send_legacy_packet(&midi_event);
+		#if ENABLE_LEGACY_MIDI_USART_OUTPUT > 0
+			MIDI_send_legacy_packet(&midi_event);
+		#endif
 	}
 }
 
@@ -322,7 +332,29 @@ void midi_stream_raw_cc(const uint8_t channel,
 	if (midi_is_usb()) {
 		MIDI_Device_SendEventPacket(g_midi_interface_info, &midi_event);
 	} else {
-		MIDI_send_legacy_packet(&midi_event);
+		#if ENABLE_LEGACY_MIDI_USART_OUTPUT > 0
+			MIDI_send_legacy_packet(&midi_event);
+		#endif
+	}
+}
+
+void midi_stream_raw_pitchbend(const uint8_t channel, const uint16_t value)
+{
+	const uint8_t command = 0xe0;  // the control change command
+	uint8_t value_l = value & 0x7F;
+	uint8_t value_h = (value >> 7) & 0x7F;
+	MIDI_EventPacket_t midi_event;
+	midi_event.Event       = MIDI_EVENT(0, command);
+	midi_event.Data1       = command | (channel & 0x0f); // 0..15
+	midi_event.Data2       = value_l ;   // 0..127
+	midi_event.Data3       = value_h ;  // 0..127
+
+	if (midi_is_usb()) {
+		MIDI_Device_SendEventPacket(g_midi_interface_info, &midi_event);
+	} else {
+		#if ENABLE_LEGACY_MIDI_USART_OUTPUT > 0
+			MIDI_send_legacy_packet(&midi_event);
+		#endif
 	}
 }
 
@@ -389,7 +421,7 @@ void midi_stream_sysex (const uint8_t length, uint8_t* data)
  *  input_event:	The MIDI event to process
  *
 **/
-void process_midi_packet(MIDI_EventPacket_t input_event)
+void process_midi_packet(MIDI_EventPacket_t input_event) // Midi Feedback - Packet
 {
 	// Parse the USB-MIDI packet to see what it contains
 	switch (input_event.Event) {
@@ -508,6 +540,8 @@ void process_midi_packet(MIDI_EventPacket_t input_event)
 // USB MIDI Functions ---------------------------------------------------------
 
 // Legacy MIDI Functions ------------------------------------------------------
+#if ENABLE_LEGACY_MIDI_USART_OUTPUT > 0
+#warning LEGACY MIDI Enabled! This is known to cause issues with USB Enumeration at computer boot time.
 
 /**
  *  Sends a packet of MIDI data on the serial port
@@ -601,6 +635,7 @@ void process_legacy_packet(void)
 		}
 	}
 }
+#endif //ENABLE_LEGACY_MIDI_USART_OUTPUT > 0
 
 
 // ----------------------------------------------------------------------------

@@ -147,9 +147,9 @@ void display_init(void)
 	// Set Timer 0 CCB match value to 126 (~1 mS)
 	tc_write_cc(&TCC0, TC_CCB, DISPLAY_ANIMATION_TIMER_PERIOD);	
 	// Set Timer 0 CCB interrupt level to high
-	tc_set_cca_interrupt_level(&TCC0, TC_INT_LVL_LO);
+	tc_set_cca_interrupt_level(&TCC0, TC_INT_LVL_HI);  // !testingLedFlicker Interrupt Priority: LEDs 1 TC_INT_LVL_HI
 	// Set Timer 0 CCB interrupt level to low
-	tc_set_ccb_interrupt_level(&TCC0, TC_INT_LVL_LO);
+	tc_set_ccb_interrupt_level(&TCC0, TC_INT_LVL_LO);	// Interrupt Priority: LEDs 2
 	
 	// Set Timer 0 waveform mode to count up
 	tc_set_wgm(&TCC0, TC_WG_NORMAL);
@@ -319,12 +319,12 @@ void set_encoder_indicator_level(uint8_t encoder, uint8_t position,
 			ptr[1]  = 0xFF;
 
 			// Write Mask A
-			if ((i*(127/NUM_OF_FRAMES)) < bit_masks.pattern_A_brightness) { // !revision: 127/NUM_OF_FRAMES is constant, why do this math?
+			if ((i*(127/NUM_OF_FRAMES)) < bit_masks.pattern_A_brightness) {
 				ptr[0] &= ~mask_A_lower_byte;
 				ptr[1] &= ~mask_A_upper_byte;
 			}
 			// Write Mask B
-			if ((i*(127/NUM_OF_FRAMES)) < bit_masks.pattern_B_brightness) { // !revision: 127/NUM_OF_FRAMES is constant, why do this math?
+			if ((i*(127/NUM_OF_FRAMES)) < bit_masks.pattern_B_brightness) {
 				ptr[0] &= ~mask_B_lower_byte;
 				ptr[1] &= ~mask_B_upper_byte;
 			}
@@ -379,8 +379,8 @@ int build_indicator_pattern(indicator_bit_mask_t *result,
 		if (position == 63 || position == 64 ) {
 			// The encoder is in its detent position, set the detent indicator
 			// to its color and return.
-			result->pattern_A = 0x0001;
-			result->pattern_B = 0x0002;
+			result->pattern_A = 0x0001;  // detent color 1 flag 
+			result->pattern_B = 0x0002;  // detent color 2 flag
 			result->pattern_A_brightness = (uint8_t)(detent_color);
 			result->pattern_B_brightness = (uint8_t)(0x7F - (detent_color));
 			return 1;
@@ -402,10 +402,8 @@ int build_indicator_pattern(indicator_bit_mask_t *result,
 					dot_count +=1;
 				}
 			}	
-		}
-			 
+		} 
 	} else {
-		
 		if (is_blended) {
 			dot_count = (int8_t)(position / 11.5f);	
 			remainder = fmodf(position, 11.5f);         
@@ -450,7 +448,6 @@ int build_indicator_pattern(indicator_bit_mask_t *result,
 	// Store the bit masks and set their respective brightness levels
 	result->pattern_B = (uint16_t)(bit_mask);
 	
-	// TODO NEED TO GET THE BLENDED DOT DISPLAY WORKING NICE ... leading dot does not fade in
 	if ((remainder > 0) && is_blended) {
 		result->pattern_A = (uint16_t)(bit_mask | (bit_mask >> 1));
 		result->pattern_A_brightness = frac;
@@ -470,7 +467,6 @@ int build_indicator_pattern(indicator_bit_mask_t *result,
 	if (type != BLENDED_DOT) {
 		result->pattern_B_brightness = 127;	
 	}
-
 	return 1;	
 }
 
@@ -564,12 +560,16 @@ void set_indicator_pattern_level(uint8_t encoder, uint16_t pattern, uint8_t brig
 	// Iterate through and build the bit patterns for the 128 frames
 	for (uint8_t i=0;i<NUM_OF_FRAMES;++i)
 	{
-		ptr[0] |= 0xE0;
+		// Turn off All LEDs
+		ptr[0] |= 0xE3; // E3: ensure the bits are set to turn off the detent indicators (0x03)
 		ptr[1] |= 0xFF;
+		// Turn on LEDs 
 		if(i < brightness){
 			ptr[0] &= ~(0xE0 & pattern_lower_byte);
 			ptr[1]  = (0xFF & ~pattern_uper_byte);
+			// Esure the 
 		}
+		// Move to next pointer
 		ptr += 32;
 	}
 }
@@ -684,24 +684,9 @@ void run_encoder_animation(uint8_t encoder, uint8_t bank, uint8_t animation, uin
 			encoder_settings[banked_encoder_id].indicator_display_type,
 			encoder_settings[banked_encoder_id].detent_color, 255);
 		}
-
-		// Read from EEPROM
-		//encoder_config_t enc_cfg;
-		//get_encoder_config(bank, encoder, &enc_cfg); // !revision: lessen overhead of encoder animations, no need to read from EEPROM anymore with expanded encoder_settings
-		//
-		// Indicator Strobe Animation
-		//if (!strobe_animation(animation-48)) {
-			//set_encoder_indicator_level(encoder, indicator_value_buffer[bank][encoder], enc_cfg.has_detent,
-										//enc_cfg.indicator_display_type,
-										//enc_cfg.detent_color, 0);
-		//} else {
-			//set_encoder_indicator_level(encoder, indicator_value_buffer[bank][encoder], enc_cfg.has_detent,
-										//enc_cfg.indicator_display_type,
-										//enc_cfg.detent_color, 255);
-		//}
-		
 	} else if ((animation > 56) && (animation < 65)) {
 		// Read Directly from RAM
+		// Indicator Pulse Animation
 		uint8_t banked_encoder_id = encoder + bank*PHYSICAL_ENCODERS;
 		uint8_t level = (uint8_t)(pulse_animation(animation - 55));
 		set_encoder_indicator_level(encoder, indicator_value_buffer[bank][encoder], encoder_settings[banked_encoder_id].has_detent,
@@ -709,7 +694,6 @@ void run_encoder_animation(uint8_t encoder, uint8_t bank, uint8_t animation, uin
 		encoder_settings[banked_encoder_id].detent_color, level);
 
 		// Read from EEPROM
-		// Indicator Pulse Animation
 		//encoder_config_t enc_cfg;
 		//get_encoder_config(bank, encoder, &enc_cfg); // !revision: lessen overhead of encoder animations, no need to read from EEPROM anymore with expanded encoder_settings
 		//uint8_t level = (uint8_t)(pulse_animation(animation - 55));

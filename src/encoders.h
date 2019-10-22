@@ -37,7 +37,12 @@
 	#define BANKED_ENCODERS 64 // essentially virtual encoders but not including 'shifted' encoders.
 	#define BANKED_ENCODER_MASK 0x3F // For Determining banked encoder id from the virtual encoder id
 	#define VIRTUAL_ENCODERS 128  // Twister Firmware supports 4 Banks of 16 Encoders, each containing a virtual shift encoder (4x16x2=128)
-
+	
+	#define ENCODER_VALUE_SCALAR_DIRECT 100  // 100 values is 1 CC Value
+	#define ENCODER_VALUE_SCALAR_EMULATION 178
+	#define ENCODER_VALUE_SCALAR_DIRECT_FINE 25 // 25 values is 4 ticks per CC Value change
+	#define ENCODER_VALUE_SCALAR_VELOCITY_MIN 25
+	#define ENCODER_VALUE_SCALAR_VELOCITY_MAX 255
 	/*	Types: */
 	
 		typedef enum enc_control_type {
@@ -70,13 +75,17 @@
 			SEND_NOTE,
 			SEND_CC,
 			SEND_REL_ENC,
-			SEND_NOTE_OFF, // 20160615 - for MIDI Feedback only
+			SEND_NOTE_OFF = 3, // 20160615 - for MIDI Feedback only
+			SEND_SWITCH_VEL_CONTROL = 3, // For 'Encoders' only, sends like send_cc, but also adjusts the button output velocity.
+			SEND_REL_ENC_MOUSE_EMU_DRAG = 4, // For 'Encoders' only, sends like rel_enc, but tells MF Utility, to drag the mouse for controlling onscreen elements with the mouse
+			SEND_REL_ENC_MOUSE_EMU_SCROLL = 5, // For 'Encoders' only, sends like rel_enc, but tells MF Utility, to drag the mouse for controlling onscreen elements with the mouse
 		} midi_type_t;
 
 		// Encoder Movement Type Enum
 		typedef enum enc_move_type {
 			DIRECT,
 			EMULATION,
+			VELOCITY_SENSITIVE_ENC
 		} enc_move_type_t;
 		
 		// Encoder Indicator Display Type Enum
@@ -89,7 +98,7 @@
 
 		// Tag-Value table which holds the configuration for 1 encoder
 		//#define ENC_CFG_SIZE 14
-		#define ENC_CFG_SIZE 15 // !Summer2016Update: added encoder_shift_midi_channel
+		#define ENC_CFG_SIZE 15
 		#define ENC_REL_FINE_LIMIT 0x04 // how many 'ticks' per output when encoder is Relative and Fine
 		typedef union {  // Each of these fields is designed to be written to directly from MIDI Sysex Data
 			struct {     // - so you can only use 7-bits of these uint8_t's to store data.
@@ -114,20 +123,14 @@
 		
 		// !Summer2016Update: Encoder Shift Feedback 
 		// - Input map was removed in favor of expanding encoder_settings table
-		//~ typedef struct input_map {
-			//~ uint8_t	ind_midi_number;
-			//~ uint8_t ind_midi_channel;
-			//~ uint8_t sw_midi_number;
-			//~ uint8_t sw_midi_channel;
-			//~ uint8_t ind_shifted_midi_channel; 
-			//~ // !review ind_midi_type?
-		//~ } input_map_t;
+
+		/* Constants */
+		extern const uint16_t encoder_detent_limit_low;
+		extern const uint16_t encoder_detent_limit_high;
 		
 		/* Variables */
 		
 		extern uint8_t indicator_value_buffer[4][16];
-		//static encoder_config_t encoder_settings[16];
-		//static encoder_config_t encoder_settings[64];
 		extern encoder_config_t encoder_settings[64];
 		// - overall, the use of input_map over an enlarged encoder_settings saves about 236 Bytes of RAM (624->960)
 		// -- But logically, the use of encoder_settings is a much simpler and faster implementation
@@ -138,6 +141,22 @@
 		void factory_reset_encoder_config(void);
 		
 		void encoders_init(void);
+		void process_encoder_input_rotary(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, uint16_t bit);
+
+		#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+			bool process_encoder_input_rotary_relative(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value, uint16_t bit, uint16_t cycle_count);
+			bool process_encoder_input_rotary_absolute(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value, uint16_t bit, uint16_t cycle_count);
+			bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value, uint16_t cycle_count);
+			bool process_encoder_input_rotary_deadzone(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value, uint16_t cycle_count);
+		#else
+			bool process_encoder_input_rotary_relative(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value, uint16_t bit);
+			bool process_encoder_input_rotary_absolute(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value, uint16_t bit);
+			bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value);
+			bool process_encoder_input_rotary_deadzone(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value);
+		#endif
+
+
+		void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, uint16_t bit);
 		void process_encoder_input(void);
 		void update_encoder_display(void);
 		void change_encoder_bank(uint8_t new_bank);

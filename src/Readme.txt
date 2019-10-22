@@ -1,6 +1,3 @@
-This Repository was last Built with: Atmel Studio 7 (Version 7.0.790)
-- All references are relative to the project, so a simple project import and build,
-- should be all that is required.
 
 The MF Twister Project makes use of the Atmel ASF extensions & LUFA Module.
 
@@ -18,5 +15,4 @@ The compiler must also link libm
 The project also requires a user board configuration header file, if this is missing add the following to conf_board.h
 
 #define CONF_BOARD_ENABLE_USARTD0
-
 
