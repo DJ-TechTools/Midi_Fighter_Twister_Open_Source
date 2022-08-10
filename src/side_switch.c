@@ -24,6 +24,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **/
 #include <side_switch.h>
+#include "native_mode.h"
 
 // Holds all configurable side switch settings
 static side_sw_settings_t side_sw_cfg;
@@ -103,7 +104,8 @@ void process_side_switch_input(void)  // MIDI Output: Digital Inputs -> Side Swi
 	//uint8_t enc_bank = current_encoder_bank();
 	
 	// Check for Sequencer Activation Combination (Both Middle at same time)
-	if ((get_side_switch_state() & 0x12) == 0x12){
+	if (!native_mode_is_active() // native mode -> ignore sequencer
+		&& (get_side_switch_state() & 0x12) == 0x12){
 		if ((prev_side_switch_state & 0x12) == 0x02 || (prev_side_switch_state & 0x12) == 0x10){
 			set_op_mode(sequencer);
 			init_seq_display();
@@ -130,6 +132,17 @@ void process_side_switch_input(void)  // MIDI Output: Digital Inputs -> Side Swi
 
 void do_side_switch_function(uint8_t switch_num, switch_event_t state)
 {
+	switch(state)
+	{
+		case SW_DOWN:
+		case SW_UP:
+			if(native_mode_process_side_switch_pressed(switch_num, state == SW_DOWN))
+				return;
+			break;
+		default:
+			break;
+	}
+	
 	
 	uint8_t bank = side_sw_cfg.side_is_banked ? current_encoder_bank() : 0;
 	

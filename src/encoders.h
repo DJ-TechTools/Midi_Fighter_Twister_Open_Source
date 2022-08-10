@@ -96,6 +96,7 @@
 			BAR,
 			BLENDED_BAR,
 			BLENDED_DOT,
+			NUM_DISPLAY_TYPES // this must always be the last entry
 		} display_type_t;
 
 		// Tag-Value table which holds the configuration for 1 encoder

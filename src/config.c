@@ -20,6 +20,7 @@
  */ 
 
 #include "config.h"
+#include "native_mode.h"
 
 uint8_t global_super_knob_start;
 uint8_t global_super_knob_end;
@@ -334,6 +335,11 @@ static void sysExCmdBulkXfer(uint8_t length, uint8_t* buffer) // Process/ParseSy
     }
 }
 
+static void sysExCmdNativeMode(uint8_t length, uint8_t* buffer)
+{
+	native_mode_handle_sysex_command(--length, buffer);
+}
+
 void config_init(void)
 {
     // Install SysEx command handlers
@@ -341,6 +347,7 @@ void config_init(void)
     sysex_install(SYSEX_COMMAND_PULL_CONF, sysExCmdPullConfig);
     sysex_install(SYSEX_COMMAND_SYSTEM,    sysExCmdSystem);
     sysex_install(SYSEX_COMMAND_BULK_XFER, sysExCmdBulkXfer);
+    sysex_install(SYSEX_COMMAND_NATIVE_MODE, sysExCmdNativeMode);
 	
 	// If our EEPROM layout has changed, reset everything.
 	if (eeprom_read(EE_EEPROM_VERSION) != EEPROM_LAYOUT) {
