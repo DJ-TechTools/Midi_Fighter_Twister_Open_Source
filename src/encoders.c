@@ -120,7 +120,7 @@ bool animation_buffer_conflict_exists(uint8_t bank, uint8_t encoder);
 **/
 
 uint8_t get_virtual_encoder_id (uint8_t bank, uint8_t encoder_id){
-	uint8_t virtual_encoder_id = encoder_id;
+	uint8_t virtual_encoder_id = bank*16;
 	uint8_t this_bank = bank;
 	if (encoder_is_in_shift_state(this_bank, encoder_id))
 		{virtual_encoder_id += 64;}
