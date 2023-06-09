@@ -210,7 +210,7 @@
   <documentation help="http://asf.atmel.com/docs/3.9.1/common.applications.user_application.user_board.xmegaau/html/index.html" />
   <offline-documentation help="" />
   <dependencies>
-    <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.26.0" />
+    <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.44.1" />
     <content-extension eid="0e160d5c-e331-48d9-850b-e0387912171b" uuidref="0e160d5c-e331-48d9-850b-e0387912171b" version="14.03.02" />
   </dependencies>
   <project id="common.applications.user_application.user_board.xmegaau" value="Add" config="" content-id="Atmel.ASF" />
