@@ -28,9 +28,9 @@
 
 #include "self_test.h"
 
-//#define FACTORY_CODE
+#define FACTORY_CODE
 //#define PCB_TEST
-//#define ASSEMBLY_TEST
+#define ASSEMBLY_TEST
 
 #if defined(PCB_TEST) && defined(ASSEMBLY_TEST)
 #error "Cannot define both PCB & assembly test"
