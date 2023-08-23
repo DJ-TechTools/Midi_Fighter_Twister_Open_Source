@@ -1353,9 +1353,9 @@ void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t
 								// Note: ENC_SHIFT_HOLD can't support software toggling of encoder shift state
 								// - this is because HOLD type buttons are continually checked at a hardware level
 								// - adding this feature would take a lot of work/testing for little benefit.
-							if (action_type == ENC_SHIFT_TOGGLE){ 
-								process_sw_encoder_shift_update(i, value);
-							}
+							//if (action_type == ENC_SHIFT_TOGGLE){
+							//	process_sw_encoder_shift_update(i, value);
+							//}
 							#if ENABLE_DUPLICATE_INPUT_MAPPINGS == 0
 							return;
 							#endif
