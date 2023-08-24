@@ -1527,8 +1527,8 @@ bool animation_is_switch_rgb(uint8_t animation_value) { // !Summer2016Update: Du
 
 // - Indicator Animations 49-96
 bool animation_is_encoder_indicator(uint8_t animation_value) { // !Summer2016Update: Dual Animations - Identify to Eliminate Conflicts
-	if (animation_value < 49) {return false;}
-	else if (animation_value < 97 || animation_value == 127) {return true;}
+	if (animation_value < 49 || animation_value == 127) {return false;}
+	else if (animation_value < 97) {return true;}
 	else {return false;}
 }
 
@@ -1598,46 +1598,30 @@ void update_encoder_display(void)
 	// !Summer2016Update: Dual Animations 
 	// - created encoder_animation_buffer, which double-uses run_encoder_animation
 
-	// Encoder Animation Buffer takes priority over Switch Animation Buffer if there are Conflicts
-	// - however either animation buffer can run either type of animation in reality
+	// rmerrill 2023-08-23
+	// we ignore animation types from the "wrong" buffer now.
+	// encoder_animation_buffer's values are ignored unless they apply to encoder
+	// likewise with switch_animation_buffer.
+
 	currentValue = encoder_animation_buffer[encoder_bank][idx];
-	if (currentValue){
+	if (currentValue && animation_is_encoder_indicator(currentValue)){
 		run_encoder_animation(idx, encoder_bank, currentValue, switch_color_buffer[encoder_bank][idx]);
 		prevEncoderAnimationValue[idx] = currentValue;
 	} else if (prevEncoderAnimationValue[idx]) {
-		// !Summer2016Update: Reset the Indicator Display/ RGB Display as necessary
-		if (animation_is_switch_rgb(prevEncoderAnimationValue[idx])) {
-			set_encoder_rgb(idx, switch_color_buffer[encoder_bank][idx]);
-		}
-		else if (animation_is_encoder_indicator(prevEncoderAnimationValue[idx])) {
-			set_encoder_indicator(idx, indicator_value_buffer[encoder_bank][idx], encoder_settings[banked_encoder_idx].has_detent,  
-					encoder_settings[banked_encoder_idx].indicator_display_type,
-					encoder_settings[banked_encoder_idx].detent_color);
-		}
-		// !revision: could add error handling for invalid values (values that do not directly point to animations)
+		set_encoder_indicator(idx, indicator_value_buffer[encoder_bank][idx], encoder_settings[banked_encoder_idx].has_detent,
+				encoder_settings[banked_encoder_idx].indicator_display_type,
+				encoder_settings[banked_encoder_idx].detent_color);
 		prevEncoderAnimationValue[idx] = 0;
 	}
 
 	// Run Switch Animation, or set the indicator to the last set color.
-	if (!animation_buffer_conflict_exists(encoder_bank, idx)) { 
-		// Run The Encoder Value Display Animation
-		currentValue = switch_animation_buffer[encoder_bank][idx];
-		if (currentValue) { // !review: could make this more robust by limiting currentValue to only Encoder related animatinos 
-			run_encoder_animation(idx, encoder_bank, currentValue, switch_color_buffer[encoder_bank][idx]);
-			prevSwAnimationValue[idx] = currentValue;
-		}  
-		else if (prevSwAnimationValue[idx]) {  // Animation Just Ended
-			// !Summer2016Update: Reset the Indicator Display/ RGB Display as necessary
-			if (animation_is_switch_rgb(prevSwAnimationValue[idx])) {
-				set_encoder_rgb(idx, switch_color_buffer[encoder_bank][idx]);
-			}
-			else if (animation_is_encoder_indicator(prevSwAnimationValue[idx])) {
-				set_encoder_indicator(idx, indicator_value_buffer[encoder_bank][idx], encoder_settings[banked_encoder_idx].has_detent,
-				encoder_settings[banked_encoder_idx].indicator_display_type,
-				encoder_settings[banked_encoder_idx].detent_color);
-			}
-			prevSwAnimationValue[idx] = 0;			
-		}
+	currentValue = switch_animation_buffer[encoder_bank][idx];
+	if (currentValue && animation_is_switch_rgb(currentValue)) {
+		run_encoder_animation(idx, encoder_bank, currentValue, switch_color_buffer[encoder_bank][idx]);
+		prevSwAnimationValue[idx] = currentValue;
+	}  else if (prevSwAnimationValue[idx]) {  // Animation Just Ended
+		set_encoder_rgb(idx, switch_color_buffer[encoder_bank][idx]);
+		prevSwAnimationValue[idx] = 0;
 	}
 	
 	// Increment the encoder index for next time
