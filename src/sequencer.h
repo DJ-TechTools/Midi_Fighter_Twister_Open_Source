@@ -87,9 +87,11 @@
 		DEFAULT,
 		PATTERN_MEMORY,
 		PATTERN_EDIT,
+#if 0 // suppress -Wswitch warnings
 		EFFECTS_SELECTION,
 		EFFECTS_PATTERN_EDIT,
 		SWING_PAGE,
+#endif
 	} displayMode_t;
 	
 	typedef enum rowTypes{
