@@ -1080,12 +1080,16 @@ void send_encoder_midi(uint8_t banked_encoder_idx, uint8_t value, bool state, bo
 		midi_stream_raw_cc(midi_channel,
 		encoder_settings[banked_encoder_idx].encoder_midi_number,
 		value);
-		if (encoder_settings[banked_encoder_idx].is_super_knob && (value >= global_super_knob_start)) {
+		//if (encoder_settings[banked_encoder_idx].is_super_knob && (value >= global_super_knob_start)) {
+		if (encoder_settings[banked_encoder_idx].is_super_knob) {
 
 			float step = 1/(((float)(global_super_knob_end - global_super_knob_start)) / 127.0f);
 					
-			uint16_t secondary_value = ((uint16_t)(step * (float)(value - global_super_knob_start)));
-					
+			uint16_t secondary_value = 0;
+			if (value >= global_super_knob_start) {
+				secondary_value = ((uint16_t)(step * (float)(value - global_super_knob_start)));
+			}
+
 			// Clamp to 127
 			secondary_value = secondary_value > 127 ? 127 : secondary_value;
 
@@ -1155,12 +1159,15 @@ void send_element_midi(enc_control_type_t type, uint8_t banked_encoder_idx, uint
 				midi_stream_raw_cc(encoder_settings[banked_encoder_idx].encoder_midi_channel,
 										   encoder_settings[banked_encoder_idx].encoder_midi_number,
 						                   value);
-				if (encoder_settings[banked_encoder_idx].is_super_knob && (value >= global_super_knob_start)) { 
-
+				//if (encoder_settings[banked_encoder_idx].is_super_knob && (value >= global_super_knob_start)) {
+				if (encoder_settings[banked_encoder_idx].is_super_knob) {
 					float step = 1/(((float)(global_super_knob_end - global_super_knob_start)) / 127.0f);
 					
-					uint16_t secondary_value = ((uint16_t)(step * (float)(value - global_super_knob_start)));
-					
+					uint16_t secondary_value = 0;
+					if (value >= global_super_knob_start) {
+						secondary_value = ((uint16_t)(step * (float)(value - global_super_knob_start)));
+					}
+
 					// Clamp to 127
 					secondary_value = secondary_value > 127 ? 127 : secondary_value;
 
