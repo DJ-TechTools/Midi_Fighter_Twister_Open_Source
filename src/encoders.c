@@ -737,6 +737,10 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
 			output_value--;
 		}
 	}
+	else if(encoder_settings[banked_encoder_id].movement == EMULATION) {
+		// Case C: encoder set to "responsive" mode
+		output_value = 64 + (new_value * ENCODER_RELATIVE_TICKS_RESPONSIVE);
+	}
 	else {	// Case B: Normal Relative Encoders
 		#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_NONE
 			output_value = 64 + new_value;	// Relative: Bin Offset
