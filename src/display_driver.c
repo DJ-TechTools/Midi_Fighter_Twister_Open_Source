@@ -480,6 +480,7 @@ int build_indicator_pattern(indicator_bit_mask_t *result,
 void build_rgb(uint8_t encoder, uint32_t color, uint8_t level)
 {
 
+#if 0 // exponents are now precomputed in colorMap7
 	float red_pow = 5.0;
 	float green_pow = 2.50f;
 	float blue_pow = 1.0f;
@@ -492,6 +493,11 @@ void build_rgb(uint8_t encoder, uint32_t color, uint8_t level)
 	
 	uint8_t blue_byte =  (uint8_t)(color & 0xFF);
 	blue_byte = 255 * pow( (((float)blue_byte)/255.0f) , (blue_pow));
+#else
+	uint8_t red_byte = (uint8_t)((color >> 16) & 0xFF);
+	uint8_t green_byte = (uint8_t)((color >> 8) & 0xFF);
+	uint8_t blue_byte =  (uint8_t)(color & 0xFF);
+#endif
 
 	if (level) {
 		// Dim the color to the specified level
@@ -510,6 +516,9 @@ void build_rgb(uint8_t encoder, uint32_t color, uint8_t level)
 		// Set RGB bits to "OFF" first
 		*ptr |= 0x1C;		
 		// Covert to 8 Bit space
+		// FIXME: Rounding error? values probably need
+		//        to be tweaked if we fix it.
+		//        127/80 = 1
 		uint8_t value = (i << 1)*(127/NUM_OF_FRAMES);
 		//uint8_t value = (i << 1);
 		
