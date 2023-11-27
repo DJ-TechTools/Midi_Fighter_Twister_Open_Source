@@ -741,7 +741,21 @@ void run_encoder_animation(uint8_t encoder, uint8_t bank, uint8_t animation, uin
 		rgb_step += 85;
 		uint32_t blue_level = (uint8_t)(sin(rgb_step*rgb_freq)*126)+128;
 		
+
 		uint32_t color = (uint32_t)(red_level << 16) + (green_level << 8) + (blue_level);
+
+		// build_rgb no longer does this for us.
+		// XXX this is ugly because I don't want to touch the above code.
+		//     the incorrect use of the uint8_t cast invokes weird behavior,
+		//     and "fixing" it makes the rainbow look very different
+		//     -rfm
+
+		uint32_t adjusted_red = 255 * pow( (((float)((color >> 16) & 0xFF))/255.0f) , 5.0);
+		uint32_t adjusted_green = 255 * pow( (((float)((color >> 8) & 0xFF))/255.0f) , 2.5);
+		uint32_t adjusted_blue = color & 0xFF;
+
+		color = (adjusted_red << 16) | (adjusted_green << 8) | adjusted_blue;
+
 		build_rgb(encoder, color, 0);
 	}
 	
@@ -921,19 +935,23 @@ void run_sparkle(uint8_t count)
 				uint8_t t = sparkle_intensity[i] << 1;
 		
 				if (sparkle_intensity[i] > 127) {
-					rb = lerp(sparkle_start_color[0], sparkle_end_color[0], t);
-					gb = lerp(sparkle_start_color[1], sparkle_end_color[1], t);
-					bb = lerp(sparkle_start_color[2], sparkle_end_color[2], t);
+					rb = lerp(sparkle_start_color[0], sparkle_end_color[0], t) & 0xFF;
+					gb = lerp(sparkle_start_color[1], sparkle_end_color[1], t) & 0xFF;
+					bb = lerp(sparkle_start_color[2], sparkle_end_color[2], t) & 0xFF;
 				} else {
-					rb = lerp(sparkle_end_color[0], 0, t);
-					gb = lerp(sparkle_end_color[1], 0, t);
-					bb = lerp(sparkle_end_color[2], 0, t);
+					rb = lerp(sparkle_end_color[0], 0, t) & 0xFF;
+					gb = lerp(sparkle_end_color[1], 0, t) & 0xFF;
+					bb = lerp(sparkle_end_color[2], 0, t) & 0xFF;
 				}
-				
-				uint32_t new_color = ((rb << 16) & 0xFF0000) | ((gb << 8) & 0xFF00) | (bb & 0xFF);
-				
+
+				// build_rgb no longer does this for us.
+				rb = 255 * pow( (((float)rb)/255.0f) , 5.0);
+				gb = 255 * pow( (((float)gb)/255.0f) , 2.5);
+
+				uint32_t new_color = (rb << 16) | (gb << 8) | (bb);
+
 				build_rgb(i, new_color, 0xFE);
-				
+
 				// Store the value for the next comparison
 				prev_sparkle_intensity[i] = sparkle_intensity[i];
 			}
