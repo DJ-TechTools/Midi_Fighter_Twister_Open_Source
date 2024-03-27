@@ -180,8 +180,8 @@ void display_init(void)
 	ioport_set_pin_level(DISPLAY_LATCH, 0);
 	
 	// Initialize the animation tick and animation counter
-	uint8_t animation_counter = 0;
-	static uint8_t tick = 0;
+	//uint8_t animation_counter = 0;
+	//static uint8_t tick = 0;
 	
 	// Finally initialize the frame counter
 	display_frame_index = 0;

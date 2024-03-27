@@ -53,7 +53,8 @@ void board_init(void);
 
 bool watchdog_flag = false;
 
-void Midifighter_Task(void) {
+void Midifighter_Task(void); // -Wmissing-prototypes
+ void Midifighter_Task(void) {
 	if (USB_DeviceState != DEVICE_STATE_Configured) {
 		return;
 	}
@@ -69,6 +70,10 @@ void Midifighter_Task(void) {
 	#endif
 
 	switch (get_op_mode()) {
+		case startup:{
+			// Do nothing
+		}
+		break;
 		case normal:{
 			// Process any encoder movements or changes to the switch state
 			process_encoder_input();
@@ -131,7 +136,7 @@ void Midifighter_Task(void) {
 		USB_USBTask();
 	
 		// If we are using the USB MIDI connection check for and process received MIDI packets
-		MIDI_EventPacket_t ReceivedMIDIEvent;
+		//MIDI_EventPacket_t ReceivedMIDIEvent;
 	
 		// For now we disable interrupts while processing incoming MIDI, this avoids missed clock
 		// ticks. This could probably be solved more elegantly but it works
@@ -193,6 +198,7 @@ void Midifighter_Task(void) {
 	watchdog_flag = true;
 }
 
+void main_loop(void); // -Wmissing-prototypes
 void main_loop(void) {
 	// Read keys and motion tracking for User and MIDI events to process,
 	// setting LEDs to display the resulting state.
@@ -291,7 +297,8 @@ void system_init()
 	USB_Init();
 }
 
-void clock_init() { // !test
+#if 0 // Unused function. Why is it here?
+static void clock_init(void) { // !test
 	/* Start the PLL to multiply the 2MHz RC oscillator to 32MHz and switch the CPU core to run from it */
 	XMEGACLK_StartPLL(CLOCK_SRC_INT_RC2MHZ, 2000000, F_CPU);
 	XMEGACLK_SetCPUClockSource(CLOCK_SRC_PLL);
@@ -302,7 +309,7 @@ void clock_init() { // !test
 
 	PMIC.CTRL = PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
 }
-
+#endif
 
 
 /** Event handler for the library USB Configuration Changed event. */

@@ -61,6 +61,7 @@ fifo_desc_t fifo_desc;
 
 USB_ClassInfo_MIDI_Device_t* g_midi_interface_info;
 
+#if 0 // -Wunused-variable
 // Setup USART options for Legacy MIDI
 static usart_serial_options_t usart_options = {
 	.baudrate   = USART_SERIAL_BAUDRATE,
@@ -68,6 +69,7 @@ static usart_serial_options_t usart_options = {
 	.paritytype = USART_SERIAL_PARITY,
 	.stopbits	= USART_SERIAL_STOP_BIT
 };
+#endif
 
 
 // MIDI System Functions ------------------------------------------------------
@@ -155,6 +157,7 @@ bool midi_is_usb(void)
 
 
 /* Send a 16 bit value as a song position pointer message for easy debugging */
+void debug_16_bit_value(uint16_t); // -Wmissing-prototypes
 void debug_16_bit_value(uint16_t value)
 {
 	uint8_t data[3];
@@ -162,7 +165,7 @@ void debug_16_bit_value(uint16_t value)
 	data[2] = (uint8_t)(value & 0x3F);
 	data[1] = (uint8_t)((value >> 8) & 0x3F);
 
-	midi_stream_sysex(3,&data);
+	midi_stream_sysex(3, data);
 }
 
 /**
@@ -228,10 +231,12 @@ static int8_t tick_counter = 0;
 
 // Handler for Midi Clock tick, this counts from 0 to 23
 // The MIDI USB CABLE HAS CRAZY COCK JITTER - this causes timing issues
+void midi_clock(void); // -Wmissing-prototypes
 void midi_clock(void)
 {
 	// !Summer2016Update: midi_clock animation
 	uint16_t counts = update_clock_counter();
+	UNUSED(counts);
 	seq_midi_clock_handler(tick_counter);
 
 	// If not enabled enable MIDI Clock for animations 
@@ -277,9 +282,12 @@ void real_time_start(void)
 	prev_count = 0;
 	// Todo: Send Note Offs for any active notes ..
 	clock_stable = false;
+#if 0	// XXX FIXME! conditioned out for -Wunused
+		//     but this probably SHOULD actually do something!
 	if (seq_state == PLAYBACK){
 		seq_state == WAIT_FOR_SYNC;
 	}
+#endif
 }
 
 // Handle real time stop messages
@@ -306,10 +314,10 @@ void midi_stream_raw_note(const uint8_t channel,
     midi_event.Data3       = velocity & 0x7f; // 0..127
 	if (midi_is_usb()){
 		int error_code = MIDI_Device_SendEventPacket(g_midi_interface_info, &midi_event);
-		if (error_code){
-			int i = 0 + error_code;
-		}
-		
+		//if (error_code){
+		//	int i = 0 + error_code;
+		//}
+		UNUSED(error_code);
 	} else {
 		#if ENABLE_LEGACY_MIDI_USART_OUTPUT > 0
 			MIDI_send_legacy_packet(&midi_event);

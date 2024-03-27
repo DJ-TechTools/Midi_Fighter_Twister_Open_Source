@@ -41,9 +41,9 @@ void init_seq_display(void)
 			build_pattern_edit_display();
 		}
 		break;
-		case EFFECTS_SELECTION:{
+		//case EFFECTS_SELECTION:{
 			//build_effects_selection_display();
-		}
+		//}
 		break;
 	}
 }
@@ -53,7 +53,9 @@ void build_default_display(void)
 	// Get the display brightness values
 	uint8_t rgb_brightness = pgm_read_byte(&brightnessMap[global_rgb_brightness]);
 	uint8_t ind_brightness = pgm_read_byte(&brightnessMap[global_ind_brightness]);
-	
+	UNUSED(rgb_brightness);
+	UNUSED(ind_brightness);
+
 	// Initialize all indicators for the four slots
 	for(uint8_t i=0;i<4;++i){
 		
@@ -175,7 +177,7 @@ const uint16_t indicator_pattern[4] = {0xC000,0x3800,0x0700,0x00E0};
 
 void run_default_display(uint8_t idx){
 
-	static uint8_t lastIndex;
+	//static uint8_t lastIndex;
 
 	// First the indicator displays
 	uint8_t currentValue = SeqIndicatorValue[idx];
@@ -252,7 +254,7 @@ void run_default_display(uint8_t idx){
 		break;
 	}
 	
-	lastIndex = rythmIndex;			
+	//lastIndex = rythmIndex;
 }
 
 void run_pattern_edit_display(uint8_t idx)

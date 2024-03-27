@@ -95,6 +95,7 @@ bool usart_init_rs232(USART_t *usart, const usart_rs232_options_t *opt)
  */
 void usart_init_spi(USART_t *usart, const usart_spi_options_t *opt)
 {
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 	ioport_pin_t sck_pin;
 	bool invert_sck;
 

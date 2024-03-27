@@ -36,7 +36,7 @@ enum {
 #define MAX_COMMAND 8
 SysExFn sysExCommandMap[MAX_COMMAND] = {0,};
 
-void __attribute__((optimize("O0"))) sysex_handle (uint8_t length)
+static void __attribute__((optimize("O0"))) sysex_handle (uint8_t length)
 {
 	if (sysex_state == State_DJTT && length > 0) {
 		// This is a DJTT SysEx message
