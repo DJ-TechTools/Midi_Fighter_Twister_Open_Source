@@ -31,8 +31,8 @@
 //#define DEVICE_VERSION  		((DEVICE_VERSION_YEAR << 16) | (DEVICE_VERSION_MONTH << 8) | DEVICE_VERSION_DAY)
 
 #define DEVICE_VERSION_YEAR 	0x2023
-#define DEVICE_VERSION_MONTH	0x06
-#define DEVICE_VERSION_DAY		0x08
+#define DEVICE_VERSION_MONTH	0x0C
+#define DEVICE_VERSION_DAY		0x11
 #define DEVICE_VERSION  		((DEVICE_VERSION_YEAR << 23) | (DEVICE_VERSION_MONTH << 6) | DEVICE_VERSION_DAY)
 
 // 14bit device family ID, LSB first
@@ -57,16 +57,20 @@
 
 // Channel & Offset Definitions -------------------------------------------
 
+// NB: these channel numbers start from ZERO!
+//     the corresponding user manual entries should be 1-based as they
+//     are in most user interfaces. (i.e. this number plus one)
+
 #define ENCODER_ROTARY_CHANNEL	  0
 #define ENCODER_SWITCH_CHANNEL	  1
 #define SIDE_SWITCH_OFFSET        8
 #define SHIFT_OFFSET             44
 //#define ENCODER_CHANNEL	0 // Defined elsewhere
 //#define SWITCH_CHANNEL	1 // Defined elsewhere
-#define ENCODER_ANIMATION_CHANNEL 2
+#define ENCODER_ANIMATION_CHANNEL 5
 //#define DEF_MIDI_CHANNEL		3 // TWISTER DEFAULT SETTINGS Channel for changing banks
 //#define ENCODER_SHIFTED_CHANNEL 4 // Defined elsewhere
-#define SWITCH_ANIMATION_CHANNEL  5
+#define SWITCH_ANIMATION_CHANNEL  2
 
 // Debug & Test Harness Definitions ---------------------------------------
 
