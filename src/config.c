@@ -33,6 +33,7 @@ uint8_t global_super_knob_end;
 #define GLOBAL_TAG_HIGH_LOWER 30
 #define ENCODER_RESV_RANGE (GLOBAL_TAG_HIGH_LOWER - GLOBAL_TAG_LOW_UPPER)
 
+void global_tv_table_decode(global_tvtable_t*, uint8_t*, uint8_t); // -Wmissing-prototype
 void global_tv_table_decode(global_tvtable_t* table, uint8_t* buffer, uint8_t size)
 {
     uint8_t idx = 0;
@@ -49,7 +50,7 @@ void global_tv_table_decode(global_tvtable_t* table, uint8_t* buffer, uint8_t si
     }
 }
 
-void sysExCmdPushConfig (uint8_t length, uint8_t* buffer)
+static void sysExCmdPushConfig (uint8_t length, uint8_t* buffer)
 {
 	
 	// First disable watch dog as EEPROM is slow
@@ -116,7 +117,7 @@ void send_config_data (void)
     midi_stream_sysex(sizeof(payload), payload);
 }
 
-void sysExCmdPullConfig (uint8_t length, uint8_t* buffer)
+static void sysExCmdPullConfig (uint8_t length, uint8_t* buffer)
 {
     // Change settings
     if (length > 0 && *buffer == 0x0) { // Received request
@@ -124,6 +125,7 @@ void sysExCmdPullConfig (uint8_t length, uint8_t* buffer)
     }
 }
 
+void sysExCmdSystem (uint8_t, uint8_t*); // -Wmissing-prototype
 void sysExCmdSystem (uint8_t length, uint8_t* buffer)
 {
     if (length == 0) return;
@@ -205,7 +207,7 @@ NOTE: Binary data must either avoid setting the MSB, or encode octets as packed 
 
 **********/
 //__attribute__((optimize("O0")))
-void sysExCmdBulkXfer(uint8_t length, uint8_t* buffer) // Process/ParseSysexMessage (incoming)
+static void sysExCmdBulkXfer(uint8_t length, uint8_t* buffer) // Process/ParseSysexMessage (incoming)
 {   
     if (length > 2) {
 		
@@ -218,6 +220,7 @@ void sysExCmdBulkXfer(uint8_t length, uint8_t* buffer) // Process/ParseSysexMess
                 uint8_t part = *buffer++; // Transfers may consist of multiple parts
                 if (part == 0) return; // Invalid part number
                 uint8_t total = *buffer++;
+                UNUSED(total);
                 uint8_t size = *buffer++;
                 if (size > length - 5) return; // Not enough data to support payload
                 

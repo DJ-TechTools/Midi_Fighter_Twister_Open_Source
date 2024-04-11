@@ -60,7 +60,7 @@ const uint8_t default_pattern[11][16] PROGMEM = {
 };
 
 
-static uint8_t tempo = 6;
+//static uint8_t tempo = 6;
 bool start_pattern = false;
 
 uint8_t truncate_value;
@@ -209,8 +209,8 @@ const int8_t swing_adjustment[16][4] = {{0,1,0,1},
 uint8_t swing_selection;
 bool swing_enabled;	
 
-static int16_t	current_swing_value = 0;
-static int16_t 	last_swing_value = 0;							   
+//static int16_t	current_swing_value = 0;
+//static int16_t 	last_swing_value = 0;
 
 void send_triggers(void){
 	

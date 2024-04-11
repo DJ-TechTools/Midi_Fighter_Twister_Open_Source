@@ -127,7 +127,7 @@ bool elec_self_test(void)
 	// Enable display
 	display_enable();
 	
-	bool test_passed = false;
+	//bool test_passed = false;
 	
 	uint16_t bit = 0x0001;
 	

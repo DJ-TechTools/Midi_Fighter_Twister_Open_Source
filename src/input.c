@@ -94,7 +94,7 @@ const float velocity_calc_offset = -1*(VELOCITY_CALC_MIN_MULTIPLIER +
 // ===== Velocity Calculation Method ==============END=
 
 static uint16_t timer_cca_value = 125;
-static uint16_t timer_ccb_value = 0;
+//static uint16_t timer_ccb_value = 0;
 
 void do_task(void);
 
