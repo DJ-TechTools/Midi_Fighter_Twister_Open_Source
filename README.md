@@ -7,7 +7,8 @@
 - installed AVR Toolchain and libm
    - on Linux: `sudo apt-get install gcc-avr avr-libc`
    - on Windows: can be downloaded from [here](https://www.microchip.com/en-us/tools-resources/develop/microchip-studio/gcc-compilers)
-       - extract and set the environment variable `AVR_ROOT` to the full `bin` directory path
+      - maybe [this](https://gnutoolchains.com/avr/) might work as well?
+      - extract and set the environment variable `AVR_ROOT` to the full `bin` directory path
 
 ### How to build
 
