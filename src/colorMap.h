@@ -28,7 +28,7 @@
 #ifndef COLORMAP_H_
 #define COLORMAP_H_
 
-	#include <ASF.H>
+	#include <asf.h>
 
 	const uint8_t colorMap8[256][3];
 	const uint8_t colorMap7[128][3];
