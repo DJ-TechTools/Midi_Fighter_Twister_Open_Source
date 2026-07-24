@@ -1,35 +1,21 @@
 # Midi Fighter Twister - Open Source Firmware
 
 ## Compilation
-The MF Twister Project makes use of the Atmel ASF extensions & LUFA Module.
+### Prerequisites
 
-To compile, the following symbols must be defined
+- installed CMake
+- installed AVR Toolchain and libm
+   - on Linux: `sudo apt-get install gcc-avr avr-libc`
+   - on Windows: can be downloaded from [here](https://www.microchip.com/en-us/tools-resources/develop/microchip-studio/gcc-compilers)
+      - maybe [this](https://gnutoolchains.com/avr/) might work as well?
+      - extract and set the environment variable `AVR_ROOT` to the full `bin` directory path
 
-```
-DEBUG
-F_USB=48000000UL
-F_CPU=32000000UL
-USE_LUFA_CONFIG_HEADER
-ARCH=ARCH_XMEGA
-BOARD=USER_BOARD
-```
-
-The compiler must also link libm
-
-The project also requires a user board configuration header file. If this is missing add the following to conf_board.h
+### How to build
 
 ```
-#define CONF_BOARD_ENABLE_USARTD0
+cmake -S . -B build
+cmake --build build
 ```
-
-### How to build using Microchip Studio (Windows-only)
-You need Microchip Studio which can be downloaded [here](https://www.microchip.com/en-us/tools-resources/develop/microchip-studio)
-
-1. Inside Micropchip Studio, open the *Midi_Fighter_Twister.atsln* solution
-1. Select the desired configuration (*Debug* or *Release*)
-1. Build the solution via *Build > Build Solution*
-
-The resulting *Midi_Fighter_Twister.hex* file now can be found in the respective *Debug* or *Release* target directory
 
 ## Installation
 You need the Midi Fighter Utility which can be downloaded [here](https://store.djtechtools.com/pages/midi-fighter-utility)
