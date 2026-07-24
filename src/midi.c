@@ -7,10 +7,10 @@
  *  Contains all MIDI handling functions for the Midi Fighter Twister
  *  Uses some code taken from Robin Greens midi library for the Midi Fighter Classic 
  *
- * DJTT - MIDI Fighter Twister - Embedded Software License
- * Copyright (c) 2016: DJ Tech Tools
+ * DJTT - Midi Fighter Twister - Embedded Software License
+ * Copyright (c) 2026: DJ TechTools
  * Permission is hereby granted, free of charge, to any person owning or possessing 
- * a DJ Tech-Tools MIDI Fighter Twister Hardware Device to view and modify this source 
+ * a DJ TechTools Midi Fighter Twister Hardware Device to view and modify this source 
  * code for personal use. Person may not publish, distribute, sublicense, or sell 
  * the source code (modified or un-modified). Person may not use this source code 
  * or any diminutive works for commercial purposes. The permission to use this source 
@@ -91,7 +91,7 @@ void midi_init(void)
 
 	// Initialize the midi port type to USB
 	midi_port_mode = USB_CONNECTION;	
-	ioport_set_pin_level(MIDI_SEL, false);		
+	ioport_set_pin_level(MIDI_SEL, false);
 }
 
 
@@ -155,7 +155,6 @@ bool midi_is_usb(void)
 	}
 }
 
-
 /* Send a 16 bit value as a song position pointer message for easy debugging */
 void debug_16_bit_value(uint16_t); // -Wmissing-prototypes
 void debug_16_bit_value(uint16_t value)
@@ -174,11 +173,11 @@ void debug_16_bit_value(uint16_t value)
  * \return The current average
  */
 
-static volatile uint16_t prev_count;
+static volatile int32_t prev_count;
 static volatile int32_t average;
 static volatile bool clock_stable;
 
-int32_t update_clock_counter(void)
+int32_t update_clock_counter(void) // BKP
 {
 	uint16_t new_count = tc_read_count(&TCC1);
 	
@@ -188,7 +187,8 @@ int32_t update_clock_counter(void)
 	if (new_count > prev_count) {
 		delta = ((new_count - prev_count) - average)/8;		
 	} else {
-		delta = ((abs(((2^16)-prev_count)-1)+new_count) - average)/8;
+		//delta = ((abs(((2^16)-prev_count)-1)+new_count) - average)/8;
+	    delta = (int32_t)(((65536U - prev_count) + new_count) - average) / 8;
 	}
 	
 	average += delta;
@@ -199,9 +199,12 @@ int32_t update_clock_counter(void)
 	// the point at which it schedules triggers.
 	if((abs(delta) < 5) && (getTickCount() == 1)){
 		clock_stable = true;
-		if(seq_traktor_mode && sequencerDisplayState == OFF){
-			sequencerDisplayState = DEFAULT;
-		}
+		#ifndef EXTENDED_BANKS
+			if(seq_traktor_mode && sequencerDisplayState == OFF){
+				sequencerDisplayState = DEFAULT;
+			}
+		#endif
+
 	} else {
 		//clock_stable = false;
 	}
@@ -214,7 +217,8 @@ int32_t update_clock_counter(void)
 	return average;
 }
 
-uint16_t get_counts_per_tick(void)
+
+uint32_t get_counts_per_tick(void)
 {
 	return average;
 }
@@ -237,7 +241,9 @@ void midi_clock(void)
 	// !Summer2016Update: midi_clock animation
 	uint16_t counts = update_clock_counter();
 	UNUSED(counts);
+	#ifndef EXTENDED_BANKS
 	seq_midi_clock_handler(tick_counter);
+	#endif
 
 	// If not enabled enable MIDI Clock for animations 
 	// - !Summer2016Update: midi clock for animations
@@ -274,28 +280,31 @@ uint8_t getTickCount(void){
 	return tick_counter;
 }
 
-// Handle real time start messages
+//// Handle real time start messages // BKP
 void real_time_start(void)
 {
 	tick_counter = 0;
 	average = 0;
 	prev_count = 0;
-	// Todo: Send Note Offs for any active notes ..
+	//// Todo: Send Note Offs for any active notes ..
 	clock_stable = false;
 #if 0	// XXX FIXME! conditioned out for -Wunused
-		//     but this probably SHOULD actually do something!
+		/////     but this probably SHOULD actually do something!
 	if (seq_state == PLAYBACK){
 		seq_state == WAIT_FOR_SYNC;
 	}
 #endif
 }
 
+
 // Handle real time stop messages
-void real_time_stop(void)
+void real_time_stop(void) //BKP
 {
 	// Reset the sequencer position
-	reset_sequence();
-	// Cancel any schedules sequencer tasks
+	#ifndef EXTENDED_BANKS
+		reset_sequence();
+	#endif
+	//// Cancel any schedules sequencer tasks
 	cancel_task();
 }
 
@@ -467,7 +476,7 @@ void process_midi_packet(MIDI_EventPacket_t input_event) // Midi Feedback - Pack
 			uint8_t velocity = input_event.Data3;
 			
 			if (channel == midi_system_channel){
-				if (note < 4){
+				if (note < NUM_BANKS){
 					if (velocity == 127){
 						change_encoder_bank(note);
 					}
@@ -501,7 +510,7 @@ void process_midi_packet(MIDI_EventPacket_t input_event) // Midi Feedback - Pack
 			process_element_midi(channel, SEND_CC, cc_number, cc_value, true);
 			
 			if (channel == midi_system_channel){
-				if (cc_number < 4){
+				if (cc_number < NUM_BANKS){
 					if (cc_value == 127){
 						change_encoder_bank(cc_number);
 					}
@@ -509,9 +518,11 @@ void process_midi_packet(MIDI_EventPacket_t input_event) // Midi Feedback - Pack
 			}
 			
 			// Handle Sequencer Controls in here
+			#ifndef EXTENDED_BANKS
 			if (channel == SEQ_CHANNEL){
 				process_seq_midi(cc_number, cc_value);
 			}
+			#endif
 		}
 		break;
 		case 0x4 :

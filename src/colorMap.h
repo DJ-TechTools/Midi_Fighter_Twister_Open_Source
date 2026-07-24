@@ -8,10 +8,10 @@
  *  using processing. Saturation & Lightness values were fixed at 1.0 & 0.5 
  *  respectively. 
  *
- * DJTT - MIDI Fighter Twister - Embedded Software License
- * Copyright (c) 2016: DJ Tech Tools
+ * DJTT - Midi Fighter Twister - Embedded Software License
+ * Copyright (c) 2026: DJ TechTools
  * Permission is hereby granted, free of charge, to any person owning or possessing 
- * a DJ Tech-Tools MIDI Fighter Twister Hardware Device to view and modify this source 
+ * a DJ TechTools Midi Fighter Twister Hardware Device to view and modify this source 
  * code for personal use. Person may not publish, distribute, sublicense, or sell 
  * the source code (modified or un-modified). Person may not use this source code 
  * or any diminutive works for commercial purposes. The permission to use this source 
@@ -24,14 +24,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */ 
 
-
 #ifndef COLORMAP_H_
 #define COLORMAP_H_
 
 	#include <ASF.H>
+	
+	extern const uint8_t (*activeColorMap)[3];
+	void colorMap_init(void);
 
-	const uint8_t colorMap8[256][3];
+	//const uint8_t colorMap8[256][3];
 	const uint8_t colorMap7[128][3];
+	const uint8_t colorMap64[128][3];
 	const uint8_t brightnessMap[128];
 	const uint8_t animationBrightnessMap[32];
 
