@@ -43,6 +43,8 @@
 	#define ENCODER_VALUE_SCALAR_DIRECT_FINE 25 // 25 values is 4 ticks per CC Value change
 	#define ENCODER_VALUE_SCALAR_VELOCITY_MIN 25
 	#define ENCODER_VALUE_SCALAR_VELOCITY_MAX 255
+
+	#define ENCODER_RELATIVE_TICKS_RESPONSIVE 2 // 2x per tick is approximately 178/100, best we can do
 	/*	Types: */
 	
 		typedef enum enc_control_type {
@@ -84,7 +86,7 @@
 		// Encoder Movement Type Enum
 		typedef enum enc_move_type {
 			DIRECT,
-			EMULATION,
+			EMULATION, // This is used for "responsive" as well
 			VELOCITY_SENSITIVE_ENC
 		} enc_move_type_t;
 		

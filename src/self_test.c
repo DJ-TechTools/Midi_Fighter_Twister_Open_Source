@@ -36,7 +36,9 @@
 #error "Cannot define both PCB & assembly test"
 #endif
 
-#define WHITE      (uint32_t) 0xCFFFA0
+//#define WHITE      (uint32_t) 0xCFFFA0
+// exponential-adjusted value
+#define WHITE      (uint32_t) 0x59FFA0
 
 #define PCB_TEST_PASSED_FLAG      0xA5
 #define ASSEMBLY_TEST_PASSED_FLAG 0x5A
