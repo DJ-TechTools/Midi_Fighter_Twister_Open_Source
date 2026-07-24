@@ -2,12 +2,12 @@
  * constants.h
  *
  * Created: 9/16/2013 4:34:41 PM
- *  Author: Michael 
+ * Author: Michael 
  *
- * DJTT - MIDI Fighter Twister - Embedded Software License
- * Copyright (c) 2016: DJ Tech Tools
+ * DJTT - Midi Fighter Twister - Embedded Software License
+ * Copyright (c) 2026: DJ TechTools
  * Permission is hereby granted, free of charge, to any person owning or possessing 
- * a DJ Tech-Tools MIDI Fighter Twister Hardware Device to view and modify this source 
+ * a DJ TechTools Midi Fighter Twister Hardware Device to view and modify this source 
  * code for personal use. Person may not publish, distribute, sublicense, or sell 
  * the source code (modified or un-modified). Person may not use this source code 
  * or any diminutive works for commercial purposes. The permission to use this source 
@@ -27,13 +27,13 @@
 // Versioning: Version is Firmware Release Date
 //#define DEVICE_VERSION_YEAR 	0x2014
 //#define DEVICE_VERSION_MONTH	0x08
-//#define DEVICE_VERSION_DAY		0x13
+//#define DEVICE_VERSION_DAY	0x13
 //#define DEVICE_VERSION  		((DEVICE_VERSION_YEAR << 16) | (DEVICE_VERSION_MONTH << 8) | DEVICE_VERSION_DAY)
 
-#define DEVICE_VERSION_YEAR 	0x2023
-#define DEVICE_VERSION_MONTH	0x0C
-#define DEVICE_VERSION_DAY		0x11
-#define DEVICE_VERSION  		((DEVICE_VERSION_YEAR << 23) | (DEVICE_VERSION_MONTH << 6) | DEVICE_VERSION_DAY)
+#define DEVICE_VERSION_YEAR 	0x2026
+#define DEVICE_VERSION_MONTH	0x07
+#define DEVICE_VERSION_DAY		0x02
+#define DEVICE_VERSION  		((DEVICE_VERSION_YEAR << 16) | (DEVICE_VERSION_MONTH << 8) | DEVICE_VERSION_DAY)
 
 // 14bit device family ID, LSB first
 #define DEVICE_FAMILY_LSB		0x05
@@ -57,9 +57,8 @@
 
 // Channel & Offset Definitions -------------------------------------------
 
-// NB: these channel numbers start from ZERO!
-//     the corresponding user manual entries should be 1-based as they
-//     are in most user interfaces. (i.e. this number plus one)
+// Channel numbers start from ZERO! The corresponding user manual entries should be 1-based as they
+// are in most user interfaces. (i.e. this number plus one)
 
 #define ENCODER_ROTARY_CHANNEL	  0
 #define ENCODER_SWITCH_CHANNEL	  1
@@ -67,26 +66,34 @@
 #define SHIFT_OFFSET             44
 //#define ENCODER_CHANNEL	0 // Defined elsewhere
 //#define SWITCH_CHANNEL	1 // Defined elsewhere
-#define ENCODER_ANIMATION_CHANNEL 5
+//#define ENCODER_ANIMATION_CHANNEL 5  //old hardcoded value
 //#define DEF_MIDI_CHANNEL		3 // TWISTER DEFAULT SETTINGS Channel for changing banks
 //#define ENCODER_SHIFTED_CHANNEL 4 // Defined elsewhere
-#define SWITCH_ANIMATION_CHANNEL  2
+//#define SWITCH_ANIMATION_CHANNEL  2 //old hardcoded value
+
 
 // Debug & Test Harness Definitions ---------------------------------------
-
 #define SEQUENCER_TEST_CHANNEL   15
-
 #define CLOCK_TICK_RECEIVED		  0 
 #define SIXTEENTH_TRIGGER		  1
 
 
 // System Constants -------------------------------------------------------
+#define EXTENDED_BANKS  // Comment out to use sequencer + 4 banks
 
+#ifdef EXTENDED_BANKS
+#define NUM_BANKS 8
+#else
 #define NUM_BANKS 4
+#endif
+
+// Alternate USB ID Selection Constant
+
+#define USE_ALTERNATE_ID 0
+
 
 // EEPROM Constants -------------------------------------------------------
-
-#define EEPROM_LAYOUT			         7	//The EEPROM layout version
+#define EEPROM_LAYOUT			         8	//The EEPROM layout version
 
 // EEPROM Memory Locations for configurable settings
 
@@ -104,7 +111,15 @@
 #define EE_SUPER_KNOB_START			0x000A  //Super Knob Secondary CC start point
 #define EE_SUPER_KNOB_END			0x000B  //Super Knob Secondary CC start point
 #define EE_RGB_BRIGHTNESS			0x000C  //Global brightness setting for RGB
-#define EE_IND_BRIGHTNESS           0x000D  //Gobal brightness setting for indicators
+#define EE_IND_BRIGHTNESS           0x000D  //Global brightness setting for indicators
+#define EE_COLOR_MAP				0x000E  //Switch between 2016 and 2026 color palettes
+#define EE_ANIMATION_CHANNELS		0x000F	//Encoder and switch animation channels
+#define EE_SLEEP_SETTINGS			0x0010  // Timeout (6 bits) + Animation (2 bits)
+#define EE_BANK_ANIMATIONS_ENABLED	0x0011	// Bank change animations on/off
+
+#define PACK_SLEEP_SETTINGS(timeout, anim)   (((timeout) & 0x3F) | (((anim) & 0x03) << 6))
+#define GET_SLEEP_TIMEOUT(val)               ((val) & 0x3F)
+#define GET_SLEEP_ANIMATION(val)             (((val) >> 6) & 0x03)
 
 #define EE_ENC_SETTING_START		0x0020  //Start of encoder settings
 #define EE_HAS_DETENT_OFFSET		0x0000  //Has Detent setting offset			    //
@@ -117,8 +132,8 @@
 #define EE_ENC_MIDI_NUM_OFFSET		0x0007  //Switch MIDI Type & Number offset      //
 #define EE_ENC_MIDI_TYPE_OFFSET		0x0008  //Switch MIDI Type & Number offset      //
 #define EE_DETENT_COLOR_OFFSET		0x000B  //Detent Color offset                   //
-#define EE_INDICATOR_TYPE_OFFSET	0x000C  //Indicator Style offset                //
-#define EE_ACTIVE_COLOR_OFFSET		0x0002  //Active Color offset					//
+#define EE_INDICATOR_TYPE_OFFSET	0x000C  //Indicator Style offset
+#define EE_ACTIVE_COLOR_OFFSET		0x0002  //Active Color offset
 #define EE_INACTIVE_COLOR_OFFSET	0x0003  //Inactive Color offset
 
 #define ENC_EE_SIZE 8
@@ -129,21 +144,31 @@
 
 // Defaults -------------------------------------------------------------------
 // System 
-#define DEF_MIDI_CHANNEL		3
+#define DEF_MIDI_CHANNEL			3
 
 // Side Buttons
-#define DEF_BANK_SIDE_SW        true
-#define DEF_SIDE_SW_1_FUNC		CC_HOLD_SS
-#define DEF_SIDE_SW_2_FUNC      GLOBAL_BANK_DOWN
-#define DEF_SIDE_SW_3_FUNC      CC_HOLD_SS
-#define DEF_SIDE_SW_4_FUNC      CC_HOLD_SS
-#define DEF_SIDE_SW_5_FUNC		GLOBAL_BANK_UP
-#define DEF_SIDE_SW_6_FUNC      CC_HOLD_SS
+#define DEF_BANK_SIDE_SW			true
+#define DEF_SIDE_SW_1_FUNC			CC_HOLD_SS
+#define DEF_SIDE_SW_2_FUNC			GLOBAL_BANK_DOWN
+#define DEF_SIDE_SW_3_FUNC			CC_HOLD_SS
+#define DEF_SIDE_SW_4_FUNC			CC_HOLD_SS
+#define DEF_SIDE_SW_5_FUNC			GLOBAL_BANK_UP
+#define DEF_SIDE_SW_6_FUNC			CC_HOLD_SS
 
-#define DEF_SUPER_START_VALUE    63
-#define DEF_SUPER_END_VALUE     127
-#define DEF_RGB_BRIGHTNESS	    127
-#define DEF_IND_BRIGHTNESS	    127
+#define DEF_SUPER_START_VALUE		63
+#define DEF_SUPER_END_VALUE			127
+#define DEF_RGB_BRIGHTNESS			127
+#define DEF_IND_BRIGHTNESS			127
+#define DEF_COLOR_MAP				0x00
+#define DEF_ENCODER_ANIMATION_CH    5
+#define DEF_SWITCH_ANIMATION_CH     2
+
+#define DEF_SLEEP_TIMEOUT			7		// Index 7 = 60 minutes
+#define DEF_SLEEP_ANIMATION			1		// Default 0 = lights off, 1 = rainbow wave
+#define DEF_SLEEP_SETTINGS			PACK_SLEEP_SETTINGS(DEF_SLEEP_TIMEOUT, DEF_SLEEP_ANIMATION)
+#define DEF_BANK_ANIMATIONS_ENABLED	true
+
+
 
 //Encoder
 #define DEF_ENC_DETENT          false
@@ -157,16 +182,29 @@
 #define DEF_ACTIVE_COLOR		51
 #define DEF_INACTIVE_COLOR      1
 
-// !Summer2016Update mark: Default Colors (first used in build 20160622
-#define DEF_ACTIVE_COLOR_BANK1		25
-#define DEF_INACTIVE_COLOR_BANK1      113
-#define DEF_ACTIVE_COLOR_BANK2		81
-#define DEF_INACTIVE_COLOR_BANK2      63
-#define DEF_ACTIVE_COLOR_BANK3		25
-#define DEF_INACTIVE_COLOR_BANK3      100
-#define DEF_ACTIVE_COLOR_BANK4		25
-#define DEF_INACTIVE_COLOR_BANK4      0
-
+#define DEF_ACTIVE_COLOR_BANK1_CLASSIC 25
+#define DEF_INACTIVE_COLOR_BANK1_CLASSIC 5
+// Bank 2
+#define DEF_ACTIVE_COLOR_BANK2_CLASSIC 25
+#define DEF_INACTIVE_COLOR_BANK2_CLASSIC 84
+// Bank 3
+#define DEF_ACTIVE_COLOR_BANK3_CLASSIC 25
+#define DEF_INACTIVE_COLOR_BANK3_CLASSIC 53
+// Bank 4
+#define DEF_ACTIVE_COLOR_BANK4_CLASSIC 25
+#define DEF_INACTIVE_COLOR_BANK4_CLASSIC 13
+// Bank 5
+#define DEF_ACTIVE_COLOR_BANK5_CLASSIC 25
+#define DEF_INACTIVE_COLOR_BANK5_CLASSIC 75
+// Bank 6 Bank
+#define DEF_ACTIVE_COLOR_BANK6_CLASSIC 25
+#define DEF_INACTIVE_COLOR_BANK6_CLASSIC 67
+// Bank 7 Bank
+#define DEF_ACTIVE_COLOR_BANK7_CLASSIC 25
+#define DEF_INACTIVE_COLOR_BANK7_CLASSIC 106
+// Bank 8 Bank
+#define DEF_ACTIVE_COLOR_BANK8_CLASSIC 25
+#define DEF_INACTIVE_COLOR_BANK8_CLASSIC 44
 
 // !Summer2016Update mark: Default Colors (last used in build 20160615)
 //~ #define DEF_ACTIVE_COLOR_BANK1		25

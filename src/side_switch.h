@@ -4,10 +4,10 @@
  *  Created: 9/3/2013 1:01:14 PM
  *  Author: Michael Mitchell 
  *
- * DJTT - MIDI Fighter Twister - Embedded Software License
- * Copyright (c) 2016: DJ Tech Tools
+ * DJTT - Midi Fighter Twister - Embedded Software License
+ * Copyright (c) 2026: DJ TechTools
  * Permission is hereby granted, free of charge, to any person owning or possessing 
- * a DJ Tech-Tools MIDI Fighter Twister Hardware Device to view and modify this source 
+ * a DJ TechTools Midi Fighter Twister Hardware Device to view and modify this source 
  * code for personal use. Person may not publish, distribute, sublicense, or sell 
  * the source code (modified or un-modified). Person may not use this source code 
  * or any diminutive works for commercial purposes. The permission to use this source 
@@ -43,13 +43,21 @@
 			NOTE_TOGGLE_SS,
 			SHIFT_PAGE_1,
 			SHIFT_PAGE_2,
+			SHIFT_PAGE_1_TOGGLE,
+			SHIFT_PAGE_2_TOGGLE,
 			GLOBAL_BANK_UP,
 			GLOBAL_BANK_DOWN,
+			BANK_SELECT,
 			GLOBAL_BANK_1,
 			GLOBAL_BANK_2,
 			GLOBAL_BANK_3,
 			GLOBAL_BANK_4,
+			GLOBAL_BANK_5,
+			GLOBAL_BANK_6,
+			GLOBAL_BANK_7,
+			GLOBAL_BANK_8,
 			CYCLE_BANK,
+
 		} side_sw_action_t;
 	
 		// Structure which hold side switch settings
@@ -75,6 +83,7 @@
 		
 		void side_switch_init(void);
 		void side_switch_config(side_sw_settings_t *settings);
+		extern bool g_bank_select_active;
 		side_sw_settings_t* get_side_switch_config(void);
 		void process_side_switch_input(void);
 		
@@ -82,5 +91,8 @@
 		op_mode_t get_op_mode(void);
 		
 		//Internal Functions
+		bool get_bank_select_active(void);
+		void set_bank_select_active(bool value);
+		void draw_bank_select_overlay(void);
 
 #endif /* SIDE_SWITCH_H_ */

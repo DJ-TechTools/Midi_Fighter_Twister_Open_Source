@@ -4,10 +4,10 @@
  * Created: 10/14/2013 10:32:32 AM
  *  Author: Michael 
  *
- * DJTT - MIDI Fighter Twister - Embedded Software License
- * Copyright (c) 2016: DJ Tech Tools
+ * DJTT - Midi Fighter Twister - Embedded Software License
+ * Copyright (c) 2026: DJ TechTools
  * Permission is hereby granted, free of charge, to any person owning or possessing 
- * a DJ Tech-Tools MIDI Fighter Twister Hardware Device to view and modify this source 
+ * a DJ TechTools Midi Fighter Twister Hardware Device to view and modify this source 
  * code for personal use. Person may not publish, distribute, sublicense, or sell 
  * the source code (modified or un-modified). Person may not use this source code 
  * or any diminutive works for commercial purposes. The permission to use this source 
@@ -27,8 +27,9 @@
 /*	Includes: */
 
 	#include <asf.h>
-	
+	#ifndef EXTENDED_BANKS
 	#include "sequencer.h"
+
 	#include "sequencer_input.h"
 	
 	#include "display_driver.h"
@@ -62,5 +63,5 @@
 	void run_pattern_memory_display(uint8_t idx);
 	
 	uint16_t make_effect_indicator_pattern(uint8_t master_level, uint8_t step_level);
-
+	#endif
 #endif /* SEQUENCER_DISPLAY_H_ */
