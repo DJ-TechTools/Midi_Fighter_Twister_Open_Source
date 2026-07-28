@@ -1,0 +1,9 @@
+# Debug build folder (excluded entirely)
+Debug/
+
+# macOS / editor cruft
+.DS_Store
+.vs/
+
+# Atmel Studio generated
+*.componentinfo.xml
