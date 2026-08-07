@@ -1,5 +1,5 @@
-# Debug build folder (excluded entirely)
 Debug/
+Release/src
 
 # macOS / editor cruft
 .DS_Store
