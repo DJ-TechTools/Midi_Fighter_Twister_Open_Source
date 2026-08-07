@@ -4,6 +4,8 @@
     #include <asf.h>
 
     bool native_mode_is_active(void);
+    //toggles native mode on/off (e.g. from a hardware button combo)
+    void native_mode_toggle(void);
 
     void native_mode_handle_sysex_command(uint8_t length, uint8_t* buffer);
     //returns true if the MIDI event was consumed by native mode

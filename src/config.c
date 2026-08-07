@@ -359,6 +359,8 @@ static void sysExCmdBulkXfer(uint8_t length, uint8_t* buffer) // Process/ParseSy
 static void sysExCmdNativeMode(uint8_t length, uint8_t* buffer)
 {
 	native_mode_handle_sysex_command(--length, buffer);
+}
+
 static void sysExCmdGetDeviceId(uint8_t length, uint8_t* buffer)
 {
 	if (length > 0 && buffer[0] == 0x0) {

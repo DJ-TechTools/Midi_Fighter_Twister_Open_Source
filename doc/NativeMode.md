@@ -4,7 +4,7 @@ The native mode enables extended bidirectional communication via MIDI for advanc
 - The native mode active state as well as the visual state can be remotely configured via well-defined CC/SysEx messages. (see [Remote setup messages](#remote-setup-messages))
 
 **Please notice the following**:
-- **You have to set the native mode to active first (via SysEx) before you can make use of any of these features!**
+- **You have to set the native mode to active first before you can make use of any of these features!** This can be done via SysEx (see below) or by pressing the two **bottom side buttons** together, which toggles native mode on/off.
 - It makes sense to deactivate native mode after use to return the device to normal operation.
 - All native-mode-specific configuration data sent to the device is (intentionally) lost after disconnecting the Midi Fighter Twister.
 
@@ -48,7 +48,7 @@ Set top right knob indicator position to 0%|0xB0 (1)| 0x03| 0
 Native mode SysEx messages in general are composed as follows:
 SysEx start|Manufacturer ID|Native mode|Command ID|Content|SysEx end
 --:|--:|--:|:--:|:--:|--:
-0xF0|0x000179|0x05|\<*commandId*\>|\<*content*\>|0xF7
+0xF0|0x000179|0x06|\<*commandId*\>|\<*content*\>|0xF7
 
 The \<*commandId*\> bytes define the setting whose value is set using the \<*content*\> bytes. The \<*commandId*\> assignments and basic structure of the corresponding \<*content*\> HEX bytes are defined as follows:
 \<*commandId*\>|Setting|\<*content*\> HEX bytes
@@ -62,7 +62,7 @@ Here the individual bytes \<*content*\> HEX bytes are two-letter literals:
 --:|--|:--:
 *aa*|Active|0: inactive / 1: active
 *ii*|Knob index|0-15: row by row
-*tt*|Indicator type|0: dot / 1: bar / 2: blended bar / 3: blended dot
+*tt*|Indicator type|0: dot / 1: bar / 2: blended bar / 3: spread bar
 *dd*|Detent|0: no detent / 1: has detent
 *cc*|Detent color|0-127: crossfade between red (0) and blue (127), ignored if no detent
 *rrggbb*|RGB LED color|Each component (R/G/B): 0-127
@@ -70,9 +70,9 @@ Here the individual bytes \<*content*\> HEX bytes are two-letter literals:
 Here are some useful example SysEx messages:
 Action|SysEx HEX bytes
 --|--
-Enter native mode|F0 000179 **05 00 01** F7
-Leave native mode|F0 000179 **05 00 00** F7
-Set top left knob RGB LED color to red |F0 000179 **05 0101 00 7F0000** F7
-Set top right knob RGB LED color to green |F0 000179 **05 0101 03 007F00** F7
-Setup top left knob indicator as bar without detent|F0 000179 **05 0100 00 010000** F7
-Setup top left knob indicator as dot with blue detent|F0 000179 **05 0100 00 00017F** F7
+Enter native mode|F0 000179 **06 00 01** F7
+Leave native mode|F0 000179 **06 00 00** F7
+Set top left knob RGB LED color to red |F0 000179 **06 0101 00 7F0000** F7
+Set top right knob RGB LED color to green |F0 000179 **06 0101 03 007F00** F7
+Setup top left knob indicator as bar without detent|F0 000179 **06 0100 00 010000** F7
+Setup top left knob indicator as dot with blue detent|F0 000179 **06 0100 00 00017F** F7

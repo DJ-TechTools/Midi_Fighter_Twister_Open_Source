@@ -105,6 +105,12 @@ side_sw_settings_t* get_side_switch_config(void)
  * action for that switch.
  */
 
+// Native mode toggle combo: both bottom side buttons pressed simultaneously.
+// get_side_switch_state() bits 0-5 = SIDE_SW1..SW6; both-middle (sequencer) is
+// bits 1 & 4 (0x12), so the bottom pair is assumed to be bits 2 & 5 (0x24).
+// NOTE: verify on hardware -- if this fires on the TOP buttons, use 0x09 (bits 0 & 3).
+#define NATIVE_MODE_TOGGLE_COMBO 0x24
+
 void process_side_switch_input(void)  // MIDI Output: Digital Inputs -> Side Switches
 {
 	update_side_switch_state();
@@ -115,10 +121,21 @@ void process_side_switch_input(void)  // MIDI Output: Digital Inputs -> Side Swi
 
 	//uint8_t enc_bank = current_encoder_bank();
 	
+	// Native mode toggle: both bottom side buttons at the same time.
+	// Checked before everything else and in either state, so it can also switch
+	// native mode back off. Fires once, on the edge that completes the combo.
+	if ((get_side_switch_state() & NATIVE_MODE_TOGGLE_COMBO) == NATIVE_MODE_TOGGLE_COMBO) {
+		if ((prev_side_switch_state & NATIVE_MODE_TOGGLE_COMBO) != NATIVE_MODE_TOGGLE_COMBO) {
+			native_mode_toggle();
+		}
+		prev_side_switch_state = get_side_switch_state();
+		return;
+	}
+
 	// Check for Sequencer Activation Combination (Both Middle at same time)
 	#ifndef EXTENDED_BANKS
-  if (!native_mode_is_active() // native mode -> ignore sequencer
-	if ((get_side_switch_state() & 0x12) == 0x12){
+	if (!native_mode_is_active() // native mode -> ignore sequencer
+		&& (get_side_switch_state() & 0x12) == 0x12){
 		if ((prev_side_switch_state & 0x12) == 0x02 || (prev_side_switch_state & 0x12) == 0x10){
 			set_op_mode(sequencer);
 			init_seq_display();

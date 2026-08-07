@@ -162,6 +162,18 @@ static void native_mode_handle_sysex_set_native_mode(uint8_t length, uint8_t *bu
 	}
 }
 
+void native_mode_toggle(void)
+{
+	// Flip the active state (always a change), applying the same entry
+	// behaviour as the SysEx "set native mode" command.
+	if (native_mode_set_active(!native_mode_is_active()))
+	{
+		if (native_mode_is_active())
+			native_mode_reset_encoder_configs();
+		refresh_display();
+	}
+}
+
 static void native_mode_handle_sysex_enc_config(uint8_t length, uint8_t *buffer)
 {
 	if (!native_mode_is_active())

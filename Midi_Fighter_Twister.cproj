@@ -1052,6 +1052,12 @@
     <Compile Include="src\side_switch.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\native_mode.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\native_mode.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\colorMap.h">
       <SubType>compile</SubType>
     </Compile>
