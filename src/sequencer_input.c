@@ -4,10 +4,10 @@
  * Created: 10/14/2013 10:26:55 AM
  *  Author: Michael 
  *
- * DJTT - MIDI Fighter Twister - Embedded Software License
- * Copyright (c) 2016: DJ Tech Tools
+ * DJTT - Midi Fighter Twister - Embedded Software License
+ * Copyright (c) 2026: DJ TechTools
  * Permission is hereby granted, free of charge, to any person owning or possessing 
- * a DJ Tech-Tools MIDI Fighter Twister Hardware Device to view and modify this source 
+ * a DJ TechTools Midi Fighter Twister Hardware Device to view and modify this source 
  * code for personal use. Person may not publish, distribute, sublicense, or sell 
  * the source code (modified or un-modified). Person may not use this source code 
  * or any diminutive works for commercial purposes. The permission to use this source 
@@ -102,7 +102,7 @@ void process_sequencer_input(void)
 					switch (is_row_type(i)) {
 						case clipSelection: {
 							set_slot_clip(i,(uint8_t)(control_change_value/11.55f));	
-							SeqIndicatorValue[i]=control_change_value;	
+							SeqIndicatorValue[i]=control_change_value;
 						}
 						break;
 						case patternSelection: {
@@ -125,7 +125,7 @@ void process_sequencer_input(void)
 							// Update slot volume adjustment & indicator
 							slotSettings[i-8].volume = control_change_value;
 							SeqIndicatorValue[i]=(uint8_t)control_change_value;
-							//midi_stream_raw_cc(SEQ_CHANNEL, SEQ_FILTER_VALUE_OFFSET + i , control_change_value);
+							midi_stream_raw_cc(SEQ_CHANNEL, SEQ_FILTER_VALUE_OFFSET + (i+4) , control_change_value);
 						}
 						break;
 						case filterAdjust: {
@@ -135,7 +135,7 @@ void process_sequencer_input(void)
 							midi_stream_raw_cc(SEQ_CHANNEL, SEQ_FILTER_VALUE_OFFSET + (i-12) , control_change_value);
 						}
 						break;
-					}					
+					}				
 			} else if (sequencerDisplayState == PATTERN_EDIT) {
 				set_step_state(selectedSlot, i,  control_change_value);
 				set_encoder_indicator(i, control_change_value, false, BAR, 0);
@@ -216,7 +216,6 @@ void process_seq_enc_buttons(uint8_t switch_idx, bool downpress)
 				case filterAdjust: {
 					// Send the filter on/off toggle midi out
 					if (downpress) {
-					
 						if (slotSettings[switch_idx-12].filter_on){
 							midi_stream_raw_cc(SEQ_CHANNEL, SEQ_FILTER_ON_OFFSET+(switch_idx-12), 63);
 						} else {
@@ -320,6 +319,7 @@ void  process_seq_side_buttons(void)
 						default:{
 							if (!sw_down){
 								sequencerDisplayState = DEFAULT;
+								build_default_display();
 							}
 						}
 						break;
@@ -351,6 +351,7 @@ void  process_seq_side_buttons(void)
 						default:{
 							if (!sw_down){
 								sequencerDisplayState = DEFAULT;
+
 							}
 						}
 						break;
@@ -524,7 +525,9 @@ void load_pattern_memory(uint8_t memory_slot)
 	for(uint8_t i=0;i<4;++i){
 		
 		// Filter Amount and State
-		slotSettings[i].filter  = eeprom_read(addr) & 0x7F;
+		slotSettings[i].filter = eeprom_read(addr) & 0x7F;
+		//midi_stream_raw_cc(SEQ_CHANNEL, SEQ_FILTER_ON_OFFSET + (i+4), slotSettings[i].filter);
+		
 		// Because mapping uses toggle control we only send MIDI if the state changed
 		state = (eeprom_read(addr++) & 0x80) ? true : false;
 		if(slotSettings[i].filter_on != state){
@@ -532,8 +535,9 @@ void load_pattern_memory(uint8_t memory_slot)
 		}
 		
 		// Volume & Mute State
-		slotSettings[i].volume  = eeprom_read(addr) & 0x7F;
-		
+		slotSettings[i].volume = eeprom_read(addr) & 0x7F;
+		//midi_stream_raw_cc(SEQ_CHANNEL, SEQ_MUTE_OFFSET + (i+4), slotSettings[i].volume);
+
 		state = (eeprom_read(addr++) & 0x80) ? true : false;
 		if (slotSettings[i].mute_on != state){
 			midi_stream_raw_cc(SEQ_CHANNEL, SEQ_MUTE_OFFSET+i, 127);
@@ -598,7 +602,7 @@ void push_all_parameters(void){
 		midi_stream_raw_cc(SEQ_CHANNEL, SEQ_MUTE_OFFSET+i, 127 * slotSettings[i].mute_on);
 		midi_stream_raw_cc(SEQ_CHANNEL, SEQ_FILTER_ON_OFFSET+i, 127 * slotSettings[i].filter_on);
 		midi_stream_raw_cc(SEQ_CHANNEL, SEQ_SETTINGS_OFFSET + i+4, 127 * slotSettings[i].fx_send);
-		midi_stream_raw_cc(SEQ_CHANNEL,   SEQ_FILTER_VALUE_OFFSET + i , slotSettings[i].filter);
+		midi_stream_raw_cc(SEQ_CHANNEL, SEQ_FILTER_ON_OFFSET + i , slotSettings[i].filter);
 	}
 }
 

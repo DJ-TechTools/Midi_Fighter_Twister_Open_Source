@@ -1,0 +1,9 @@
+Debug/
+Release/src
+
+# macOS / editor cruft
+.DS_Store
+.vs/
+
+# Atmel Studio generated
+*.componentinfo.xml

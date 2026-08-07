@@ -4,10 +4,10 @@
  * Created: 8/2/2013 12:18:50 PM
  *  Author: Michael 
  *
- * DJTT - MIDI Fighter Twister - Embedded Software License
- * Copyright (c) 2016: DJ Tech Tools
+ * DJTT - Midi Fighter Twister - Embedded Software License
+ * Copyright (c) 2026: DJ TechTools
  * Permission is hereby granted, free of charge, to any person owning or possessing 
- * a DJ Tech-Tools MIDI Fighter Twister Hardware Device to view and modify this source 
+ * a DJ TechTools Midi Fighter Twister Hardware Device to view and modify this source 
  * code for personal use. Person may not publish, distribute, sublicense, or sell 
  * the source code (modified or un-modified). Person may not use this source code 
  * or any diminutive works for commercial purposes. The permission to use this source 
@@ -20,8 +20,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */ 
 
+#ifndef EXTENDED_BANKS
 #include "sequencer.h"
-
+#endif
 /*
 const uint8_t default_pattern[11][16] PROGMEM = {
 		
@@ -68,7 +69,7 @@ uint8_t truncate_value;
 bool seq_traktor_mode;
 
 seq_state_t seq_state;
-
+#ifndef EXTENDED_BANKS
 void sequencer_init(void)
 {	
 	// Initiase the slot parameters to their defaults
@@ -347,10 +348,13 @@ void seq_midi_clock_handler(int8_t tick)
  */
 void schedule_trigger(void)
 {
-	if (seq_traktor_mode){
-		schedule_task(send_triggers,  get_counts_per_tick()/2);		
-	} else {
-		schedule_task(send_triggers, (3*get_counts_per_tick())/4);		
+	uint32_t counts_per_tick = get_counts_per_tick();
+	uint16_t tcc1_counts = (uint16_t)(counts_per_tick / 4);
+
+	if (seq_traktor_mode) {
+		schedule_task(send_triggers, tcc1_counts / 2);
+		} else {
+		schedule_task(send_triggers, (3 * tcc1_counts) / 4);
 	}
 }
 
@@ -535,3 +539,4 @@ rowTypes_t is_row_type(uint8_t idx)
 	return false;
 }
 
+#endif

@@ -272,7 +272,14 @@ static void USB_Device_GetDescriptor(void)
 	#elif defined(USE_EEPROM_DESCRIPTORS)
 	Endpoint_Write_Control_EStream_LE(DescriptorPointer, DescriptorSize);
 	#elif defined(USE_FLASH_DESCRIPTORS)
-	Endpoint_Write_Control_PStream_LE(DescriptorPointer, DescriptorSize);
+if (USB_ControlRequest.wValue == ((DTYPE_String << 8) | 0x03))
+{
+    Endpoint_Write_Control_Stream_LE(DescriptorPointer, DescriptorSize);
+}
+else
+{
+    Endpoint_Write_Control_PStream_LE(DescriptorPointer, DescriptorSize);
+}
 	#else
 	if (DescriptorAddressSpace == MEMSPACE_FLASH)
 	  Endpoint_Write_Control_PStream_LE(DescriptorPointer, DescriptorSize);

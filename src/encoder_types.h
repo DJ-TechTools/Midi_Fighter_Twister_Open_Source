@@ -5,10 +5,10 @@
  *  Author: Michael
  *
  * Contains all encoder setting type defs and enums used in the Midi Fighter Twister Project 
- * DJTT - MIDI Fighter Twister - Embedded Software License
- * Copyright (c) 2016: DJ Tech Tools
+ * DJTT - Midi Fighter Twister - Embedded Software License
+ * Copyright (c) 2026: DJ TechTools
  * Permission is hereby granted, free of charge, to any person owning or possessing 
- * a DJ Tech-Tools MIDI Fighter Twister Hardware Device to view and modify this source 
+ * a DJ TechTools Midi Fighter Twister Hardware Device to view and modify this source 
  * code for personal use. Person may not publish, distribute, sublicense, or sell 
  * the source code (modified or un-modified). Person may not use this source code 
  * or any diminutive works for commercial purposes. The permission to use this source 
@@ -75,6 +75,8 @@
 		GLOBAL_BANK_2,
 		GLOBAL_BANK_3,
 		GLOBAL_BANK_4,
+		GLOBAL_BANK_5,
+		GLOBAL_BANK_6,
 	} sw_action_t;
 
 	// Structure which holds all encoder settings

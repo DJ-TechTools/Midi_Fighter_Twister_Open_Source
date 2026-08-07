@@ -13,10 +13,10 @@
  *  the prev buffer is compared with the MIDI buffer of the selected bank and any changes
  *  are added to the display update cue. 1 display update task is performed per main loop
  * 
- * DJTT - MIDI Fighter Twister - Embedded Software License
- * Copyright (c) 2016: DJ Tech Tools
+ * DJTT - Midi Fighter Twister - Embedded Software License
+ * Copyright (c) 2026: DJ TechTools
  * Permission is hereby granted, free of charge, to any person owning or possessing 
- * a DJ Tech-Tools MIDI Fighter Twister Hardware Device to view and modify this source 
+ * a DJ TechTools Midi Fighter Twister Hardware Device to view and modify this source 
  * code for personal use. Person may not publish, distribute, sublicense, or sell 
  * the source code (modified or un-modified). Person may not use this source code 
  * or any diminutive works for commercial purposes. The permission to use this source 
@@ -29,10 +29,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */ 
 
-
-
 #include <encoders.h>
 #include "native_mode.h"
+#include <side_switch.h>
 
 // Constants
 const uint16_t encoder_detent_limit_low = 6240; // 6240 - ok for all modes (6250 causes high res mode to hit '64' on the way up)
@@ -88,6 +87,7 @@ static int8_t g_dead_zone_size;
 encoder_config_t encoder_settings[BANKED_ENCODERS];
 //static encoder_config_t encoder_settings_transfer_buffer[1];
 
+
 // Private Functions
 uint8_t get_virtual_encoder_id (uint8_t bank, uint8_t encoder_id);
 void encoderConfig(encoder_config_t *settings);
@@ -124,7 +124,7 @@ uint8_t get_virtual_encoder_id (uint8_t bank, uint8_t encoder_id){
 	uint8_t virtual_encoder_id = encoder_id + bank*16;
 	uint8_t this_bank = bank;
 	if (encoder_is_in_shift_state(this_bank, encoder_id))
-		{virtual_encoder_id += 64;}
+		{virtual_encoder_id += BANKED_ENCODERS;}
 	return virtual_encoder_id;
 }
 
@@ -182,18 +182,6 @@ void transfer_encoder_values_to_other_banks(uint8_t current_bank){
 		transfer_this_encoder_value_to_other_banks(current_bank, this_encoder);
 	}
 }
-
-// !Summer2016Update: Removed input_map in favor of expanding encoder_settings table
-//~ void sync_input_map_to_output_map(uint8_t encoder_id)  // Accepted Encoder IDs are: 0-63 (16-encoders per each of the 4-banks)
-//~ {
-	//~ uint16_t addr = (ENC_SETTINGS_START_PAGE * 32);	// !Summer2016Update mark: eeprom address of Encoder Settings //of input_map
-	//~ addr+= ENC_EE_SIZE*encoder_id;
-	//~ input_map[encoder_id].sw_midi_channel  = (eeprom_read(addr)>> 4) & 0x0F;
-	//~ input_map[encoder_id].sw_midi_number   =  eeprom_read(addr+1) & 0x7F;
-	//~ input_map[encoder_id].ind_midi_channel = (eeprom_read(addr+6)>> 4) & 0x0F;
-	//~ input_map[encoder_id].ind_midi_number  =  eeprom_read(addr+7) & 0x7F;
-	//~ input_map[encoder_id].ind_shifted_midi_channel = (eeprom_read(addr+5)>> 4) & 0x0F;
-//~ }
 
 void encoders_init(void)
 {
@@ -391,7 +379,7 @@ void save_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_pt
 	}
 	if (cfg_ptr->encoder_shift_midi_channel < 0x80){ // !Summer2016Update shifted encoders midi channel
 		*buffer_ptr &= ~0xF0;
-		*buffer_ptr |= (0xF0 & (cfg_ptr->encoder_shift_midi_channel << 4));
+		*buffer_ptr |= (0xF0 & ((cfg_ptr->encoder_shift_midi_channel - 1) << 4));
 	}
 	buffer_ptr++; // Full
 	
@@ -454,9 +442,20 @@ void factory_reset_encoder_config(void)
 	enc_default.encoder_shift_midi_channel = DEF_ENC_SHIFT_CH; // !Summer2016Update: Shifted Encoders MIDI Channel
 	 
 	// !Summer2016Update active/inactive colors modified to be fixed per bank
-	uint8_t active_colors[NUM_BANKS] = {DEF_ACTIVE_COLOR_BANK1, DEF_ACTIVE_COLOR_BANK2, DEF_ACTIVE_COLOR_BANK3, DEF_ACTIVE_COLOR_BANK4};
-	uint8_t inactive_colors[NUM_BANKS] = {DEF_INACTIVE_COLOR_BANK1, DEF_INACTIVE_COLOR_BANK2, DEF_INACTIVE_COLOR_BANK3, DEF_INACTIVE_COLOR_BANK4};
+	uint8_t color_map = eeprom_read_byte((uint8_t*)EE_COLOR_MAP);
 
+	uint8_t active_colors[NUM_BANKS] = {
+		DEF_ACTIVE_COLOR_BANK1_CLASSIC, DEF_ACTIVE_COLOR_BANK2_CLASSIC,
+		DEF_ACTIVE_COLOR_BANK3_CLASSIC, DEF_ACTIVE_COLOR_BANK4_CLASSIC,
+		DEF_ACTIVE_COLOR_BANK5_CLASSIC, DEF_ACTIVE_COLOR_BANK6_CLASSIC,
+		DEF_ACTIVE_COLOR_BANK7_CLASSIC, DEF_ACTIVE_COLOR_BANK8_CLASSIC
+	};
+	uint8_t inactive_colors[NUM_BANKS] = {
+		DEF_INACTIVE_COLOR_BANK1_CLASSIC, DEF_INACTIVE_COLOR_BANK2_CLASSIC,
+		DEF_INACTIVE_COLOR_BANK3_CLASSIC, DEF_INACTIVE_COLOR_BANK4_CLASSIC,
+		DEF_INACTIVE_COLOR_BANK5_CLASSIC, DEF_INACTIVE_COLOR_BANK6_CLASSIC,
+		DEF_INACTIVE_COLOR_BANK7_CLASSIC, DEF_INACTIVE_COLOR_BANK8_CLASSIC
+	};
 	/* We then fill a page buffer with the compressed settings for 4 encoders
 	   (each encoder has 8 bytes of data allocated for its setting) */
 	uint8_t page_buffer[EEPROM_PAGE_SIZE];
@@ -470,7 +469,7 @@ void factory_reset_encoder_config(void)
 	
 	// Set up a Template Memory Page - (One Column of 4-Encoders) - with the default settings
 	// - buffer_ptr will be the actual table passed to the EEPROM Write Routine
-	// - It will be modded for each group of four encoders
+	// - It will be modified for each group of four encoders
 	for(uint8_t i=0;i<4;++i) {
 		// Switch Settings are saved in the first and second bytes
 		data_byte  = (enc_default.switch_action_type & 0x0F);
@@ -576,6 +575,7 @@ void send_midi_velocity_sensitive_encoder(uint8_t encoder_id, uint16_t output_va
  */                                                                
 void process_encoder_input(void)  // MIDI Output: Digital Inputs -> Encoders (Output)
 {
+	
 	uint16_t bit = 0x0001;
 	// Update the current encoder switch states
 	update_encoder_switch_state();
@@ -605,6 +605,7 @@ void process_encoder_input_rotary(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 	#endif
 
 	if (new_value) { // if Encoder Has Moved
+    reset_idle_timer();
 		if(native_mode_process_encoder_input_rotary(i, new_value))
 			return;
 			
@@ -854,9 +855,21 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
 #endif
 
 void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, uint16_t bit) {
-
+	
+	if (get_bank_select_active()) {
+		if (bit & get_enc_switch_down()) {
+			uint8_t target_bank = i % NUM_BANKS;
+			midi_stream_raw_cc(midi_system_channel, current_encoder_bank(), 0);
+			bank_change_animation(target_bank);
+			change_encoder_bank(target_bank);
+			midi_stream_raw_cc(midi_system_channel, target_bank, 127);
+			draw_bank_select_overlay();
+		}
+		return;
+	}
 
 	if (bit & get_enc_switch_down() || bit & get_enc_switch_up()) {
+		reset_idle_timer(); 
 	// If the switch state has changed due its action
 	
 		if(native_mode_process_encoder_input_switch_pressed(i, bit & get_enc_switch_down()))
@@ -926,6 +939,28 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 				if (bit & get_enc_switch_down()) {						
 					send_element_midi(SWITCH, banked_encoder_id , 127, true);
 				} else if (bit & get_enc_switch_up()){
+					send_element_midi(SWITCH, banked_encoder_id , 0, false);
+				}
+			}
+			break;				
+			case ENC_RESET_VALUE_INV:{
+				// Reset the encoder value
+				uint8_t control_change_value; // = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
+				if (encoder_settings[banked_encoder_id].has_detent){
+					raw_encoder_value[virtual_encoder_id] = 6300;
+					control_change_value = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
+					} else {
+					raw_encoder_value[virtual_encoder_id] = 12700;
+					control_change_value = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
+				}
+				// Send the updated encoder value
+				encoder_detent_counter[i] = 0;
+				send_element_midi(ENCODER, banked_encoder_id, control_change_value, true);  // Last Encoder call to 'send_element_midi', all others upgraded to 'send_encoder_midi'
+				indicator_value_buffer[encoder_bank][i]=control_change_value;
+				// Then send the switch action
+				if (bit & get_enc_switch_down()) {
+					send_element_midi(SWITCH, banked_encoder_id , 127, true);
+					} else if (bit & get_enc_switch_up()){
 					send_element_midi(SWITCH, banked_encoder_id , 0, false);
 				}
 			}
@@ -1208,7 +1243,8 @@ void send_element_midi(enc_control_type_t type, uint8_t banked_encoder_idx, uint
 				encoder_settings[banked_encoder_idx].switch_action_type == CC_TOGGLE ||
 				encoder_settings[banked_encoder_idx].switch_action_type == ENC_SHIFT_HOLD ||
 				encoder_settings[banked_encoder_idx].switch_action_type == ENC_SHIFT_TOGGLE ||
-				encoder_settings[banked_encoder_idx].switch_action_type == ENC_RESET_VALUE){
+				encoder_settings[banked_encoder_idx].switch_action_type == ENC_RESET_VALUE ||
+				encoder_settings[banked_encoder_idx].switch_action_type == ENC_RESET_VALUE_INV){
 					
 				uint8_t adj_val = adjust_switch_value_by_encoder_value(banked_encoder_idx, value, state);
 				//midi_stream_raw_cc(encoder_settings[banked_encoder_idx].switch_midi_channel, 
@@ -1285,7 +1321,7 @@ void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t
 				number = number - SHIFT_OFFSET;
 				uint8_t index  = number % 16;
 				uint8_t bank   = number / 16;
-				// Set the corresponding overide bit
+				// Set the corresponding override bit
 				shift_mode_midi_override[bank] |= (0x0001 << index);
 				if (value){
 					shift_mode_switch_state[bank] |= (0x0001 << index);
@@ -1296,7 +1332,7 @@ void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t
 		} 
 	} else {
 		// Otherwise the input is re mappable so scan through the input map for a match
-		for(uint8_t i=0;i<64;++i){
+		for(uint8_t i=0;i<BANKED_ENCODERS;++i){
 			// Search the input map for a match
 			if(encoder_settings[i].encoder_midi_number == number){  // !revision: reuse unused switch midi number for shifted encoder midi number
 				uint8_t output_type = encoder_settings[i].encoder_midi_type;
@@ -1383,7 +1419,7 @@ void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t
 							#endif
 						}
 					}
-				} else if (channel == ENCODER_ANIMATION_CHANNEL) { 
+				} else if (channel == GET_ENC_ANIM_CHANNEL(global_animation_channels)) { 
 					// Note: Animations are executed, so long as the number matches the switch
 					// - This allows backward compatibility with a very lenient earlier protocol for twister (2014 builds)
 					// Matched to encoder switch animation
@@ -1391,7 +1427,7 @@ void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t
 					#if ENABLE_DUPLICATE_INPUT_MAPPINGS == 0
 					return;
 					#endif
-				} else if (channel == SWITCH_ANIMATION_CHANNEL) {  // 2016: Dual software animation channels update
+				} else if (channel == GET_SW_ANIM_CHANNEL(global_animation_channels)) {  // 2016: Dual software animation channels update
 					// Matched to encoder switch animation
 					process_sw_animation_update(i, value);
 					#if ENABLE_DUPLICATE_INPUT_MAPPINGS == 0
@@ -1410,6 +1446,9 @@ void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t
 //void process_indicator_update(uint8_t idx, uint8_t value)
 void process_indicator_update(uint8_t idx, uint8_t value, uint8_t rx_msg_shifted_mapping) // !Summer2016Update: Added MIDI Feedback for Shifted Encoders
 {		
+	if (encoder_settings[idx].has_detent && value == 0) {
+		return;
+	}
 	uint8_t bank = idx / 16;
 	uint8_t encoder = idx % 16;
 	//uint16_t mask = 0x0001 << encoder;
@@ -1506,7 +1545,7 @@ void process_sw_encoder_shift_update(uint8_t idx, uint8_t value){
 	// - this must stay after the update of enc_switch_toggle_state!
 	uint8_t virtual_encoder_id = idx;
 	if (encoder_is_in_shift_state(bank, encoder))
-		{virtual_encoder_id += 64;}
+		{virtual_encoder_id += BANKED_ENCODERS;}
 	indicator_value_buffer[bank][encoder]=(uint8_t)(raw_encoder_value[virtual_encoder_id]/100); // update display buffer
 }
 

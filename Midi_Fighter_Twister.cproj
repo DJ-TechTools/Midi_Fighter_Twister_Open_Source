@@ -9,213 +9,213 @@
     <RootNamespace>$(MSBuildProjectName)</RootNamespace>
     <AsfFrameworkConfig>
       <framework-data>
-  <options>
-    <option id="common.boards" value="Add" config="" content-id="Atmel.ASF" />
-    <option id="common.drivers.nvm" value="Add" config="no_extmem" content-id="Atmel.ASF" />
-    <option id="common.services.basic.clock" value="Add" config="" content-id="Atmel.ASF" />
-    <option id="common.services.delay" value="Add" config="" content-id="Atmel.ASF" />
-    <option id="common.services.basic.fifo" value="Add" config="" content-id="Atmel.ASF" />
-    <option id="common.services.ioport" value="Add" config="" content-id="Atmel.ASF" />
-    <option id="common.services.basic.serial" value="Add" config="" content-id="Atmel.ASF" />
-    <option id="common.utils.interrupt" value="Add" config="" content-id="Atmel.ASF" />
-    <option id="xmega.drivers.dma" value="Add" config="" content-id="Atmel.ASF" />
-    <option id="xmega.drivers.tc" value="Add" config="" content-id="Atmel.ASF" />
-    <option id="xmega.drivers.usart" value="Add" config="" content-id="Atmel.ASF" />
-    <option id="xmega.drivers.wdt" value="Add" config="" content-id="Atmel.ASF" />
-    <option id="lufa.drivers.usb" value="Add" config="" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <option id="lufa.platform" value="Add" config="" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-  </options>
-  <configurations>
-    <configuration key="config.xmega.drivers.twi.mode" value="both" default="both" content-id="Atmel.ASF" />
-    <configuration key="lufa.drivers.usb.class.android.mode" value="host" default="host" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <configuration key="lufa.drivers.usb.class.audio.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <configuration key="lufa.drivers.usb.class.cdc.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <configuration key="lufa.drivers.usb.class.hid.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <configuration key="lufa.drivers.usb.class.ms.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <configuration key="lufa.drivers.usb.class.midi.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <configuration key="lufa.drivers.usb.class.printer.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <configuration key="lufa.drivers.usb.class.rndis.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <configuration key="lufa.drivers.usb.class.si.mode" value="host" default="host" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-  </configurations>
-  <files>
-    <file path="src/main.c" framework="" version="" source="common/applications/user_application/main.c" changed="False" content-id="Atmel.ASF" />
-    <file path="src/config/conf_board.h" framework="" version="" source="common/applications/user_application/user_board/config/conf_board.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/boards/user_board/init.c" framework="" version="" source="common/boards/user_board/init.c" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/boards/user_board/user_board.h" framework="" version="" source="common/boards/user_board/user_board.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/boards/board.h" framework="" version="3.9.1" source="common\boards\board.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/fifo/fifo.c" framework="" version="3.9.1" source="common\services\fifo\fifo.c" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/fifo/fifo.h" framework="" version="3.9.1" source="common\services\fifo\fifo.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/hugemem/avr8/avr8_hugemem.c" framework="" version="3.9.1" source="common\services\hugemem\avr8\avr8_hugemem.c" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/hugemem/hugemem.h" framework="" version="3.9.1" source="common\services\hugemem\hugemem.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/hugemem/avr8/hugemem.h" framework="" version="3.9.1" source="common\services\hugemem\avr8\hugemem.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/hugemem/generic/hugemem.h" framework="" version="3.9.1" source="common\services\hugemem\generic\hugemem.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/utils/make/Makefile.avr.in" framework="" version="3.9.1" source="common\utils\make\Makefile.avr.in" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/cpu/ccp.s" framework="" version="3.9.1" source="xmega\drivers\cpu\ccp.s" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/cpu/xmega_reset_cause.h" framework="" version="3.9.1" source="xmega\drivers\cpu\xmega_reset_cause.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/cpu/ccp.h" framework="" version="3.9.1" source="xmega\drivers\cpu\ccp.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/dma/dma.c" framework="" version="3.9.1" source="xmega\drivers\dma\dma.c" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/dma/dma.h" framework="" version="3.9.1" source="xmega\drivers\dma\dma.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/nvm/nvm.c" framework="" version="3.9.1" source="xmega\drivers\nvm\nvm.c" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/nvm/nvm_asm.s" framework="" version="3.9.1" source="xmega\drivers\nvm\nvm_asm.s" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/nvm/nvm.h" framework="" version="3.9.1" source="xmega\drivers\nvm\nvm.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/pmic/pmic.h" framework="" version="3.9.1" source="xmega\drivers\pmic\pmic.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/sleep/sleep.h" framework="" version="3.9.1" source="xmega\drivers\sleep\sleep.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/tc/tc.c" framework="" version="3.9.1" source="xmega\drivers\tc\tc.c" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/tc/tc.h" framework="" version="3.9.1" source="xmega\drivers\tc\tc.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/wdt/wdt.c" framework="" version="3.9.1" source="xmega\drivers\wdt\wdt.c" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/wdt/wdt.h" framework="" version="3.9.1" source="xmega\drivers\wdt\wdt.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/drivers/nvm/xmega/xmega_nvm.c" framework="" version="3.9.1" source="common\drivers\nvm\xmega\xmega_nvm.c" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/drivers/nvm/common_nvm.h" framework="" version="3.9.1" source="common\drivers\nvm\common_nvm.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/Config/conf_nvm.h" framework="" version="3.9.1" source="common\drivers\nvm\xmega\module_config\conf_nvm.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/clock/xmega/sysclk.c" framework="" version="3.9.1" source="common\services\clock\xmega\sysclk.c" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/clock/pll.h" framework="" version="3.9.1" source="common\services\clock\pll.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/clock/genclk.h" framework="" version="3.9.1" source="common\services\clock\genclk.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/clock/osc.h" framework="" version="3.9.1" source="common\services\clock\osc.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/clock/xmega/pll.h" framework="" version="3.9.1" source="common\services\clock\xmega\pll.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/clock/xmega/sysclk.h" framework="" version="3.9.1" source="common\services\clock\xmega\sysclk.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/clock/xmega/osc.h" framework="" version="3.9.1" source="common\services\clock\xmega\osc.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/clock/sysclk.h" framework="" version="3.9.1" source="common\services\clock\sysclk.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/Config/conf_clock.h" framework="" version="3.9.1" source="common\services\clock\xmega\module_config_usb\conf_clock.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/delay/delay.h" framework="" version="3.9.1" source="common\services\delay\delay.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/delay/xmega/cycle_counter.h" framework="" version="3.9.1" source="common\services\delay\xmega\cycle_counter.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/ioport/xmega/ioport_compat.c" framework="" version="3.9.1" source="common\services\ioport\xmega\ioport_compat.c" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/ioport/xmega/ioport_compat.h" framework="" version="3.9.1" source="common\services\ioport\xmega\ioport_compat.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/ioport/xmega/ioport.h" framework="" version="3.9.1" source="common\services\ioport\xmega\ioport.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/ioport/ioport.h" framework="" version="3.9.1" source="common\services\ioport\ioport.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/serial/usart_serial.c" framework="" version="3.9.1" source="common\services\serial\usart_serial.c" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/serial/xmega_usart/usart_serial.h" framework="" version="3.9.1" source="common\services\serial\xmega_usart\usart_serial.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/serial/serial.h" framework="" version="3.9.1" source="common\services\serial\serial.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/Config/conf_usart_serial.h" framework="" version="3.9.1" source="common\services\serial\xmega_usart\module_config\conf_usart_serial.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/sleepmgr/xmega/sleepmgr.c" framework="" version="3.9.1" source="common\services\sleepmgr\xmega\sleepmgr.c" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/sleepmgr/sleepmgr.h" framework="" version="3.9.1" source="common\services\sleepmgr\sleepmgr.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/services/sleepmgr/xmega/sleepmgr.h" framework="" version="3.9.1" source="common\services\sleepmgr\xmega\sleepmgr.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/Config/conf_sleepmgr.h" framework="" version="3.9.1" source="common\services\sleepmgr\xmega\module_config\conf_sleepmgr.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/utils/interrupt.h" framework="" version="3.9.1" source="common\utils\interrupt.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/utils/interrupt/interrupt_avr8.h" framework="" version="3.9.1" source="common\utils\interrupt\interrupt_avr8.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/common/utils/parts.h" framework="" version="3.9.1" source="common\utils\parts.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/usart/usart.c" framework="" version="3.9.1" source="xmega\drivers\usart\usart.c" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/drivers/usart/usart.h" framework="" version="3.9.1" source="xmega\drivers\usart\usart.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/utils/progmem.h" framework="" version="3.9.1" source="xmega\utils\progmem.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/utils/assembler.h" framework="" version="3.9.1" source="xmega\utils\assembler.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/utils/bit_handling/clz_ctz.h" framework="" version="3.9.1" source="xmega\utils\bit_handling\clz_ctz.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/utils/preprocessor/preprocessor.h" framework="" version="3.9.1" source="xmega\utils\preprocessor\preprocessor.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/utils/preprocessor/stringz.h" framework="" version="3.9.1" source="xmega\utils\preprocessor\stringz.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/utils/preprocessor/tpaste.h" framework="" version="3.9.1" source="xmega\utils\preprocessor\tpaste.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/utils/compiler.h" framework="" version="3.9.1" source="xmega\utils\compiler.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/utils/status_codes.h" framework="" version="3.9.1" source="xmega\utils\status_codes.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/utils/preprocessor/mrepeat.h" framework="" version="3.9.1" source="xmega\utils\preprocessor\mrepeat.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/ASF/xmega/utils/assembler/gas.h" framework="" version="3.9.1" source="xmega\utils\assembler\gas.h" changed="False" content-id="Atmel.ASF" />
-    <file path="src/LUFA/LUFA/Drivers/USB/USB.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\USB.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/Config/LUFAConfig.h" framework="" version="14.03.02" source="LUFA\CodeTemplates\LUFAConfig.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Common/Attributes.h" framework="" version="14.03.02" source="LUFA\Common\Attributes.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Common/Common.h" framework="" version="14.03.02" source="LUFA\Common\Common.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Version.h" framework="" version="14.03.02" source="LUFA\Version.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Common/Endianness.h" framework="" version="14.03.02" source="LUFA\Common\Endianness.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Common/Architectures.h" framework="" version="14.03.02" source="LUFA\Common\Architectures.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Common/CompilerSpecific.h" framework="" version="14.03.02" source="LUFA\Common\CompilerSpecific.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Common/BoardTypes.h" framework="" version="14.03.02" source="LUFA\Common\BoardTypes.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Common/ArchitectureSpecific.h" framework="" version="14.03.02" source="LUFA\Common\ArchitectureSpecific.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/AndroidAccessoryClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\AndroidAccessoryClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/AndroidAccessoryClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\AndroidAccessoryClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/AndroidAccessoryClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\AndroidAccessoryClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/AndroidAccessoryClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\AndroidAccessoryClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/AudioClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\AudioClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/AudioClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\AudioClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/AudioClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\AudioClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/AudioClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\AudioClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/AudioClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\AudioClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/AudioClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\AudioClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/CDCClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\CDCClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/CDCClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\CDCClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/CDCClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\CDCClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/CDCClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\CDCClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/CDCClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\CDCClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/CDCClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\CDCClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/HIDClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\HIDClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/HIDClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\HIDClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/HIDClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\HIDClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/HIDClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\HIDClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/HIDClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\HIDClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/HIDClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\HIDClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/MIDIClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\MIDIClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/MIDIClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\MIDIClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/MIDIClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\MIDIClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/MIDIClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\MIDIClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/MIDIClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\MIDIClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/MIDIClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\MIDIClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/MassStorageClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\MassStorageClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/MassStorageClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\MassStorageClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/MassStorageClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\MassStorageClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/MassStorageClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\MassStorageClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/MassStorageClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\MassStorageClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/MassStorageClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\MassStorageClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/PrinterClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\PrinterClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/PrinterClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\PrinterClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/PrinterClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\PrinterClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/PrinterClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\PrinterClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/PrinterClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\PrinterClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/PrinterClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\PrinterClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/RNDISClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\RNDISClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/RNDISClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\RNDISClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/RNDISClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\RNDISClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/RNDISClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\RNDISClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/RNDISClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\RNDISClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/RNDISClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\RNDISClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/StillImageClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\StillImageClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/StillImageClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\StillImageClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/StillImageClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\StillImageClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/StillImageClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\StillImageClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/HostStandardReq.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\HostStandardReq.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/USBTask.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\USBTask.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/DeviceStandardReq.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\DeviceStandardReq.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/HIDParser.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\HIDParser.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/ConfigDescriptors.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\ConfigDescriptors.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/Events.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Events.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/ConfigDescriptors.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\ConfigDescriptors.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/Device.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Device.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/Endpoint.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Endpoint.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/EndpointStream.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\EndpointStream.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/USBController.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\USBController.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/OTG.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\OTG.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/USBInterrupt.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\USBInterrupt.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/USBMode.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\USBMode.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/HIDParser.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\HIDParser.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/PipeStream.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\PipeStream.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/HIDReportData.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\HIDReportData.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/Pipe.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Pipe.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/StdRequestType.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\StdRequestType.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/DeviceStandardReq.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\DeviceStandardReq.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/HostStandardReq.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\HostStandardReq.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/Events.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Events.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/Host.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Host.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/USBTask.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\USBTask.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/StdDescriptors.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\StdDescriptors.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_RW.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Template\Template_Endpoint_RW.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_Control_R.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Template\Template_Endpoint_Control_R.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_Control_W.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Template\Template_Endpoint_Control_W.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Endpoint_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Endpoint_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBInterrupt_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\USBInterrupt_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/EndpointStream_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\EndpointStream_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Device_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Device_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBController_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\USBController_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Pipe_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Pipe_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBController_XMEGA.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\USBController_XMEGA.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Device_XMEGA.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Device_XMEGA.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Endpoint_XMEGA.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Endpoint_XMEGA.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/EndpointStream_XMEGA.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\EndpointStream_XMEGA.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBInterrupt_XMEGA.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\USBInterrupt_XMEGA.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Platform/Platform.h" framework="" version="14.03.02" source="LUFA\Platform\Platform.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-    <file path="src/LUFA/LUFA/Platform/XMEGA/ClockManagement.h" framework="" version="14.03.02" source="LUFA\Platform\XMEGA\ClockManagement.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
-  </files>
-  <documentation help="http://asf.atmel.com/docs/3.9.1/common.applications.user_application.user_board.xmegaau/html/index.html" />
-  <offline-documentation help="" />
-  <dependencies>
-    <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.26.0" />
-    <content-extension eid="0e160d5c-e331-48d9-850b-e0387912171b" uuidref="0e160d5c-e331-48d9-850b-e0387912171b" version="14.03.02" />
-  </dependencies>
-  <project id="common.applications.user_application.user_board.xmegaau" value="Add" config="" content-id="Atmel.ASF" />
-  <board id="board.user_board.xmegaau" value="Add" config="" content-id="Atmel.ASF" />
-</framework-data>
+        <options>
+          <option id="common.boards" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="common.drivers.nvm" value="Add" config="no_extmem" content-id="Atmel.ASF" />
+          <option id="common.services.basic.clock" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="common.services.delay" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="common.services.basic.fifo" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="common.services.ioport" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="common.services.basic.serial" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="common.utils.interrupt" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="xmega.drivers.dma" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="xmega.drivers.tc" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="xmega.drivers.usart" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="xmega.drivers.wdt" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="lufa.drivers.usb" value="Add" config="" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <option id="lufa.platform" value="Add" config="" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+        </options>
+        <configurations>
+          <configuration key="config.xmega.drivers.twi.mode" value="both" default="both" content-id="Atmel.ASF" />
+          <configuration key="lufa.drivers.usb.class.android.mode" value="host" default="host" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <configuration key="lufa.drivers.usb.class.audio.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <configuration key="lufa.drivers.usb.class.cdc.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <configuration key="lufa.drivers.usb.class.hid.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <configuration key="lufa.drivers.usb.class.ms.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <configuration key="lufa.drivers.usb.class.midi.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <configuration key="lufa.drivers.usb.class.printer.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <configuration key="lufa.drivers.usb.class.rndis.mode" value="host_device" default="host_device" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <configuration key="lufa.drivers.usb.class.si.mode" value="host" default="host" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+        </configurations>
+        <files>
+          <file path="src/main.c" framework="" version="" source="common/applications/user_application/main.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/config/conf_board.h" framework="" version="" source="common/applications/user_application/user_board/config/conf_board.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/boards/user_board/init.c" framework="" version="" source="common/boards/user_board/init.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/boards/user_board/user_board.h" framework="" version="" source="common/boards/user_board/user_board.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/boards/board.h" framework="" version="3.9.1" source="common\boards\board.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/fifo/fifo.c" framework="" version="3.9.1" source="common\services\fifo\fifo.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/fifo/fifo.h" framework="" version="3.9.1" source="common\services\fifo\fifo.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/hugemem/avr8/avr8_hugemem.c" framework="" version="3.9.1" source="common\services\hugemem\avr8\avr8_hugemem.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/hugemem/hugemem.h" framework="" version="3.9.1" source="common\services\hugemem\hugemem.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/hugemem/avr8/hugemem.h" framework="" version="3.9.1" source="common\services\hugemem\avr8\hugemem.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/hugemem/generic/hugemem.h" framework="" version="3.9.1" source="common\services\hugemem\generic\hugemem.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/utils/make/Makefile.avr.in" framework="" version="3.9.1" source="common\utils\make\Makefile.avr.in" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/cpu/ccp.s" framework="" version="3.9.1" source="xmega\drivers\cpu\ccp.s" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/cpu/xmega_reset_cause.h" framework="" version="3.9.1" source="xmega\drivers\cpu\xmega_reset_cause.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/cpu/ccp.h" framework="" version="3.9.1" source="xmega\drivers\cpu\ccp.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/dma/dma.c" framework="" version="3.9.1" source="xmega\drivers\dma\dma.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/dma/dma.h" framework="" version="3.9.1" source="xmega\drivers\dma\dma.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/nvm/nvm.c" framework="" version="3.9.1" source="xmega\drivers\nvm\nvm.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/nvm/nvm_asm.s" framework="" version="3.9.1" source="xmega\drivers\nvm\nvm_asm.s" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/nvm/nvm.h" framework="" version="3.9.1" source="xmega\drivers\nvm\nvm.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/pmic/pmic.h" framework="" version="3.9.1" source="xmega\drivers\pmic\pmic.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/sleep/sleep.h" framework="" version="3.9.1" source="xmega\drivers\sleep\sleep.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/tc/tc.c" framework="" version="3.9.1" source="xmega\drivers\tc\tc.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/tc/tc.h" framework="" version="3.9.1" source="xmega\drivers\tc\tc.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/wdt/wdt.c" framework="" version="3.9.1" source="xmega\drivers\wdt\wdt.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/wdt/wdt.h" framework="" version="3.9.1" source="xmega\drivers\wdt\wdt.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/drivers/nvm/xmega/xmega_nvm.c" framework="" version="3.9.1" source="common\drivers\nvm\xmega\xmega_nvm.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/drivers/nvm/common_nvm.h" framework="" version="3.9.1" source="common\drivers\nvm\common_nvm.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/Config/conf_nvm.h" framework="" version="3.9.1" source="common\drivers\nvm\xmega\module_config\conf_nvm.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/clock/xmega/sysclk.c" framework="" version="3.9.1" source="common\services\clock\xmega\sysclk.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/clock/pll.h" framework="" version="3.9.1" source="common\services\clock\pll.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/clock/genclk.h" framework="" version="3.9.1" source="common\services\clock\genclk.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/clock/osc.h" framework="" version="3.9.1" source="common\services\clock\osc.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/clock/xmega/pll.h" framework="" version="3.9.1" source="common\services\clock\xmega\pll.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/clock/xmega/sysclk.h" framework="" version="3.9.1" source="common\services\clock\xmega\sysclk.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/clock/xmega/osc.h" framework="" version="3.9.1" source="common\services\clock\xmega\osc.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/clock/sysclk.h" framework="" version="3.9.1" source="common\services\clock\sysclk.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/Config/conf_clock.h" framework="" version="3.9.1" source="common\services\clock\xmega\module_config_usb\conf_clock.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/delay/delay.h" framework="" version="3.9.1" source="common\services\delay\delay.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/delay/xmega/cycle_counter.h" framework="" version="3.9.1" source="common\services\delay\xmega\cycle_counter.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/ioport/xmega/ioport_compat.c" framework="" version="3.9.1" source="common\services\ioport\xmega\ioport_compat.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/ioport/xmega/ioport_compat.h" framework="" version="3.9.1" source="common\services\ioport\xmega\ioport_compat.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/ioport/xmega/ioport.h" framework="" version="3.9.1" source="common\services\ioport\xmega\ioport.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/ioport/ioport.h" framework="" version="3.9.1" source="common\services\ioport\ioport.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/serial/usart_serial.c" framework="" version="3.9.1" source="common\services\serial\usart_serial.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/serial/xmega_usart/usart_serial.h" framework="" version="3.9.1" source="common\services\serial\xmega_usart\usart_serial.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/serial/serial.h" framework="" version="3.9.1" source="common\services\serial\serial.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/Config/conf_usart_serial.h" framework="" version="3.9.1" source="common\services\serial\xmega_usart\module_config\conf_usart_serial.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/sleepmgr/xmega/sleepmgr.c" framework="" version="3.9.1" source="common\services\sleepmgr\xmega\sleepmgr.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/sleepmgr/sleepmgr.h" framework="" version="3.9.1" source="common\services\sleepmgr\sleepmgr.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/services/sleepmgr/xmega/sleepmgr.h" framework="" version="3.9.1" source="common\services\sleepmgr\xmega\sleepmgr.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/Config/conf_sleepmgr.h" framework="" version="3.9.1" source="common\services\sleepmgr\xmega\module_config\conf_sleepmgr.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/utils/interrupt.h" framework="" version="3.9.1" source="common\utils\interrupt.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/utils/interrupt/interrupt_avr8.h" framework="" version="3.9.1" source="common\utils\interrupt\interrupt_avr8.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common/utils/parts.h" framework="" version="3.9.1" source="common\utils\parts.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/usart/usart.c" framework="" version="3.9.1" source="xmega\drivers\usart\usart.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/drivers/usart/usart.h" framework="" version="3.9.1" source="xmega\drivers\usart\usart.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/utils/progmem.h" framework="" version="3.9.1" source="xmega\utils\progmem.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/utils/assembler.h" framework="" version="3.9.1" source="xmega\utils\assembler.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/utils/bit_handling/clz_ctz.h" framework="" version="3.9.1" source="xmega\utils\bit_handling\clz_ctz.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/utils/preprocessor/preprocessor.h" framework="" version="3.9.1" source="xmega\utils\preprocessor\preprocessor.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/utils/preprocessor/stringz.h" framework="" version="3.9.1" source="xmega\utils\preprocessor\stringz.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/utils/preprocessor/tpaste.h" framework="" version="3.9.1" source="xmega\utils\preprocessor\tpaste.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/utils/compiler.h" framework="" version="3.9.1" source="xmega\utils\compiler.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/utils/status_codes.h" framework="" version="3.9.1" source="xmega\utils\status_codes.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/utils/preprocessor/mrepeat.h" framework="" version="3.9.1" source="xmega\utils\preprocessor\mrepeat.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/xmega/utils/assembler/gas.h" framework="" version="3.9.1" source="xmega\utils\assembler\gas.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/LUFA/LUFA/Drivers/USB/USB.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\USB.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/Config/LUFAConfig.h" framework="" version="14.03.02" source="LUFA\CodeTemplates\LUFAConfig.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Common/Attributes.h" framework="" version="14.03.02" source="LUFA\Common\Attributes.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Common/Common.h" framework="" version="14.03.02" source="LUFA\Common\Common.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Version.h" framework="" version="14.03.02" source="LUFA\Version.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Common/Endianness.h" framework="" version="14.03.02" source="LUFA\Common\Endianness.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Common/Architectures.h" framework="" version="14.03.02" source="LUFA\Common\Architectures.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Common/CompilerSpecific.h" framework="" version="14.03.02" source="LUFA\Common\CompilerSpecific.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Common/BoardTypes.h" framework="" version="14.03.02" source="LUFA\Common\BoardTypes.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Common/ArchitectureSpecific.h" framework="" version="14.03.02" source="LUFA\Common\ArchitectureSpecific.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/AndroidAccessoryClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\AndroidAccessoryClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/AndroidAccessoryClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\AndroidAccessoryClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/AndroidAccessoryClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\AndroidAccessoryClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/AndroidAccessoryClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\AndroidAccessoryClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/AudioClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\AudioClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/AudioClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\AudioClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/AudioClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\AudioClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/AudioClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\AudioClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/AudioClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\AudioClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/AudioClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\AudioClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/CDCClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\CDCClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/CDCClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\CDCClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/CDCClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\CDCClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/CDCClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\CDCClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/CDCClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\CDCClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/CDCClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\CDCClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/HIDClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\HIDClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/HIDClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\HIDClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/HIDClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\HIDClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/HIDClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\HIDClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/HIDClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\HIDClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/HIDClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\HIDClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/MIDIClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\MIDIClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/MIDIClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\MIDIClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/MIDIClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\MIDIClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/MIDIClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\MIDIClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/MIDIClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\MIDIClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/MIDIClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\MIDIClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/MassStorageClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\MassStorageClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/MassStorageClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\MassStorageClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/MassStorageClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\MassStorageClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/MassStorageClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\MassStorageClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/MassStorageClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\MassStorageClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/MassStorageClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\MassStorageClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/PrinterClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\PrinterClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/PrinterClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\PrinterClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/PrinterClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\PrinterClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/PrinterClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\PrinterClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/PrinterClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\PrinterClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/PrinterClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\PrinterClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/RNDISClassDevice.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\RNDISClassDevice.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/RNDISClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\RNDISClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/RNDISClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\RNDISClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Device/RNDISClassDevice.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Device\RNDISClassDevice.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/RNDISClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\RNDISClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/RNDISClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\RNDISClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/StillImageClassHost.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\StillImageClassHost.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/StillImageClassCommon.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\StillImageClassCommon.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Host/StillImageClassHost.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Host\StillImageClassHost.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/StillImageClass.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\StillImageClass.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/HostStandardReq.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\HostStandardReq.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/USBTask.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\USBTask.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/DeviceStandardReq.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\DeviceStandardReq.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/HIDParser.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\HIDParser.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/ConfigDescriptors.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\ConfigDescriptors.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/Events.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Events.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/ConfigDescriptors.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\ConfigDescriptors.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/Device.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Device.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/Endpoint.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Endpoint.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/EndpointStream.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\EndpointStream.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/USBController.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\USBController.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/OTG.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\OTG.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/USBInterrupt.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\USBInterrupt.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/USBMode.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\USBMode.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/HIDParser.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\HIDParser.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/PipeStream.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\PipeStream.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Class/Common/HIDReportData.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Class\Common\HIDReportData.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/Pipe.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Pipe.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/StdRequestType.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\StdRequestType.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/DeviceStandardReq.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\DeviceStandardReq.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/HostStandardReq.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\HostStandardReq.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/Events.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Events.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/Host.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\Host.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/USBTask.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\USBTask.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/StdDescriptors.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\StdDescriptors.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_RW.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Template\Template_Endpoint_RW.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_Control_R.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Template\Template_Endpoint_Control_R.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_Control_W.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Template\Template_Endpoint_Control_W.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Endpoint_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Endpoint_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBInterrupt_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\USBInterrupt_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/EndpointStream_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\EndpointStream_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Device_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Device_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBController_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\USBController_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Pipe_XMEGA.c" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Pipe_XMEGA.c" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBController_XMEGA.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\USBController_XMEGA.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Device_XMEGA.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Device_XMEGA.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Endpoint_XMEGA.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\Endpoint_XMEGA.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/EndpointStream_XMEGA.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\EndpointStream_XMEGA.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBInterrupt_XMEGA.h" framework="" version="14.03.02" source="LUFA\Drivers\USB\Core\XMEGA\USBInterrupt_XMEGA.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Platform/Platform.h" framework="" version="14.03.02" source="LUFA\Platform\Platform.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+          <file path="src/LUFA/LUFA/Platform/XMEGA/ClockManagement.h" framework="" version="14.03.02" source="LUFA\Platform\XMEGA\ClockManagement.h" changed="False" content-id="0e160d5c-e331-48d9-850b-e0387912171b" />
+        </files>
+        <documentation help="http://asf.atmel.com/docs/3.9.1/common.applications.user_application.user_board.xmegaau/html/index.html" />
+        <offline-documentation help="" />
+        <dependencies>
+          <content-extension eid="atmel.asf" uuidref="Atmel.ASF" version="3.26.0" />
+          <content-extension eid="0e160d5c-e331-48d9-850b-e0387912171b" uuidref="0e160d5c-e331-48d9-850b-e0387912171b" version="14.03.02" />
+        </dependencies>
+        <project id="common.applications.user_application.user_board.xmegaau" value="Add" config="" content-id="Atmel.ASF" />
+        <board id="board.user_board.xmegaau" value="Add" config="" content-id="Atmel.ASF" />
+      </framework-data>
     </AsfFrameworkConfig>
     <avrdevice>ATxmega128A4U</avrdevice>
     <avrdeviceseries>xmegaau</avrdeviceseries>
@@ -235,8 +235,8 @@
     <UncachedRange />
     <OverrideVtorValue>exception_table</OverrideVtorValue>
     <BootSegment>2</BootSegment>
-    <eraseonlaunchrule>0</eraseonlaunchrule>
-    <avrtool>com.atmel.avrdbg.tool.simulator</avrtool>
+    <eraseonlaunchrule>1</eraseonlaunchrule>
+    <avrtool>com.atmel.avrdbg.tool.atmelice</avrtool>
     <avrtoolinterface>PDI</avrtoolinterface>
     <com_atmel_avrdbg_tool_jtagicemkii>
       <ToolOptions>
@@ -262,9 +262,9 @@
       <ToolName>JTAGICE3</ToolName>
     </com_atmel_avrdbg_tool_jtagice3plus>
     <preserveEEPROM>True</preserveEEPROM>
-    <avrtoolserialnumber />
+    <avrtoolserialnumber>J42700061734</avrtoolserialnumber>
     <avrdeviceexpectedsignature>0x1E9746</avrdeviceexpectedsignature>
-    <avrtoolinterfaceclock>0</avrtoolinterfaceclock>
+    <avrtoolinterfaceclock>4000000</avrtoolinterfaceclock>
     <com_atmel_avrdbg_tool_simulator>
       <ToolOptions xmlns="">
         <InterfaceProperties>
@@ -278,6 +278,27 @@
     </com_atmel_avrdbg_tool_simulator>
     <ResetRule>0</ResetRule>
     <EraseKey />
+    <com_atmel_avrdbg_tool_avrdragon>
+      <ToolOptions>
+        <InterfaceProperties>
+        </InterfaceProperties>
+        <InterfaceName>PDI</InterfaceName>
+      </ToolOptions>
+      <ToolType>com.atmel.avrdbg.tool.avrdragon</ToolType>
+      <ToolNumber>00A200045283</ToolNumber>
+      <ToolName>AVR Dragon</ToolName>
+    </com_atmel_avrdbg_tool_avrdragon>
+    <com_atmel_avrdbg_tool_atmelice>
+      <ToolOptions>
+        <InterfaceProperties>
+          <PdiClock>4000000</PdiClock>
+        </InterfaceProperties>
+        <InterfaceName>PDI</InterfaceName>
+      </ToolOptions>
+      <ToolType>com.atmel.avrdbg.tool.atmelice</ToolType>
+      <ToolNumber>J42700061734</ToolNumber>
+      <ToolName>Atmel-ICE</ToolName>
+    </com_atmel_avrdbg_tool_atmelice>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <ToolchainSettings>

@@ -4,10 +4,10 @@
  * Created: 6/28/2013 1:48:45 PM
  *  Author: Michael 
  *
- * DJTT - MIDI Fighter Twister - Embedded Software License
- * Copyright (c) 2016: DJ Tech Tools
+ * DJTT - Midi Fighter Twister - Embedded Software License
+ * Copyright (c) 2026: DJ TechTools
  * Permission is hereby granted, free of charge, to any person owning or possessing 
- * a DJ Tech-Tools MIDI Fighter Twister Hardware Device to view and modify this source 
+ * a DJ TechTools Midi Fighter Twister Hardware Device to view and modify this source 
  * code for personal use. Person may not publish, distribute, sublicense, or sell 
  * the source code (modified or un-modified). Person may not use this source code 
  * or any diminutive works for commercial purposes. The permission to use this source 
@@ -29,9 +29,21 @@
 
 #include <display_driver.h>
 
+extern uint8_t switch_color_buffer[NUM_BANKS][16];
+extern uint8_t indicator_value_buffer[NUM_BANKS][16];
+extern encoder_config_t encoder_settings[];
+
 /* Variables: */
 static uint8_t display_frame_buffer[DMA_BUFFER_SIZE]; 
 volatile uint8_t animation_counter;
+static uint8_t pulse_anim_origin = 0;
+
+static uint8_t  s_bank_anim_bank   = 0xFF;  // 0xFF = inactive
+static bool     s_bank_anim_fading = false; // true only during fade
+static uint16_t s_bank_anim_level  = 0;
+static const uint8_t bank_anim_columns[4][4]   = {{0,4,8,12},{1,5,9,13},{2,6,10,14},{3,7,11,15}};
+static const uint8_t bank_anim_quadrants[4][4] = {{0,1,4,5},{2,3,6,7},{8,9,12,13},{10,11,14,15}};
+
 volatile uint8_t display_frame_index;
 volatile uint8_t tick;
 
@@ -221,11 +233,15 @@ volatile uint16_t animation_frames_remaining = 0;
 
 void display_animation_timer(void)
 {
-	// Increment the timer compare value
 	tc_write_cc(&TCC0, TC_CCB, DISPLAY_ANIMATION_TIMER_PERIOD + tc_read_count(&TCC0));
 	
 	if (animation_frames_remaining > 0){
 		animation_frames_remaining--;
+	}
+	
+	// Idle timer (~1ms tick)
+	if (!sleep_mode_active) {
+		idle_timer++;
 	}
 }
 
@@ -312,7 +328,7 @@ void set_encoder_indicator_level(uint8_t encoder, uint8_t position,
 		// Calculate initial buffer address offset for this encoder
 		ptr += ((15-encoder)*2);
 		
-		for (uint8_t i=0;i<NUM_OF_FRAMES;++i)  // NUM_OF_FRAMES = 96 (MIDI Fighter Twister)
+		for (uint8_t i=0;i<NUM_OF_FRAMES;++i)  // NUM_OF_FRAMES = 96 (Midi Fighter Twister)
 		{
 			// Clear old data
 			ptr[0] |= 0xE3;
@@ -359,21 +375,60 @@ int build_indicator_pattern(indicator_bit_mask_t *result,
 							uint16_t type, 
 							bool has_detent, 
 							uint8_t detent_color)
-{
+	{
 	int8_t		dot_count;
 	uint32_t	bit_mask;
 	int8_t		frac;
 	bool		is_blended = false;
 	bool        is_bar_display     = false;
+	bool		is_spread = false;
+
 	float       remainder = 0;
 	
-	if (type == BLENDED_BAR){// || type == BLENDED_DOT_DISPLAY) {
+	if (type == BLENDED_BAR){// || type == BLENDED_DOT) {
 		is_blended = true;
 	}
 	if (type ==  BAR || type == BLENDED_BAR) {
 		is_bar_display = true;
 	}
 	
+	if (type == SPREAD_BAR) {
+		is_blended = true;
+		is_spread = true;
+	}
+	
+	if (is_spread) {
+		if (position <= 0) {
+			result->pattern_A = 0;
+			result->pattern_A_brightness = 0;
+			result->pattern_B = 0;
+			result->pattern_B_brightness = 0;
+			return 1;
+		}
+		bit_mask = 0x0400;
+		float spread_f = ((position - 1) * 5.0f) / 126.0f;
+		uint8_t spread = (uint8_t)spread_f;
+		float frac_f = spread_f - spread;
+		uint8_t blend = (uint8_t)(frac_f * 127);
+
+		for (int8_t i = 0; i < spread; i++) {
+			bit_mask |= (bit_mask >> 1) | (bit_mask << 1);
+		}
+
+		if (blend > 0 && spread < 5) {
+			uint32_t edge_mask = (bit_mask | (bit_mask >> 1) | (bit_mask << 1)) & ~bit_mask;
+			result->pattern_A = (uint16_t)(bit_mask | edge_mask);
+			result->pattern_A_brightness = blend;
+			result->pattern_B = (uint16_t)(bit_mask);
+			result->pattern_B_brightness = 127 - blend;
+			} else {
+			result->pattern_A = 0;
+			result->pattern_A_brightness = 0;
+			result->pattern_B = (uint16_t)(bit_mask);
+			result->pattern_B_brightness = 127;
+		}
+		return 1;
+	}
 	if (has_detent) {	
 		// 
 		if (position == 63 || position == 64 ) {
@@ -463,11 +518,18 @@ int build_indicator_pattern(indicator_bit_mask_t *result,
 		result->pattern_A = 0;
 		result->pattern_A_brightness = 0;
 	}
-	
-	if (type != BLENDED_DOT) {
-		result->pattern_B_brightness = 127;	
-	}
+	result->pattern_B_brightness = 127;
 	return 1;	
+}
+
+// Per-channel white balance gains (0..255, where 255 = 1.0x)
+#define GAIN_R 140
+#define GAIN_G 245
+#define GAIN_B 235
+
+static inline uint8_t scale8(uint8_t v, uint8_t s)
+{
+	return (uint8_t)(((uint16_t)v * (uint16_t)s) / 255u);
 }
 
 /** Builds RGB color bit patterns in the display frame buffer
@@ -479,58 +541,49 @@ int build_indicator_pattern(indicator_bit_mask_t *result,
 
 void build_rgb(uint8_t encoder, uint32_t color, uint8_t level)
 {
-
-#if 0 // exponents are now precomputed in colorMap7
+	#if 0
 	float red_pow = 5.0;
 	float green_pow = 2.50f;
 	float blue_pow = 1.0f;
-	
+
 	uint8_t red_byte = (uint8_t)((color >> 16) & 0xFF);
 	red_byte = 255 * pow( (((float)red_byte)/255.0f) , (red_pow));
-	
+
 	uint8_t green_byte = (uint8_t)((color >> 8) & 0xFF);
 	green_byte = 255 * pow( (((float)green_byte)/255.0f) , (green_pow));
-	
+
 	uint8_t blue_byte =  (uint8_t)(color & 0xFF);
 	blue_byte = 255 * pow( (((float)blue_byte)/255.0f) , (blue_pow));
-#else
+	#else
 	uint8_t red_byte = (uint8_t)((color >> 16) & 0xFF);
 	uint8_t green_byte = (uint8_t)((color >> 8) & 0xFF);
 	uint8_t blue_byte =  (uint8_t)(color & 0xFF);
-#endif
+	#endif
+
+	if (activeColorMap == colorMap64) {
+		red_byte   = scale8(red_byte,   GAIN_R);
+		green_byte = scale8(green_byte, GAIN_G);
+		blue_byte  = scale8(blue_byte,  GAIN_B);
+	}
 
 	if (level) {
-		// Dim the color to the specified level
-		red_byte = (red_byte * (level-1)) >> 8;
-		green_byte = (green_byte * (level-1) ) >> 8;
-		blue_byte = (blue_byte * (level-1)) >> 8;
+		red_byte   = (red_byte   * (level-1)) >> 8;
+		green_byte = (green_byte * (level-1)) >> 8;
+		blue_byte  = (blue_byte  * (level-1)) >> 8;
 	}
-	
+
 	uint8_t *ptr = display_frame_buffer;
-	
-	// Calculate initial byte offset
 	ptr += ((15-encoder)*2);
-	
+
 	for (uint8_t i=0;i<NUM_OF_FRAMES;++i)
 	{
-		// Set RGB bits to "OFF" first
-		*ptr |= 0x1C;		
-		// Covert to 8 Bit space
-		// FIXME: Rounding error? values probably need
-		//        to be tweaked if we fix it.
-		//        127/80 = 1
+		*ptr |= 0x1C;
 		uint8_t value = (i << 1)*(127/NUM_OF_FRAMES);
-		//uint8_t value = (i << 1);
-		
-		if (blue_byte > value){
-			*ptr &= ~0x04; 
-		}
-		if (red_byte > value){
-			*ptr &= ~0x08;
-		}
-		if (green_byte > value){
-			*ptr &= ~0x10;
-		}
+
+		if (blue_byte > value)  *ptr &= (uint8_t)~0x04;
+		if (red_byte > value)   *ptr &= (uint8_t)~0x08;
+		if (green_byte > value) *ptr &= (uint8_t)~0x10;
+
 		ptr += 32;
 	}
 }
@@ -605,7 +658,7 @@ void set_encoder_rgb(uint8_t encoder, uint8_t color)
 void set_encoder_rgb_level(uint8_t encoder, uint8_t color, uint8_t brightness)
 {
 	rgb_color_setting[encoder] = color;
-	uint32_t rgb_color = pgm_read_dword(&colorMap7[rgb_color_setting[encoder]][0]);
+	uint32_t rgb_color = pgm_read_dword(&activeColorMap[rgb_color_setting[encoder]][0]);
 	build_rgb(encoder, rgb_color, brightness);
 }
 
@@ -659,7 +712,7 @@ void run_encoder_animation(uint8_t encoder, uint8_t bank, uint8_t animation, uin
 		if (!strobe_animation(animation)) {
 			build_rgb(encoder, 0, false);
 		} else {
-			uint32_t color = pgm_read_dword(&colorMap7[rgb_color_setting[encoder]][0]);
+			uint32_t color = pgm_read_dword(&activeColorMap[rgb_color_setting[encoder]][0]);
 			build_rgb(encoder, color, false);
 		}
 		
@@ -667,13 +720,13 @@ void run_encoder_animation(uint8_t encoder, uint8_t bank, uint8_t animation, uin
 		
 		// RGB Pulse Animation
 		uint8_t level = pulse_animation(animation - 8);
-		uint32_t color = pgm_read_dword(&colorMap7[rgb_color_setting[encoder]][0]);
+		uint32_t color = pgm_read_dword(&activeColorMap[rgb_color_setting[encoder]][0]);
 		build_rgb(encoder, color, (uint8_t)(level));	
 			
 	} else if ((animation > 16) && (animation < 49)) {	
 		
 		// RGB Dimming	
-		uint32_t color = pgm_read_dword(&colorMap7[rgb_color_setting[encoder]][0]);
+		uint32_t color = pgm_read_dword(&activeColorMap[rgb_color_setting[encoder]][0]);
 		// Replace with a look up table used for ALL DIMING
 		uint8_t level = pgm_read_byte(&animationBrightnessMap[animation-17]);
 		build_rgb(encoder, color, (uint8_t)(level*2));
@@ -788,17 +841,9 @@ bool strobe_animation(uint8_t flash_rate)
 uint8_t pulse_animation(uint8_t pulse_rate)
 {
 	const float rgb_freq = .04927f;
-	static uint8_t rgb_step;
-	//original_code: rgb_step  = (uint8_t)(((animation_counter<<5)>>(8-pulse_rate)) & 0xFF);
-	if(!midi_clock_enabled){ // !Summer2016Update: midi_clock_animations
-		rgb_step  = (uint8_t)(((animation_counter<<5)>>(8-pulse_rate)) & 0xFF);
-	} 
-	else{
-		rgb_step  = (uint8_t)(((animation_counter<<5)>>(8-pulse_rate)) & 0xFF); // !review: << 5 is an estimate
-	}
-
+	uint8_t phase = (uint8_t)(animation_counter - pulse_anim_origin);
+	uint8_t rgb_step = (uint8_t)(((phase<<5)>>(8-pulse_rate)) & 0xFF);
 	uint8_t level = (uint8_t)(sin(rgb_step*rgb_freq)*126)+128;
-
 	return level;
 }
 
@@ -806,86 +851,129 @@ uint8_t pulse_animation(uint8_t pulse_rate)
  * A basic settings received animation
  * 
  */
+//void setting_confirmation_animation(uint32_t color)
+//{
+	//#define COLOR	0x00FF00
+	//
+	//// Clear display buffer
+	//clear_display_buffer();
+	//
+	//// Ensure the display interrupts are enabled
+	////PMIC.CTRL = PMIC_LOLVLEN_bm;
+	//
+	//// And the display timer is running
+	////display_enable();
+	//PMIC.CTRL |= ( PMIC_LOLVLEN_bm);
+	//
+	//// make sure the display is enabled
+	//display_enable();
+	//
+	//double freq = ((3.14159)/127);
+//
+	//static int8_t step1 = 0;
+	//static int8_t step2 = - 42;
+	//static int8_t step3 = - 84;
+	//static int8_t step4 = -127;
+	//
+	//uint8_t level1;
+	//uint8_t level2;
+	//uint8_t level3;
+	//uint8_t level4;
+	//
+	//for(uint8_t j=0;j<255;++j){
+	//
+		//if (step1 > -1){
+			//level1 = (uint8_t)(255*sin(step1*freq))+1;
+		//} else {
+			//level1 = 1;
+		//}
+		//
+		//if (step2 > -1){
+			//level2 = (uint8_t)(255*sin(step2*freq))+1;
+		//} else {
+			//level2 = 1;
+		//}
+		//if (step3 > -1){
+			//level3 = (uint8_t)(255*sin(step3*freq))+1;
+		//} else {
+			//level3 = 1;
+		//}
+		//if (step4 > -1){
+			//level4 = (uint8_t)(255*sin(step4*freq))+1;
+		//} else {
+			//level4 = 1;
+		//}
+	//
+		//build_rgb(0, color, level1);
+		//build_rgb(1, color, level1);
+		//build_rgb(2, color, level1);
+		//build_rgb(3, color, level1);
+		//
+		//build_rgb(4, color, level2);
+		//build_rgb(5, color, level2);
+		//build_rgb(6, color, level2);
+		//build_rgb(7, color, level2);
+		//
+		//build_rgb(8, color, level3);
+		//build_rgb(9, color, level3);
+		//build_rgb(10, color, level3);
+		//build_rgb(11, color, level3);
+		//
+		//build_rgb(12, color, level4);
+		//build_rgb(13, color, level4);
+		//build_rgb(14, color, level4);
+		//build_rgb(15, color, level4);
+		//
+		//step1+=1;
+		//step2+=1;
+		//step3+=1;
+		//step4+=1;
+		//
+		//Delay_MS(1);
+		//
+	//}
+//}
+
 void setting_confirmation_animation(uint32_t color)
 {
-	#define COLOR	0x00FF00
-	
-	// Clear display buffer
 	clear_display_buffer();
-	
-	// Ensure the display interrupts are enabled
-	//PMIC.CTRL = PMIC_LOLVLEN_bm;
-	
-	// And the display timer is running
-	//display_enable();
-	PMIC.CTRL |= ( PMIC_LOLVLEN_bm);
-	
-	// make sure the display is enabled
+	PMIC.CTRL |= PMIC_LOLVLEN_bm;
 	display_enable();
-	
-	double freq = ((3.14159)/127);
 
-	static int8_t step1 = 0;
-	static int8_t step2 = - 42;
-	static int8_t step3 = - 84;
-	static int8_t step4 = -127;
-	
-	uint8_t level1;
-	uint8_t level2;
-	uint8_t level3;
-	uint8_t level4;
-	
-	for(uint8_t j=0;j<255;++j){
-	
-		if (step1 > -1){
-			level1 = (uint8_t)(255*sin(step1*freq))+1;
-		} else {
-			level1 = 1;
+	double freq = (3.14159 / 127);
+
+	int16_t step1 = 0;
+	int16_t step2 = -32;
+	int16_t step3 = -64;
+	int16_t step4 = -96;
+
+	uint8_t level1, level2, level3, level4;
+
+	for (uint16_t j = 0; j < 224; ++j) {
+
+		level1 = (step1 > -1 && step1 < 128) ? (uint8_t)(255 * sin(step1 * freq)) + 1 : 1;
+		level2 = (step2 > -1 && step2 < 128) ? (uint8_t)(255 * sin(step2 * freq)) + 1 : 1;
+		level3 = (step3 > -1 && step3 < 128) ? (uint8_t)(255 * sin(step3 * freq)) + 1 : 1;
+		level4 = (step4 > -1 && step4 < 128) ? (uint8_t)(255 * sin(step4 * freq)) + 1 : 1;
+
+		for (uint8_t e = 0; e < 4; ++e) {
+			build_rgb(e, color, level1);
+			build_rgb(e + 4, color, level2);
+			build_rgb(e + 8, color, level3);
+			build_rgb(e + 12, color, level4);
+
+			set_indicator_pattern_level(e, 0xFFE0, level1 >> 1);
+			set_indicator_pattern_level(e + 4, 0xFFE0, level2 >> 1);
+			set_indicator_pattern_level(e + 8, 0xFFE0, level3 >> 1);
+			set_indicator_pattern_level(e + 12, 0xFFE0, level4 >> 1);
 		}
-		
-		if (step2 > -1){
-			level2 = (uint8_t)(255*sin(step2*freq))+1;
-		} else {
-			level2 = 1;
-		}
-		if (step3 > -1){
-			level3 = (uint8_t)(255*sin(step3*freq))+1;
-		} else {
-			level3 = 1;
-		}
-		if (step4 > -1){
-			level4 = (uint8_t)(255*sin(step4*freq))+1;
-		} else {
-			level4 = 1;
-		}
-	
-		build_rgb(0, color, level1);
-		build_rgb(1, color, level1);
-		build_rgb(2, color, level1);
-		build_rgb(3, color, level1);
-		
-		build_rgb(4, color, level2);
-		build_rgb(5, color, level2);
-		build_rgb(6, color, level2);
-		build_rgb(7, color, level2);
-		
-		build_rgb(8, color, level3);
-		build_rgb(9, color, level3);
-		build_rgb(10, color, level3);
-		build_rgb(11, color, level3);
-		
-		build_rgb(12, color, level4);
-		build_rgb(13, color, level4);
-		build_rgb(14, color, level4);
-		build_rgb(15, color, level4);
-		
-		step1+=1;
-		step2+=1;
-		step3+=1;
-		step4+=1;
-		
+
+		step1++;
+		step2++;
+		step3++;
+		step4++;
+
 		Delay_MS(1);
-		
 	}
 }
 
@@ -1024,6 +1112,130 @@ void rainbow_demo(void)
 	Delay_MS(150);
 }
 
+void bank_change_animation(uint8_t new_bank)
+{
+	if (g_bank_select_active) return;
+
+	const uint8_t *pattern = (new_bank < 4)
+	? bank_anim_columns[new_bank]
+	: bank_anim_quadrants[new_bank - 4];
+
+	for (uint8_t e = 0; e < 16; e++) {
+		build_rgb(e, 0, 1);
+		set_indicator_pattern(e, 0x0000);
+	}
+	for (uint8_t e = 0; e < 4; e++) {
+		build_rgb(pattern[e], 0x0000FF, 0);
+		set_indicator_pattern(pattern[e], 0xFBC0);
+		set_encoder_indent(pattern[e], 127);
+	}
+
+	s_bank_anim_bank   = new_bank;
+	s_bank_anim_fading = false;
+	s_bank_anim_level  = 0;
+	animation_frames_remaining = 60;  // flash hold time
+}
+
+void bank_change_animation_tick(void)
+{
+	if (s_bank_anim_bank == 0xFF) return;
+	if (animation_frames_remaining > 0) return;
+
+	if (!s_bank_anim_fading) {
+		// Flash done — switch bank, begin fade
+		for (uint8_t e = 0; e < 16; e++) {
+			build_rgb(e, 0, 1);
+			set_indicator_pattern(e, 0x0000);
+		}
+		change_encoder_bank(s_bank_anim_bank);
+		s_bank_anim_fading = true;
+		s_bank_anim_level  = 1;
+		animation_frames_remaining = 2;
+		return;
+	}
+
+	for (uint8_t e = 0; e < 16; e++) {
+		uint8_t banked_idx = e + s_bank_anim_bank * PHYSICAL_ENCODERS;
+		set_encoder_rgb_level(e, switch_color_buffer[s_bank_anim_bank][e], s_bank_anim_level);
+		set_encoder_indicator_level(e, indicator_value_buffer[s_bank_anim_bank][e],
+		encoder_settings[banked_idx].has_detent,
+		encoder_settings[banked_idx].indicator_display_type,
+		encoder_settings[banked_idx].detent_color, s_bank_anim_level);
+	}
+
+	s_bank_anim_level += 4;
+	if (s_bank_anim_level >= 127) {
+		s_bank_anim_bank   = 0xFF;
+		s_bank_anim_fading = false;
+		return;
+	}
+	animation_frames_remaining = 2;
+}
+
+// True only while the fade is running (flash phase doesn't need gating)
+bool bank_change_animation_fading(void)
+{
+	return s_bank_anim_fading;
+}
+
+const uint8_t sleep_timeout_map[8] = {0, 1, 3, 5, 10, 20, 30, 60};
+uint8_t sleep_timeout_minutes = 0;
+uint8_t sleep_animation_type = 0;
+
+void sleep_frame(void)
+{
+	switch (sleep_animation_type) {
+		case 0:  // Lights off
+		for (uint8_t enc = 0; enc < 16; ++enc) {
+			build_rgb(enc, 0, 1);
+			set_indicator_pattern(enc, 0x0000);
+		}
+		break;
+		case 1:  // Rainbow wave
+		rainbow_wave_frame();
+		break;
+		default:
+		break;
+	}
+}
+
+static uint16_t rainbow_phase = 0;
+
+void rainbow_wave_frame(void)
+{
+	double color_freq = (2.0 * 3.14159 / 256);
+
+	const uint8_t row_map[16] = {
+		6, 5, 4, 3,
+		5, 4, 3, 2,
+		4, 3, 2, 1,
+		3, 2, 1, 0
+	};
+
+	for (uint8_t enc = 0; enc < 16; ++enc) {
+		uint8_t phase = (rainbow_phase >> 1) + (row_map[enc] * 16);
+
+		uint8_t r = (uint8_t)(127 * sin(phase * color_freq)) + 128;
+		uint8_t g = (uint8_t)(127 * sin((phase + 85) * color_freq)) + 128;
+		uint8_t b = (uint8_t)(127 * sin((phase + 170) * color_freq)) + 128;
+
+		uint32_t color = ((uint32_t)r << 16) | ((uint32_t)g << 8) | b;
+
+		build_rgb(enc, color, 0);
+	}
+
+	rainbow_phase++;
+}
+volatile uint32_t idle_timer = 0;
+volatile bool sleep_mode_active = false;
+
+void reset_idle_timer(void)
+{
+	idle_timer = 0;
+	sleep_mode_active = false;
+    refresh_display();
+
+}
 
 // Linear interpolation between two values.
 // 8-bit fixed point values where 0 = 0.0f and 255 = 1.0f
@@ -1055,3 +1267,7 @@ uint16_t random16(void)
 	return g_seed16;
 }
 
+void reset_pulse_animation(void)
+{
+	pulse_anim_origin = animation_counter;
+}

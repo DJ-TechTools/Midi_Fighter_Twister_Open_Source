@@ -36,10 +36,10 @@
  */
 
 #include "Descriptors.h"
+#include "constants.h"
 
-#define USE_ALTERNATE_ID 0 // Alternate USB ID Selection Constant
 #if USE_ALTERNATE_ID != 0
-	#warning ALTERNATE USB ID is in USE!!!
+#warning ALTERNATE USB ID is in USE!!!
 #endif
 
 /** Device descriptor structure. This descriptor, located in FLASH memory, describes the overall
@@ -47,6 +47,7 @@
  *  number of device configurations. The descriptor is read out by the USB host when the enumeration
  *  process begins.
  */
+
 const USB_Descriptor_Device_t PROGMEM DeviceDescriptor =
 {
 	.Header                 = {.Size = sizeof(USB_Descriptor_Device_t), .Type = DTYPE_Device},
@@ -60,19 +61,19 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor =
 
 	.VendorID               = 0x2580,
 	#if USE_ALTERNATE_ID == 0
-		.ProductID              = 0x0007,
+	.ProductID              = 0x0007,
 	#elif USE_ALTERNATE_ID == 1
-		.ProductID              = 0x1007,
+	.ProductID              = 0x1007,
 	#elif USE_ALTERNATE_ID == 2
-		.ProductID              = 0x2007,
+	.ProductID              = 0x2007,
 	#else // USE_ALTERNATE_ID == 3
-		.ProductID              = 0x3007,
+	.ProductID              = 0x3007,
 	#endif
 	.ReleaseNumber          = VERSION_BCD(0,0,1),
 
 	.ManufacturerStrIndex   = STRING_ID_Manufacturer,
 	.ProductStrIndex        = STRING_ID_Product,
-	.SerialNumStrIndex      = NO_DESCRIPTOR,  
+	.SerialNumStrIndex      = STRING_ID_Serial,
 
 	.NumberOfConfigurations = FIXED_NUM_CONFIGURATIONS
 };
@@ -274,9 +275,9 @@ const USB_Descriptor_String_t PROGMEM LanguageString =
  */
 const USB_Descriptor_String_t PROGMEM ManufacturerString =
 {
-	.Header                 = {.Size = USB_STRING_LEN(13), .Type = DTYPE_String},
+	.Header                 = {.Size = USB_STRING_LEN(12), .Type = DTYPE_String},
 
-	.UnicodeString          = L"DJ Tech Tools"
+	.UnicodeString          = L"DJ TechTools"
 };
 
 /** Product descriptor string. This is a Unicode string containing the product's details in human readable form,
@@ -313,12 +314,14 @@ const USB_Descriptor_String_t PROGMEM ProductString =
 
 /** Device Serial Numbers - We have four to allow users to user multiple MF3Ds at once
  */ 
-const USB_Descriptor_String_t PROGMEM SerialString =
-{
-	.Header                 = {.Size = USB_STRING_LEN(8), 
-							   .Type = DTYPE_String},
-	.UnicodeString          = L"6666666A"
-};
+SerialString_t SerialString;
+
+//const USB_Descriptor_String_t PROGMEM SerialString =
+//{
+	//.Header                 = {.Size = USB_STRING_LEN(8), 
+							   //.Type = DTYPE_String},
+	//.UnicodeString          = L"6666666A"
+//};
 
 
 //const USB_Descriptor_String_t PROGMEM ProductString_Alternate = // !Summer2016Update: USB String Modification
@@ -338,8 +341,13 @@ const USB_Descriptor_String_t PROGMEM SerialString =
  *  USB host.
  */
 uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue,
-                                    const uint8_t wIndex,
-                                    const void** const DescriptorAddress)
+									const uint8_t wIndex,
+									const void** const DescriptorAddress
+									#if (defined(ARCH_HAS_MULTI_ADDRESS_SPACE) || defined(__DOXYGEN__)) && \
+									!(defined(USE_FLASH_DESCRIPTORS) || defined(USE_EEPROM_DESCRIPTORS) || defined(USE_RAM_DESCRIPTORS))
+									, uint8_t* const DescriptorMemorySpace
+									#endif
+									)
 {
 	const uint8_t  DescriptorType   = (wValue >> 8);
 	const uint8_t  DescriptorNumber = (wValue & 0xFF);
@@ -349,10 +357,11 @@ uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue,
 
 	switch (DescriptorType)
 	{
-		case DTYPE_Device:
-			Address = &DeviceDescriptor;
-			Size    = sizeof(USB_Descriptor_Device_t);
-			break;
+case DTYPE_Device:
+Address = &DeviceDescriptor;
+Size    = sizeof(USB_Descriptor_Device_t);
+break;
+
 		case DTYPE_Configuration:
 			Address = &ConfigurationDescriptor;
 			Size    = sizeof(USB_Descriptor_Configuration_t);
@@ -371,18 +380,17 @@ uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue,
 				case STRING_ID_Product:
 					Address = &ProductString;
 					Size    = pgm_read_byte(&ProductString.Header.Size);
-				//#if USE_ALTERNATE_ID == 0
-					//Address = &ProductString;
-					//Size    = pgm_read_byte(&ProductString.Header.Size);				
-				//#else
-					//Address = &ProductString_Alternate;
-					//Size    = pgm_read_byte(&ProductString_Alternate.Header.Size);
-				//#endif
-					break;
-				case STRING_ID_Serial:  // !Summer2016Update: could add serial number to descriptors (not necessary, used additional Product IDs)
-					Address = &SerialString;
-					Size    = pgm_read_byte(&SerialString.Header.Size);
-					break;
+				break;
+				//case STRING_ID_Serial:  // !Summer2016Update: could add serial number to descriptors (not necessary, used additional Product IDs)
+					//Address = &SerialString;
+					//Size = SerialString.Header.Size;
+					////Size    = pgm_read_byte(&SerialString.Header.Size);
+					//break;
+				case STRING_ID_Serial:
+				Address = &SerialString;
+				Size = SerialString.Header.Size;
+				//*DescriptorMemorySpace = MEMSPACE_RAM;
+				break;
 				
 			}
 

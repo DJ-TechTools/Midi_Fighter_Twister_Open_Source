@@ -3,10 +3,10 @@
  *
  * main.c: It all starts and ends here.
  *
- * DJTT - MIDI Fighter Twister - Embedded Software License
- * Copyright (c) 2016: DJ Tech Tools
+ * DJTT - Midi Fighter Twister - Embedded Software License
+ * Copyright (c) 2026: DJ TechTools
  * Permission is hereby granted, free of charge, to any person owning or possessing 
- * a DJ Tech-Tools MIDI Fighter Twister Hardware Device to view and modify this source 
+ * a DJ TechTools Midi Fighter Twister Hardware Device to view and modify this source 
  * code for personal use. Person may not publish, distribute, sublicense, or sell 
  * the source code (modified or un-modified). Person may not use this source code 
  * or any diminutive works for commercial purposes. The permission to use this source 
@@ -43,7 +43,9 @@
 #include "side_switch.h"
 #include "Descriptors.h"
 #include "jump_to_bootloader.h"
+#ifndef EXTENDED_BANKS
 #include "sequencer.h"
+#endif
 #include "self_test.h"
 
 //#define DEMO 
@@ -75,8 +77,23 @@ void Midifighter_Task(void); // -Wmissing-prototypes
 		}
 		break;
 		case normal:{
+			// Check for sleep mode - UNCOMMENT when setting to control timeout from MFU is implemented
+			
+			if (sleep_timeout_minutes > 0 && !sleep_mode_active) {
+				uint32_t timeout_ms = (uint32_t)sleep_timeout_minutes * 60000;
+				if (idle_timer >= timeout_ms) {
+					sleep_mode_active = true;
+					clear_display_buffer();
+				}
+			}
+
 			// Process any encoder movements or changes to the switch state
 			process_encoder_input();
+			
+			  if (sleep_mode_active) {
+				  sleep_frame();
+				  } else {
+			
 		
 			// Check for any change to the encoder state and refresh the display, because
 			// redrawing any display is slow we only check and update 1 encoder per main loop
@@ -92,13 +109,19 @@ void Midifighter_Task(void); // -Wmissing-prototypes
 			// < 16:latency = (16-20ms)
 			for(uint8_t encoder_display_counter = 0; encoder_display_counter < 6; encoder_display_counter++)
 			{
-				update_encoder_display();
+				if (!get_bank_select_active()) {
+					update_encoder_display();
+				}
 			}
 			#else
-			update_encoder_display();
+			if (!get_bank_select_active() && !bank_change_animation_fading()) {
+				update_encoder_display();
+			}
+			bank_change_animation_tick();
 			#endif
 			// Now we have dealt with the encoders we check for side switch state changes
 			// Side switches either send MIDI or carry out an action
+				  }
 			process_side_switch_input();
 		}
 		break;
@@ -115,9 +138,12 @@ void Midifighter_Task(void); // -Wmissing-prototypes
 		}
 		break;
 		case sequencer:{
+			#ifndef EXTENDED_BANKS
 			process_seq_side_buttons();
 			process_sequencer_input();
 			run_sequencer_display();
+			#endif
+
 		}
 		break;
 	}
@@ -235,7 +261,9 @@ int main (void)
 	encoders_init();
 	side_switch_init();	
 	display_init();
+	#ifndef EXTENDED_BANKS
 	sequencer_init();
+	#endif
 	
 	// Disable the display until we are connected and ready to start the 
 	// start-up animation.
@@ -282,6 +310,21 @@ int main (void)
 }
 
 /** Initializes ASF drivers */
+void init_serial_from_signature(void)
+{
+	uint8_t addrs[8] = {0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x10, 0x12};
+	SerialString.Header.Size = USB_STRING_LEN(16);
+	SerialString.Header.Type = DTYPE_String;
+	for (uint8_t i = 0; i < 8; i++) {
+		uint8_t b = nvm_read_production_signature_row(addrs[i]);
+		uint8_t hi = (b >> 4) & 0x0F;
+		uint8_t lo = b & 0x0F;
+		SerialString.UnicodeString[i*2]   = (hi >= 10) ? ('A' - 10 + hi) : ('0' + hi);
+		SerialString.UnicodeString[i*2+1] = (lo >= 10) ? ('A' - 10 + lo) : ('0' + lo);
+	}
+}
+
+
 void system_init()
 {	
 	/* Start the PLL to multiply the 2MHz RC oscillator to 32MHz and switch the CPU core to run from it */
@@ -293,7 +336,8 @@ void system_init()
 	XMEGACLK_StartDFLL(CLOCK_SRC_INT_RC32MHZ, DFLL_REF_INT_USBSOF, F_USB);
 
 	PMIC.CTRL = PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
-
+	// Serial number implementation
+    init_serial_from_signature();
 	USB_Init();
 }
 

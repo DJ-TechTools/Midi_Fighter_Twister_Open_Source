@@ -1,6 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
+Microsoft Visual Studio Solution File, Format Version 12.00
 # Atmel Studio Solution File, Format Version 11.00
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Midi_Fighter_Twister", "Midi_Fighter_Twister.cproj", "{1B227EAD-881D-432E-BED0-2CCDA343697D}"
 EndProject
 Global
@@ -13,6 +15,7 @@ Global
 		{1B227EAD-881D-432E-BED0-2CCDA343697D}.Debug|AVR.Build.0 = Debug|AVR
 		{1B227EAD-881D-432E-BED0-2CCDA343697D}.Release|AVR.ActiveCfg = Release|AVR
 		{1B227EAD-881D-432E-BED0-2CCDA343697D}.Release|AVR.Build.0 = Release|AVR
+		{1B227EAD-881D-432E-BED0-2CCDA343697D}.Release|AVR.Deploy.0 = Release|AVR
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

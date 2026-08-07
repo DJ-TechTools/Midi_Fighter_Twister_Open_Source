@@ -4,10 +4,10 @@
  * Created: 6/28/2013 1:49:00 PM
  *  Author: Michael
  * 
- * DJTT - MIDI Fighter Twister - Embedded Software License
- * Copyright (c) 2016: DJ Tech Tools
+ * DJTT - Midi Fighter Twister - Embedded Software License
+ * Copyright (c) 2026: DJ TechTools
  * Permission is hereby granted, free of charge, to any person owning or possessing 
- * a DJ Tech-Tools MIDI Fighter Twister Hardware Device to view and modify this source 
+ * a DJ TechTools Midi Fighter Twister Hardware Device to view and modify this source 
  * code for personal use. Person may not publish, distribute, sublicense, or sell 
  * the source code (modified or un-modified). Person may not use this source code 
  * or any diminutive works for commercial purposes. The permission to use this source 
@@ -105,8 +105,14 @@
 	
 	uint8_t lerp(uint8_t high, uint8_t low, uint8_t t);
 	
+	void bank_change_animation(uint8_t new_bank);
+	void bank_change_animation_tick(void);
+	bool bank_change_animation_fading(void);
+
 	uint16_t random16(void);
 	
+	void reset_pulse_animation(void);
+
 	
 	// External Functions - these are what you should use to interact with the display
 	void set_encoder_rgb(uint8_t encoder, uint8_t color);
@@ -130,9 +136,17 @@
 	void run_sparkle(uint8_t count);
 	
 	void rainbow_demo(void);
-	
+	//Sleep animations
+	extern volatile uint32_t idle_timer;
+	extern volatile bool sleep_mode_active;
+	extern uint8_t sleep_timeout_minutes;
+	extern uint8_t sleep_animation_type;
+	extern const uint8_t sleep_timeout_map[8];
 
-	
+
+	void reset_idle_timer(void);
+	void rainbow_wave_frame(void);
+	void sleep_frame(void);	
 
 #endif /* DISPLAY_DRIVER_H_ */
 

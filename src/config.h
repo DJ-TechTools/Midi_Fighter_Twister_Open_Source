@@ -4,10 +4,10 @@
  * Created: 9/16/2013 4:31:44 PM
  *  Author: Michael 
  *
- * DJTT - MIDI Fighter Twister - Embedded Software License
- * Copyright (c) 2016: DJ Tech Tools
+ * DJTT - Midi Fighter Twister - Embedded Software License
+ * Copyright (c) 2026: DJ TechTools
  * Permission is hereby granted, free of charge, to any person owning or possessing 
- * a DJ Tech-Tools MIDI Fighter Twister Hardware Device to view and modify this source 
+ * a DJ TechTools Midi Fighter Twister Hardware Device to view and modify this source 
  * code for personal use. Person may not publish, distribute, sublicense, or sell 
  * the source code (modified or un-modified). Person may not use this source code 
  * or any diminutive works for commercial purposes. The permission to use this source 
@@ -39,15 +39,16 @@
 	
 		// SysEx command constants
 			
-		#define SYSEX_COMMAND_PUSH_CONF    0x1
-		#define SYSEX_COMMAND_PULL_CONF    0x2
-		#define SYSEX_COMMAND_SYSTEM       0x3
-		#define SYSEX_COMMAND_BULK_XFER    0x4
-		#define SYSEX_COMMAND_NATIVE_MODE  0x5
+		#define SYSEX_COMMAND_PUSH_CONF     0x1
+		#define SYSEX_COMMAND_PULL_CONF     0x2
+		#define SYSEX_COMMAND_SYSTEM        0x3
+		#define SYSEX_COMMAND_BULK_XFER     0x4
+		#define SYSEX_COMMAND_GET_DEVICE_ID 0x5
+    #define SYSEX_COMMAND_NATIVE_MODE   0x6
 		
 	/* Typedefs: */
 		
-		#define GLOBAL_TABLE_SIZE 12
+		#define GLOBAL_TABLE_SIZE 18
 		// The global table holds the Twister global settings
 		typedef union {
 			struct {
@@ -64,16 +65,30 @@
 				uint8_t superEnd;
 				uint8_t rgb_brightness;
 				uint8_t ind_brightness;
+				uint8_t colorMap;
+				uint8_t enc_animChannels;
+				uint8_t sw_animChannels;
+				uint8_t sleepTimeout;
+				uint8_t sleepAnimation;
+				uint8_t bankAnimationsEnabled;
+				
 			};
 			uint8_t bytes[GLOBAL_TABLE_SIZE];
 		} global_tvtable_t;	
 		
-		// TOOD MOVE TO GLOBAL SETTINGS STRUCTURE
+		// TODO MOVE TO GLOBAL SETTINGS STRUCTURE
 		uint8_t global_super_knob_start;
 		uint8_t global_super_knob_end;
 		uint8_t global_rgb_brightness;
 		uint8_t global_ind_brightness;
 		uint8_t midi_system_channel;
+		uint8_t global_animation_channels;
+		uint8_t global_bank_animations_enabled;
+
+
+		#define GET_ENC_ANIM_CHANNEL(packed)  (((packed) >> 4) & 0x0F)
+		#define GET_SW_ANIM_CHANNEL(packed)   ((packed) & 0x0F)
+		#define PACK_ANIM_CHANNELS(enc, sw)   ((((enc) & 0x0F) << 4) | ((sw) & 0x0F))
 	/* Function Prototypes: */
 	
 		void config_init (void);

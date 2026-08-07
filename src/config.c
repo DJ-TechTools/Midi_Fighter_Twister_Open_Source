@@ -4,9 +4,9 @@
  *	Created: 9/16/2013 4:31:34 PM
  *  Authors: Daniel Kersten, Michael Mitchell
  *
- * Copyright (c) 2016: DJ Tech Tools
+ * Copyright (c) 2026: DJ TechTools
  * Permission is hereby granted, free of charge, to any person owning or possessing 
- * a DJ Tech-Tools MIDI Fighter Twister Hardware Device to view and modify this source 
+ * a DJ TechTools Midi Fighter Twister Hardware Device to view and modify this source 
  * code for personal use. Person may not publish, distribute, sublicense, or sell 
  * the source code (modified or un-modified). Person may not use this source code 
  * or any diminutive works for commercial purposes. The permission to use this source 
@@ -21,12 +21,15 @@
 
 #include "config.h"
 #include "native_mode.h"
+#include "display_driver.h"
 
 uint8_t global_super_knob_start;
 uint8_t global_super_knob_end;
+uint8_t global_bank_animations_enabled;
 
 
-// Because the utility relys does not differ between the tags for global and encoder
+
+// Because the utility relays does not differ between the tags for global and encoder
 // settings we have hacked this function, the first 10 tags are global, then 11 - 29 are
 // reserved for encoder. 30 + is global again
 
@@ -74,7 +77,14 @@ static void sysExCmdPushConfig (uint8_t length, uint8_t* buffer)
 	eeprom_write(EE_SUPER_KNOB_END, config.superEnd);	
 	eeprom_write(EE_RGB_BRIGHTNESS, config.rgb_brightness);
 	eeprom_write(EE_IND_BRIGHTNESS, config.ind_brightness);
-
+	eeprom_write(EE_COLOR_MAP, config.colorMap);
+	uint8_t enc_ch = config.enc_animChannels > 0 ? config.enc_animChannels - 1 : DEF_ENCODER_ANIMATION_CH;
+	uint8_t sw_ch  = config.sw_animChannels  > 0 ? config.sw_animChannels  - 1 : DEF_SWITCH_ANIMATION_CH;
+	eeprom_write(EE_ANIMATION_CHANNELS, PACK_ANIM_CHANNELS(enc_ch, sw_ch));
+	eeprom_write(EE_SLEEP_SETTINGS, PACK_SLEEP_SETTINGS(config.sleepTimeout, config.sleepAnimation));
+	eeprom_write(EE_BANK_ANIMATIONS_ENABLED, config.bankAnimationsEnabled);
+	real_time_start;
+	reset_idle_timer();
 	setting_confirmation_animation(0x00FF00);
 		
 	// Load the new settings from EEPROM
@@ -95,6 +105,7 @@ void send_config_data (void)
 	cpu_irq_disable();
 	
 	side_sw_settings_t* side_cfg = get_side_switch_config();
+	uint8_t sleep_settings = eeprom_read(EE_SLEEP_SETTINGS);
 	
 	cpu_irq_enable();
 	
@@ -113,6 +124,13 @@ void send_config_data (void)
 								9 , global_super_knob_end,
 								31, global_rgb_brightness,
 								32, global_ind_brightness,
+								33, eeprom_read(EE_COLOR_MAP),
+								34, GET_ENC_ANIM_CHANNEL(global_animation_channels) + 1,
+								35, GET_SW_ANIM_CHANNEL(global_animation_channels) + 1,
+								36, GET_SLEEP_TIMEOUT(sleep_settings),
+								37, GET_SLEEP_ANIMATION(sleep_settings),
+								38, global_bank_animations_enabled,
+
                                 0xf7};
 								
     midi_stream_sysex(sizeof(payload), payload);
@@ -214,6 +232,7 @@ static void sysExCmdBulkXfer(uint8_t length, uint8_t* buffer) // Process/ParseSy
 		
         uint8_t command = *buffer++; // Push or pull
         uint8_t sysex_tag = *buffer++; // What is being transferred
+        if (sysex_tag == 0) sysex_tag = NUM_BANKS * 16;
         
         if (command == 0) { // PUSH (Change/Update Settings)
             if (length > 5) {
@@ -264,7 +283,7 @@ static void sysExCmdBulkXfer(uint8_t length, uint8_t* buffer) // Process/ParseSy
 			uint8_t encoder = 0;
 			
 			// If the sysex tag is invalid reply with an empty message
-			if (sysex_tag > 0 || sysex_tag <= ((NUM_BANKS*16))) {
+			if (sysex_tag > 0 && sysex_tag <= ((NUM_BANKS*16))) {
 				bank = (sysex_tag-1) / 16;
 				encoder = (sysex_tag-1) % 16;
 			}
@@ -291,7 +310,7 @@ static void sysExCmdBulkXfer(uint8_t length, uint8_t* buffer) // Process/ParseSy
 									 21, enc_cfg.detent_color,	
 									 22, enc_cfg.indicator_display_type,
 									 23, enc_cfg.is_super_knob,
-									 24, enc_cfg.encoder_shift_midi_channel, // !Summer2016Update
+									 24, enc_cfg.encoder_shift_midi_channel+1, // !Summer2016Update
 									};
 				
 			// Total number of bytes to transfer
@@ -308,10 +327,12 @@ static void sysExCmdBulkXfer(uint8_t length, uint8_t* buffer) // Process/ParseSy
 				uint8_t size = bytes_remaining > 24 ? 24 : bytes_remaining;
 				bytes_remaining -= 24;
 				// Message template
+				uint8_t tag_out = (sysex_tag == (NUM_BANKS*16)) ? 0 : sysex_tag;
+
 				uint8_t payload[] = {0xf0, 0x00, MANUFACTURER_ID >> 8, MANUFACTURER_ID & 0x7f,
 								SYSEX_COMMAND_BULK_XFER,
 								0x0, // Command: 0x0 = push, 0x1 = pull
-								sysex_tag,
+								tag_out,
 								part, // Part 'part' of 'total'
 								total,
 								size, // 24 bytes maximum size
@@ -338,16 +359,36 @@ static void sysExCmdBulkXfer(uint8_t length, uint8_t* buffer) // Process/ParseSy
 static void sysExCmdNativeMode(uint8_t length, uint8_t* buffer)
 {
 	native_mode_handle_sysex_command(--length, buffer);
+static void sysExCmdGetDeviceId(uint8_t length, uint8_t* buffer)
+{
+	if (length > 0 && buffer[0] == 0x0) {
+		uint8_t addrs[8] = {0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x10, 0x12};
+		uint8_t payload[] = {
+			0xF0, 0x00, MANUFACTURER_ID >> 8, MANUFACTURER_ID & 0x7F,
+			SYSEX_COMMAND_GET_DEVICE_ID,
+			0x1,                                     // 0x0 = request, 0x1 = response
+			0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00,
+			0xF7
+		};
+		for (uint8_t i = 0; i < 8; i++) {
+			payload[6 + i] = nvm_read_production_signature_row(addrs[i]);
+		}
+		midi_stream_sysex(sizeof(payload), payload);
+	}
 }
 
 void config_init(void)
 {
-    // Install SysEx command handlers
-    sysex_install(SYSEX_COMMAND_PUSH_CONF, sysExCmdPushConfig);
-    sysex_install(SYSEX_COMMAND_PULL_CONF, sysExCmdPullConfig);
-    sysex_install(SYSEX_COMMAND_SYSTEM,    sysExCmdSystem);
-    sysex_install(SYSEX_COMMAND_BULK_XFER, sysExCmdBulkXfer);
-    sysex_install(SYSEX_COMMAND_NATIVE_MODE, sysExCmdNativeMode);
+  // Install SysEx command handlers
+  sysex_install(SYSEX_COMMAND_PUSH_CONF, sysExCmdPushConfig);
+  sysex_install(SYSEX_COMMAND_PULL_CONF, sysExCmdPullConfig);
+  sysex_install(SYSEX_COMMAND_SYSTEM,    sysExCmdSystem);
+  sysex_install(SYSEX_COMMAND_BULK_XFER, sysExCmdBulkXfer);
+  sysex_install(SYSEX_COMMAND_GET_DEVICE_ID, sysExCmdGetDeviceId);
+  sysex_install(SYSEX_COMMAND_NATIVE_MODE, sysExCmdNativeMode);
+	  
+
 	
 	// If our EEPROM layout has changed, reset everything.
 	if (eeprom_read(EE_EEPROM_VERSION) != EEPROM_LAYOUT) {
@@ -377,6 +418,14 @@ void load_config(void)
 	global_super_knob_end      = eeprom_read(EE_SUPER_KNOB_END);
 	global_rgb_brightness      = eeprom_read(EE_RGB_BRIGHTNESS);
 	global_ind_brightness      = eeprom_read(EE_IND_BRIGHTNESS);
+	colorMap_init();
+	global_animation_channels = eeprom_read(EE_ANIMATION_CHANNELS);
+	uint8_t sleep_settings = eeprom_read(EE_SLEEP_SETTINGS);
+	uint8_t timeout_index = GET_SLEEP_TIMEOUT(sleep_settings);
+	if (timeout_index > 7) timeout_index = 0;
+	sleep_timeout_minutes = sleep_timeout_map[timeout_index];
+	sleep_animation_type  = GET_SLEEP_ANIMATION(sleep_settings);
+	global_bank_animations_enabled = eeprom_read(EE_BANK_ANIMATIONS_ENABLED);
 	
 	side_switch_config(&side_sw_cfg);
 	
@@ -408,6 +457,10 @@ void config_factory_reset(void)
 	eeprom_write(EE_SUPER_KNOB_END, DEF_SUPER_END_VALUE);
 	eeprom_write(EE_RGB_BRIGHTNESS, DEF_RGB_BRIGHTNESS);
 	eeprom_write(EE_IND_BRIGHTNESS, DEF_IND_BRIGHTNESS);
+	eeprom_write(EE_COLOR_MAP, DEF_COLOR_MAP);
+	eeprom_write(EE_ANIMATION_CHANNELS, PACK_ANIM_CHANNELS(DEF_ENCODER_ANIMATION_CH, DEF_SWITCH_ANIMATION_CH));
+	eeprom_write(EE_SLEEP_SETTINGS, DEF_SLEEP_SETTINGS);
+	eeprom_write(EE_BANK_ANIMATIONS_ENABLED, DEF_BANK_ANIMATIONS_ENABLED);
 	
 	cpu_irq_enable();
 	
