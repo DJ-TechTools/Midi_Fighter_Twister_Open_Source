@@ -30,6 +30,7 @@
  */ 
 
 #include <encoders.h>
+#include "native_mode.h"
 #include <side_switch.h>
 
 // Constants
@@ -604,7 +605,10 @@ void process_encoder_input_rotary(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 	#endif
 
 	if (new_value) { // if Encoder Has Moved
-		reset_idle_timer();
+    reset_idle_timer();
+		if(native_mode_process_encoder_input_rotary(i, new_value))
+			return;
+			
 		// --- Detents and Deadzones
 		#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
 		if (process_encoder_input_rotary_detent(i, virtual_encoder_id, banked_encoder_id, new_value, cycle_count)) { }
@@ -867,6 +871,10 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 	if (bit & get_enc_switch_down() || bit & get_enc_switch_up()) {
 		reset_idle_timer(); 
 	// If the switch state has changed due its action
+	
+		if(native_mode_process_encoder_input_switch_pressed(i, bit & get_enc_switch_down()))
+			return;
+	
 		switch (encoder_settings[banked_encoder_id].switch_action_type)
 		{
 			case CC_TOGGLE:{}
@@ -1302,6 +1310,9 @@ void send_element_midi(enc_control_type_t type, uint8_t banked_encoder_idx, uint
 
 void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t value, uint8_t state) // Midi Feedback - Main Routine
 {
+	if(native_mode_consume_midi_event(type, channel, number, value))
+		return;
+	
 	// If the incoming midi is in the system channel then its mapping is fixed 
 	if (channel == midi_system_channel) {
 		// Fixed for notes for now
@@ -1611,9 +1622,10 @@ bool animation_buffer_conflict_exists(uint8_t bank, uint8_t encoder) {
 	}
 }
 
-void update_encoder_display(void)
-{	
-	static uint8_t idx = 0;
+static void update_encoder_display_single(const uint8_t idx)
+{
+	if(native_mode_update_encoder_display_single(idx))
+		return;
 	
 //#define FORCE_UPDATE
 #ifdef FORCE_UPDATE
@@ -1673,6 +1685,13 @@ void update_encoder_display(void)
 		set_encoder_rgb(idx, switch_color_buffer[encoder_bank][idx]);
 		prevSwAnimationValue[idx] = 0;
 	}
+}
+
+void update_encoder_display(void)
+{	
+	static uint8_t idx = 0;
+	
+	update_encoder_display_single(idx);
 	
 	// Increment the encoder index for next time
 	idx += 1;

@@ -39,11 +39,12 @@
 	
 		// SysEx command constants
 			
-		#define SYSEX_COMMAND_PUSH_CONF    0x1
-		#define SYSEX_COMMAND_PULL_CONF    0x2
-		#define SYSEX_COMMAND_SYSTEM       0x3
-		#define SYSEX_COMMAND_BULK_XFER    0x4
-		#define SYSEX_COMMAND_GET_DEVICE_ID  0x5
+		#define SYSEX_COMMAND_PUSH_CONF     0x1
+		#define SYSEX_COMMAND_PULL_CONF     0x2
+		#define SYSEX_COMMAND_SYSTEM        0x3
+		#define SYSEX_COMMAND_BULK_XFER     0x4
+		#define SYSEX_COMMAND_GET_DEVICE_ID 0x5
+    #define SYSEX_COMMAND_NATIVE_MODE   0x6
 		
 	/* Typedefs: */
 		

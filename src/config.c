@@ -20,6 +20,7 @@
  */ 
 
 #include "config.h"
+#include "native_mode.h"
 #include "display_driver.h"
 
 uint8_t global_super_knob_start;
@@ -355,6 +356,9 @@ static void sysExCmdBulkXfer(uint8_t length, uint8_t* buffer) // Process/ParseSy
     }
 }
 
+static void sysExCmdNativeMode(uint8_t length, uint8_t* buffer)
+{
+	native_mode_handle_sysex_command(--length, buffer);
 static void sysExCmdGetDeviceId(uint8_t length, uint8_t* buffer)
 {
 	if (length > 0 && buffer[0] == 0x0) {
@@ -376,12 +380,14 @@ static void sysExCmdGetDeviceId(uint8_t length, uint8_t* buffer)
 
 void config_init(void)
 {
-    // Install SysEx command handlers
-    sysex_install(SYSEX_COMMAND_PUSH_CONF, sysExCmdPushConfig);
-    sysex_install(SYSEX_COMMAND_PULL_CONF, sysExCmdPullConfig);
-    sysex_install(SYSEX_COMMAND_SYSTEM,    sysExCmdSystem);
-    sysex_install(SYSEX_COMMAND_BULK_XFER, sysExCmdBulkXfer);
-	sysex_install(SYSEX_COMMAND_GET_DEVICE_ID, sysExCmdGetDeviceId);
+  // Install SysEx command handlers
+  sysex_install(SYSEX_COMMAND_PUSH_CONF, sysExCmdPushConfig);
+  sysex_install(SYSEX_COMMAND_PULL_CONF, sysExCmdPullConfig);
+  sysex_install(SYSEX_COMMAND_SYSTEM,    sysExCmdSystem);
+  sysex_install(SYSEX_COMMAND_BULK_XFER, sysExCmdBulkXfer);
+  sysex_install(SYSEX_COMMAND_GET_DEVICE_ID, sysExCmdGetDeviceId);
+  sysex_install(SYSEX_COMMAND_NATIVE_MODE, sysExCmdNativeMode);
+	  
 
 	
 	// If our EEPROM layout has changed, reset everything.
