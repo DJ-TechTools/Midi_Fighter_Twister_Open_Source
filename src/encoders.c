@@ -128,6 +128,22 @@ uint8_t get_virtual_encoder_id (uint8_t bank, uint8_t encoder_id){
 	return virtual_encoder_id;
 }
 
+// Writes an encoder's raw value into the indicator (LED ring) display buffer.
+// Relative encoders are skipped on purpose: they have no local value, so
+// raw_encoder_value only ever carries detent bookkeeping for them (the detent
+// handler parks it at encoder_detent_limit_low/high on escape and the relative
+// path never moves it again). Their ring must keep whatever the host last sent.
+static void sync_indicator_from_raw(uint8_t bank, uint8_t encoder, uint8_t virtual_encoder_id)
+{
+	uint8_t banked_encoder_id = encoder + bank*PHYSICAL_ENCODERS;
+	uint8_t midi_type = encoder_settings[banked_encoder_id].encoder_midi_type;
+	if (midi_type == SEND_REL_ENC || midi_type == SEND_REL_ENC_MOUSE_EMU_DRAG ||
+		midi_type == SEND_REL_ENC_MOUSE_EMU_SCROLL) {
+		return;
+	}
+	indicator_value_buffer[bank][encoder] = (uint8_t)(raw_encoder_value[virtual_encoder_id]/100);
+}
+
 // encoder_maps_match: Compares MIDI Mapping Parameters common to both 'shift' and 'unshifted' states.
 // - returns true if the mappings match, otherwise returns false.
 bool encoder_maps_match(uint8_t this_banked_encoder_id, uint8_t that_banked_encoder_id) {
@@ -232,6 +248,11 @@ void encoders_init(void)
 			raw_encoder_value[i] = 0;
 			raw_encoder_value[i+BANKED_ENCODERS] = 0; // Also set the value of the 'shifted encoder')
 		}
+		// Seed the ring display too. Relative encoders no longer take their
+		// indicator value from raw_encoder_value, so without this a detent
+		// encoder would boot at 0 and light the LEDs hard left.
+		indicator_value_buffer[i/PHYSICAL_ENCODERS][i%PHYSICAL_ENCODERS] =
+				encoder_settings[i].has_detent ? 63 : 0;
 	}
 	
 	// Initialize MIDI input map for all encoders	
@@ -974,7 +995,7 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 					//switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_id].active_color;
 					
 					// Update the indicator display with the shift value
-					indicator_value_buffer[encoder_bank][i]=(uint8_t)(raw_encoder_value[virtual_encoder_id]/100);
+					sync_indicator_from_raw(encoder_bank, i, virtual_encoder_id);
 					// Send a Note On
 					//midi_stream_raw_note(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
 					midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
@@ -992,7 +1013,7 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 					//switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_id].inactive_color;
 					
 					// Update the indicator display with the base encoder value
-					indicator_value_buffer[encoder_bank][i]=(uint8_t)(raw_encoder_value[virtual_encoder_id]/100);
+					sync_indicator_from_raw(encoder_bank, i, virtual_encoder_id);
 					// Send a Note Off
 					//midi_stream_raw_note(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
 					midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
@@ -1020,7 +1041,7 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 						//switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_id].active_color;
 
 						// Update the indicator display with the shift value
-						indicator_value_buffer[encoder_bank][i]=(uint8_t)(raw_encoder_value[virtual_encoder_id]/100);
+						sync_indicator_from_raw(encoder_bank, i, virtual_encoder_id);
 						
 						// Send a CC
 						// !Summer2016Update: Encoder Shift Switches now output CCs on Switch Channel like other special function switches
@@ -1038,7 +1059,7 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 						//switch_color_buffer[encoder_bank][i] = encoder_settings[banked_encoder_id].inactive_color;
 						
 						// Update the indicator display with the base encoder value
-						indicator_value_buffer[encoder_bank][i]=(uint8_t)(raw_encoder_value[virtual_encoder_id]/100);
+						sync_indicator_from_raw(encoder_bank, i, virtual_encoder_id);
 						
 						// Send a CC
 						// !Summer2016Update: Encoder Shift Switches now output CCs on Switch Channel like other special function switches
@@ -1546,7 +1567,7 @@ void process_sw_encoder_shift_update(uint8_t idx, uint8_t value){
 	uint8_t virtual_encoder_id = idx;
 	if (encoder_is_in_shift_state(bank, encoder))
 		{virtual_encoder_id += BANKED_ENCODERS;}
-	indicator_value_buffer[bank][encoder]=(uint8_t)(raw_encoder_value[virtual_encoder_id]/100); // update display buffer
+	sync_indicator_from_raw(bank, encoder, virtual_encoder_id); // update display buffer
 }
 
 void process_sw_animation_update(uint8_t idx, uint8_t value)
@@ -1715,7 +1736,7 @@ void change_encoder_bank(uint8_t new_bank) // Change Bank
 		uint8_t new_virtual_encoder_id = get_virtual_encoder_id(new_bank, i);
 		
 		// Save previous raw values
-		indicator_value_buffer[encoder_bank][i] = raw_encoder_value[old_virtual_encoder_id] / 100;
+		sync_indicator_from_raw(encoder_bank, i, old_virtual_encoder_id);
 		
 		// Update raw values for new bank 
 		// - !Summer2016Update: Removed in favor of expansion of raw_encoder_value to include all banks and shifted encoders
@@ -1740,7 +1761,7 @@ void change_encoder_bank(uint8_t new_bank) // Change Bank
 		   //(encoder_settings[i].switch_action_type == ENC_SHIFT_TOGGLE)){
 			   //raw_shift_encoder_value[i] = enc_switch_midi_state[new_bank][i] * 100;
 		   //}
-		indicator_value_buffer[new_bank][i] = raw_encoder_value[new_virtual_encoder_id] / 100;
+		sync_indicator_from_raw(new_bank, i, new_virtual_encoder_id);
 
 		/* !Summer2016Update: Removed Double use of enc_switch_midi_state by expanding of raw_encoder_value table
 		 * // Check to see if encoder is in a shift state, and if so update its indicator

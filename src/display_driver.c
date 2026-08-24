@@ -1232,9 +1232,11 @@ volatile bool sleep_mode_active = false;
 void reset_idle_timer(void)
 {
 	idle_timer = 0;
-	sleep_mode_active = false;
-    refresh_display();
-
+	// Only rebuild the display when we are actually waking from sleep.
+	if (sleep_mode_active) {
+		sleep_mode_active = false;
+		refresh_display();
+	}
 }
 
 // Linear interpolation between two values.

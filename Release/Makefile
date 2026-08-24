@@ -145,6 +145,7 @@ C_SRCS +=  \
 ../src/sequencer_input.c \
 ../src/sysex.c \
 ../src/side_switch.c \
+../src/native_mode.c \
 ../src/encoders.c \
 ../src/midi.c \
 ../src/Descriptors.c \
@@ -218,6 +219,7 @@ src/sequencer_display.o \
 src/sequencer_input.o \
 src/sysex.o \
 src/side_switch.o \
+src/native_mode.o \
 src/encoders.o \
 src/midi.o \
 src/Descriptors.o \
@@ -282,6 +284,7 @@ src/sequencer_display.o \
 src/sequencer_input.o \
 src/sysex.o \
 src/side_switch.o \
+src/native_mode.o \
 src/encoders.o \
 src/midi.o \
 src/Descriptors.o \
@@ -346,6 +349,7 @@ src/sequencer_display.d \
 src/sequencer_input.d \
 src/sysex.d \
 src/side_switch.d \
+src/native_mode.d \
 src/encoders.d \
 src/midi.d \
 src/Descriptors.d \
@@ -410,6 +414,7 @@ src/sequencer_display.d \
 src/sequencer_input.d \
 src/sysex.d \
 src/side_switch.d \
+src/native_mode.d \
 src/encoders.d \
 src/midi.d \
 src/Descriptors.d \
@@ -432,6 +437,8 @@ LINKER_SCRIPT_DEP+=
 
 
 # AVR32/GNU C Compiler
+
+
 
 
 

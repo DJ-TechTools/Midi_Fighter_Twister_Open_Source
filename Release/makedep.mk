@@ -112,6 +112,8 @@ src\sysex.c
 
 src\side_switch.c
 
+src\native_mode.c
+
 src\encoders.c
 
 src\midi.c
