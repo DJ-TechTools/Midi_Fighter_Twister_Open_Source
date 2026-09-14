@@ -19,9 +19,12 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */ 
-#ifndef EXTENDED_BANKS
-
 	#include "sequencer_display.h"
+
+	// One definition for each variable that sequencer_display.h declares.
+	uint8_t  seqBeatColor;
+	// Points into the spare part of bank_arena. Refer to sequencer_alloc().
+	uint8_t *SeqIndicatorValue;
 
 	void init_seq_display(void)
 	{
@@ -331,4 +334,3 @@
 	
 		return (uint16_t)bit_pattern;
 	}
-#endif

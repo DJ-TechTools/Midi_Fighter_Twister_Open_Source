@@ -105,8 +105,16 @@ void do_task(void);
  *
  * Side Switch Pin Connections
  *
- * Side Switch 1 = PA.5, Side Switch 2 = PA.4, Side Switch 3 = PA.3
- * Side Switch 4 = PA.2, Side Switch 5 = PA.1, Side Switch 6 = PA.0
+ * Side Switch 1 = PA.2, Side Switch 2 = PA.1, Side Switch 3 = PA.0
+ * Side Switch 4 = PA.3, Side Switch 5 = PA.4, Side Switch 6 = PA.5
+ *
+ * The two sides are mirror images. The left column runs top to bottom as PA.2,
+ * PA.1, PA.0, and the right column as PA.3, PA.4, PA.5. This is the connector
+ * layout and not a mistake. Thus update_side_switch_state() must set the state
+ * bits one at a time, and cannot shift a port read.
+ *
+ * (An earlier version of this comment listed SW1 = PA.5 down to SW6 = PA.0.
+ * That was wrong. The definitions in input.h are the reference.)
  * 
  * Encoder Shift Register Pin Connections
  *

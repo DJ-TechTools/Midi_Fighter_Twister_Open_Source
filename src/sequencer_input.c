@@ -24,6 +24,12 @@
 
 bool shift_active = false;
 
+// One definition for each variable that sequencer_input.h declares. These
+// point into the spare part of bank_arena. Refer to sequencer_alloc().
+uint16_t      *sequencerRawValue;
+int8_t        *seq_detent_counter;
+slot_memory_t *slot_memory;
+
 uint16_t button_down_counter[4];
 int8_t   mod_level[4]; 
 

@@ -100,6 +100,10 @@ src\LUFA\LUFA\Drivers\USB\Core\XMEGA\USBController_XMEGA.c
 
 src\LUFA\LUFA\Drivers\USB\Core\XMEGA\USBInterrupt_XMEGA.c
 
+src\calibration.c
+
+src\setup_mode.c
+
 src\self_test.c
 
 src\sequencer.c

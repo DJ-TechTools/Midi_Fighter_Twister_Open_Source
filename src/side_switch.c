@@ -33,7 +33,9 @@
 static side_sw_settings_t side_sw_cfg;
 
 // Holds toggle state for switch if configured for MIDI toggle action
-static uint8_t side_switch_toggle_state[NUM_BANKS];
+// MAX_BANKS, not NUM_BANKS: this is one byte per bank, thus 4 bytes more at 8
+// banks. That is less than the cost of putting it in the arena.
+static uint8_t side_switch_toggle_state[MAX_BANKS];
 bool g_bank_select_active = false;
 static uint8_t g_bank_select_origin = 0;
 
@@ -106,9 +108,11 @@ side_sw_settings_t* get_side_switch_config(void)
  */
 
 // Native mode toggle combo: both bottom side buttons pressed simultaneously.
-// get_side_switch_state() bits 0-5 = SIDE_SW1..SW6; both-middle (sequencer) is
-// bits 1 & 4 (0x12), so the bottom pair is assumed to be bits 2 & 5 (0x24).
-// NOTE: verify on hardware -- if this fires on the TOP buttons, use 0x09 (bits 0 & 3).
+// get_side_switch_state() bits 0-5 are SIDE_SW1..SW6. Bits 0, 1 and 2 are the
+// left top, middle and bottom buttons. Bits 3, 4 and 5 are the right top,
+// middle and bottom buttons. Thus the bottom pair is bits 2 and 5. This agrees
+// with the hardware, self_test.c side_pattern[], doc/NativeMode.md, and the
+// sequencer combo below, which fires on the middle pair (0x12).
 #define NATIVE_MODE_TOGGLE_COMBO 0x24
 
 void process_side_switch_input(void)  // MIDI Output: Digital Inputs -> Side Switches
@@ -133,8 +137,8 @@ void process_side_switch_input(void)  // MIDI Output: Digital Inputs -> Side Swi
 	}
 
 	// Check for Sequencer Activation Combination (Both Middle at same time)
-	#ifndef EXTENDED_BANKS
-	if (!native_mode_is_active() // native mode -> ignore sequencer
+	if (g_seq_available
+		&& !native_mode_is_active() // native mode -> ignore sequencer
 		&& (get_side_switch_state() & 0x12) == 0x12){
 		if ((prev_side_switch_state & 0x12) == 0x02 || (prev_side_switch_state & 0x12) == 0x10){
 			set_op_mode(sequencer);
@@ -143,7 +147,6 @@ void process_side_switch_input(void)  // MIDI Output: Digital Inputs -> Side Swi
 		}
 		return;
 	}
-	#endif
 	
 	for(uint8_t i = 0; i <6;++i) {
 		

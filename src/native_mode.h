@@ -15,7 +15,9 @@
     bool native_mode_update_encoder_display_single(uint8_t idx);
 
     //returns true if encoder rotary input was processed by native mode
-    bool native_mode_process_encoder_input_rotary(uint8_t idx, int16_t delta);
+    // cycle_count is the number of scan cycles since the previous event of this
+    //  encoder. The function ignores it unless the knob is in velocity sensitive mode.
+    bool native_mode_process_encoder_input_rotary(uint8_t idx, int16_t delta, uint16_t cycle_count);
     //returns true if encoder switch input was processed by native mode
     bool native_mode_process_encoder_input_switch_pressed(uint8_t idx, bool pressed);
     //returns true if side switch input was processed by native mode

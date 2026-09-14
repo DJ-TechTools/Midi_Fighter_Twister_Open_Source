@@ -121,35 +121,53 @@
 /* Variables */
 
 	extern bool seq_traktor_mode;
+
+	// True when the sequencer has storage and can run. This is false in 8 bank
+	// mode, where the banks use all of bank_arena.
+	//
+	// Every sequencer entry point must test this. It is not an optimization:
+	// in 8 bank mode the sequencer buffers are null, thus an untested call
+	// writes to address zero. Refer to sequencer_alloc().
+	extern bool g_seq_available;
+
+	// Points the large sequencer buffers at the spare part of bank_arena, and
+	// sets g_seq_available. Call one time at boot, after encoders_alloc().
+	bool sequencer_alloc(void);
 	
 	extern seq_state_t seq_state;
 
+	// These were tentative definitions, which the linker merged as COMMON
+	// symbols. A COMMON symbol cannot go in the arena, thus each one is now an
+	// extern declaration here, with one definition in sequencer.c.
+
 	// The 12 default patterns
-	const uint8_t default_pattern[11][16];
+	extern const uint8_t default_pattern[11][16] PROGMEM;
 
 	// Holds the current sequencer interface state
-	displayMode_t sequencerDisplayState;
+	extern displayMode_t sequencerDisplayState;
 	
 	// Holds the current rhythm index or 'Step' the sequencer is at
-	uint8_t rythmIndex;
+	extern uint8_t rythmIndex;
 	
 	// Holds the currently selected slot (for Pattern Editing)
-	uint8_t selectedSlot;
+	extern uint8_t selectedSlot;
 	
 	// Holds the currently selected pattern for each slot
-	uint8_t slotSelectedBuffer[4];
+	extern uint8_t slotSelectedBuffer[4];
 	
-	// Holds the 12 pattern buffers for each slot
-	#ifndef EXTENDED_BANKS
-	uint8_t pattern[4][12][16];
-	#endif
+	// Holds the 12 pattern buffers for each slot.
+	// This is 768 bytes, and it points into the spare part of bank_arena. The
+	// sequencer runs in 4 bank mode only, where that space is free. Refer to
+	// sequencer_alloc().
+	extern uint8_t (*pattern)[12][16];
 
 	// Holds the currently selected clip for each slot
-	uint8_t slot_clip[4];
+	extern uint8_t slot_clip[4];
 	
 	// Holds the slot settings states for each slot
 	// Key-lock, FX Send, Monitor, & Punch Mode 
-	slotSettings_t slotSettings[4];
+	// This is also in the arena. Refer to sequencer_alloc().
+	extern slotSettings_t *slotSettings;
 
 	// Used to signal the start of playback
 	extern bool start_pattern;

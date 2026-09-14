@@ -93,6 +93,15 @@
 	void clear_display_buffer(void);
 	
 	void build_rgb(uint8_t encoder, uint32_t color, uint8_t level);
+
+	// Per-encoder white balance trim, applied inside build_rgb to every colour
+	// on every path. Values are the resolved gains, already clamped to
+	// [CAL_TRIM_MIN, CAL_TRIM_MAX] by the caller.
+	void set_rgb_trim(uint8_t encoder, uint8_t red, uint8_t green, uint8_t blue);
+
+	// For calibration mode only. This suppresses the trim, thus the display can
+	// show a pure channel at full brightness.
+	void set_rgb_trim_bypass(bool bypass);
 	
 	int build_indicator_pattern(indicator_bit_mask_t *result, uint8_t position, uint16_t type, 
 								 bool has_detent, uint8_t detent_color);
@@ -118,7 +127,11 @@
 	void set_encoder_rgb(uint8_t encoder, uint8_t color);
 	void set_encoder_rgb_level(uint8_t encoder, uint8_t color, uint8_t brightness);
 	
+	// 0 = red, 127 = blue, intermediate values crossfade between them.
 	void set_encoder_indent(uint8_t encoder, uint8_t color_index);
+
+	// set_encoder_indent has no "off" index; this turns the detent LED dark.
+	void clear_encoder_indent(uint8_t encoder);
 	
 	void set_encoder_indicator(uint8_t encoder, uint8_t position, bool has_detent, uint16_t type, 
 								uint8_t detent_color);

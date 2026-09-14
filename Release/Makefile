@@ -139,6 +139,8 @@ C_SRCS +=  \
 ../src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_RW.c \
 ../src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBController_XMEGA.c \
 ../src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBInterrupt_XMEGA.c \
+../src/calibration.c \
+../src/setup_mode.c \
 ../src/self_test.c \
 ../src/sequencer.c \
 ../src/sequencer_display.c \
@@ -213,6 +215,8 @@ src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_Control_W.o \
 src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_RW.o \
 src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBController_XMEGA.o \
 src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBInterrupt_XMEGA.o \
+src/calibration.o \
+src/setup_mode.o \
 src/self_test.o \
 src/sequencer.o \
 src/sequencer_display.o \
@@ -278,6 +282,8 @@ src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_Control_W.o \
 src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_RW.o \
 src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBController_XMEGA.o \
 src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBInterrupt_XMEGA.o \
+src/calibration.o \
+src/setup_mode.o \
 src/self_test.o \
 src/sequencer.o \
 src/sequencer_display.o \
@@ -343,6 +349,8 @@ src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_Control_W.d \
 src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_RW.d \
 src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBController_XMEGA.d \
 src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBInterrupt_XMEGA.d \
+src/calibration.d \
+src/setup_mode.d \
 src/self_test.d \
 src/sequencer.d \
 src/sequencer_display.d \
@@ -408,6 +416,8 @@ src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_Control_W.d \
 src/LUFA/LUFA/Drivers/USB/Core/XMEGA/Template/Template_Endpoint_RW.d \
 src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBController_XMEGA.d \
 src/LUFA/LUFA/Drivers/USB/Core/XMEGA/USBInterrupt_XMEGA.d \
+src/calibration.d \
+src/setup_mode.d \
 src/self_test.d \
 src/sequencer.d \
 src/sequencer_display.d \
@@ -437,6 +447,10 @@ LINKER_SCRIPT_DEP+=
 
 
 # AVR32/GNU C Compiler
+
+
+
+
 
 
 

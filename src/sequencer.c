@@ -20,9 +20,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */ 
 
-#ifndef EXTENDED_BANKS
 #include "sequencer.h"
-#endif
 /*
 const uint8_t default_pattern[11][16] PROGMEM = {
 		
@@ -69,7 +67,62 @@ uint8_t truncate_value;
 bool seq_traktor_mode;
 
 seq_state_t seq_state;
-#ifndef EXTENDED_BANKS
+
+// One definition for each variable that sequencer.h declares. These were
+// tentative definitions in the header, which the linker merged as COMMON.
+displayMode_t sequencerDisplayState;
+uint8_t rythmIndex;
+uint8_t selectedSlot;
+uint8_t slotSelectedBuffer[4];
+uint8_t slot_clip[4];
+
+// These two point into the spare part of bank_arena. Refer to
+// sequencer_alloc().
+uint8_t (*pattern)[12][16];
+slotSettings_t *slotSettings;
+
+/**
+ * Points the large sequencer buffers at the spare part of bank_arena.
+ *
+ * Call this one time at boot, in 4 bank mode only, and before
+ * sequencer_init(). In 8 bank mode the banks use all of the arena and the
+ * sequencer must not run. Refer to g_seq_available in sequencer.h.
+ *
+ * encoders_alloc() clears the arena, thus these buffers start at zero. Keep
+ * that order. No other code initializes slot_memory, because
+ * pattern_memory_init() only reads the EEPROM slot flags.
+ *
+ * \return	true if there was space, false if the caller must not start the
+ *			sequencer
+ */
+bool g_seq_available = false;
+
+bool sequencer_alloc(void)
+{
+	uint16_t spare = 0;
+	uint8_t *p = bank_arena_spare(&spare);
+
+	uint16_t needed = (16 * 2)
+	                + (4 * sizeof(slotSettings_t))
+	                + (4 * sizeof(slot_memory_t))
+	                + (4 * 12 * 16)
+	                + 16
+	                + 16;
+
+	if (spare < needed) { return false; }
+
+	// The 16 bit buffers come first, to keep each one on an even offset.
+	sequencerRawValue = (uint16_t *)p;      p += 16 * 2;
+	slotSettings      = (slotSettings_t *)p; p += 4 * sizeof(slotSettings_t);
+	slot_memory       = (slot_memory_t *)p; p += 4 * sizeof(slot_memory_t);
+	pattern           = (uint8_t (*)[12][16])p; p += 4 * 12 * 16;
+	SeqIndicatorValue = p;                  p += 16;
+	seq_detent_counter = (int8_t *)p;       p += 16;
+
+	g_seq_available = true;
+	return true;
+}
+
 void sequencer_init(void)
 {	
 	// Initiase the slot parameters to their defaults
@@ -208,7 +261,9 @@ const int8_t swing_adjustment[16][4] = {{0,1,0,1},
 
 
 uint8_t swing_selection;
-bool swing_enabled;	
+// sequencer_input.c holds the definition of swing_enabled. This file also had a
+// tentative definition, which the linker merged. With -fno-common, that is an
+// error.
 
 //static int16_t	current_swing_value = 0;
 //static int16_t 	last_swing_value = 0;
@@ -538,5 +593,3 @@ rowTypes_t is_row_type(uint8_t idx)
 	}	
 	return false;
 }
-
-#endif

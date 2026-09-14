@@ -22,6 +22,8 @@
 #include "config.h"
 #include "native_mode.h"
 #include "display_driver.h"
+#include "calibration.h"
+#include "setup_mode.h"
 
 uint8_t global_super_knob_start;
 uint8_t global_super_knob_end;
@@ -145,6 +147,30 @@ static void sysExCmdPullConfig (uint8_t length, uint8_t* buffer)
 }
 
 void sysExCmdSystem (uint8_t, uint8_t*); // -Wmissing-prototype
+/**
+ * Shows a confirmation, then resets the unit.
+ *
+ * The system commands that change a boot time setting use this. The MIDI input
+ * handler disables interrupts, thus this turns them on again. Without this, the
+ * display does not show the confirmation.
+ *
+ * \param color [in]	24 bit confirmation color
+ */
+static void system_confirm_and_reset(uint32_t color)
+{
+	PMIC.CTRL = PMIC_LOLVLEN_bm | PMIC_MEDLVLEN_bm | PMIC_HILVLEN_bm;
+	setting_confirmation_animation(color);
+
+	USB_Disable();
+	// Wait for USB disconnect to register on the host
+	_delay_ms(2000);
+
+	wdt_set_timeout_period(WDT_TIMEOUT_PERIOD_16CLK);
+	wdt_enable();
+
+	while(true){};
+}
+
 void sysExCmdSystem (uint8_t length, uint8_t* buffer)
 {
     if (length == 0) return;
@@ -184,6 +210,66 @@ void sysExCmdSystem (uint8_t length, uint8_t* buffer)
 			wdt_enable();
 			
 			while(true){};
+        }
+        break;
+    case 3:
+        {
+			// Set the USB device number, 0 to NUM_DEVICE_IDS-1. The product ID
+			// and the product string both follow it, thus the unit resets and
+			// the host sees a different device.
+			//
+			// On macOS the new MIDI port sometimes comes back but does not pass
+			// data, and the user must then disconnect the cable. This occurred one
+			// time in four identity changes. Thus the host must not expect the port
+			// to be usable immediately. A change of bank mode keeps the product ID,
+			// and the port always came back.
+			if (length < 2) { return; }
+			if (buffer[1] >= NUM_DEVICE_IDS) { return; }
+
+			wdt_disable();
+			identity_set(buffer[1]);
+			system_confirm_and_reset(0x0000FF);
+        }
+        break;
+    case 4:
+        {
+			// Set the bank mode. The value is the bank count itself, 4 or 8. This
+			// keeps the command easy to read on the wire.
+			//
+			// bank_mode_set() also gives defaults to the EEPROM pages that the
+			// new mode reads. The reset is necessary, because encoders_alloc()
+			// divides bank_arena at boot only.
+			if (length < 2) { return; }
+			if ((buffer[1] != MIN_BANKS) && (buffer[1] != MAX_BANKS)) { return; }
+			if (buffer[1] == g_num_banks) { return; }
+
+			wdt_disable();
+			bank_mode_set(buffer[1]);
+			system_confirm_and_reset(0xFF8000);
+        }
+        break;
+    case 5:
+        {
+			// Read back the device number and the bank mode.
+			//
+			// Byte 0x0 is a request and 0x1 is a response, as in the get device
+			// ID command. Thus the unit does not answer a response that comes
+			// back to it.
+			if ((length >= 2) && (buffer[1] != 0x00)) { return; }
+
+			uint8_t payload[] = {
+				0xF0, 0x00, MANUFACTURER_ID >> 8, MANUFACTURER_ID & 0x7F,
+				SYSEX_COMMAND_SYSTEM,
+				5,
+				0x1,					// 0x0 = request, 0x1 = response
+				g_device_identity,		// 0 to NUM_DEVICE_IDS-1
+				NUM_DEVICE_IDS,
+				g_num_banks,			// MIN_BANKS or MAX_BANKS
+				MAX_BANKS,
+				0xF7
+			};
+
+			midi_stream_sysex(sizeof(payload), payload);
         }
         break;
     default:
@@ -237,6 +323,10 @@ static void sysExCmdBulkXfer(uint8_t length, uint8_t* buffer) // Process/ParseSy
         if (command == 0) { // PUSH (Change/Update Settings)
             if (length > 5) {
                 if (sysex_tag == 0x0) return; // Extended tags not supported
+                // Reject out-of-range tags. The PULL path below already does this;
+                // without it here a stray tag walks bank/encoder past the end of
+                // encoder_settings[] and pushes EEPROM writes outside the encoder pages.
+                if (sysex_tag > (NUM_BANKS*16)) return;
                 uint8_t part = *buffer++; // Transfers may consist of multiple parts
                 if (part == 0) return; // Invalid part number
                 uint8_t total = *buffer++;
@@ -432,6 +522,16 @@ void load_config(void)
 	side_switch_config(&side_sw_cfg);
 	
 	cpu_irq_enable();
+
+	// White balance trim. It is outside the block above, by design. The trim has
+	// its own EEPROM page and magic, and is not part of the layout versioned
+	// settings. Thus a factory reset and a new EEPROM_LAYOUT both keep it.
+	calibration_init();
+
+	// Runtime USB identity. It must be live before the unit services the host.
+	// This call site makes sure of it, because load_config() runs before the
+	// first USB_USBTask().
+	identity_init();
 }
 
 // This could be re-written to use config structures
@@ -463,6 +563,12 @@ void config_factory_reset(void)
 	eeprom_write(EE_ANIMATION_CHANNELS, PACK_ANIM_CHANNELS(DEF_ENCODER_ANIMATION_CH, DEF_SWITCH_ANIMATION_CH));
 	eeprom_write(EE_SLEEP_SETTINGS, DEF_SLEEP_SETTINGS);
 	eeprom_write(EE_BANK_ANIMATIONS_ENABLED, DEF_BANK_ANIMATIONS_ENABLED);
+
+	// A factory reset keeps the bank mode, as it keeps the device identity,
+	// because the user selected it. It does not keep this flag. The flag
+	// records that banks 5 to 8 hold real settings, and after this reset they
+	// do not.
+	eeprom_write(EE_BANK_HI_INIT, 0xFF);
 	
 	cpu_irq_enable();
 	

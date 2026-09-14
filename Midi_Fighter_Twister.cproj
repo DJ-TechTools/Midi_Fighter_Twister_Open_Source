@@ -1016,6 +1016,18 @@
     <None Include="src\LUFA\LUFA\Platform\XMEGA\ClockManagement.h">
       <SubType>compile</SubType>
     </None>
+    <Compile Include="src\calibration.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\calibration.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\setup_mode.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\setup_mode.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\self_test.c">
       <SubType>compile</SubType>
     </Compile>

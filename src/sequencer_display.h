@@ -27,7 +27,6 @@
 /*	Includes: */
 
 	#include <asf.h>
-	#ifndef EXTENDED_BANKS
 	#include "sequencer.h"
 
 	#include "sequencer_input.h"
@@ -40,14 +39,18 @@
 
 /* Variables */
 
+	// These were tentative definitions, which the linker merged as COMMON
+	// symbols. They are now extern, with one definition in
+	// sequencer_display.c.
+	//
+	// SeqSwitchColor was here, but no code reads or writes it. This change removes it.
+
 	// Holds the color setting for the beat cursor
-	uint8_t seqBeatColor;
+	extern uint8_t seqBeatColor;
 	
-	// Holds the color settings of the 16 RGB segments
-	uint8_t SeqSwitchColor[16];
-	
-	// Holds the indicator values of the 16 rotary indicators
-	uint8_t SeqIndicatorValue[16];
+	// Holds the indicator values of the 16 rotary indicators. This points into
+	// the spare part of bank_arena. Refer to sequencer_alloc().
+	extern uint8_t *SeqIndicatorValue;
 		
 /* Function Prototypes: */
 
@@ -63,5 +66,4 @@
 	void run_pattern_memory_display(uint8_t idx);
 	
 	uint16_t make_effect_indicator_pattern(uint8_t master_level, uint8_t step_level);
-	#endif
 #endif /* SEQUENCER_DISPLAY_H_ */

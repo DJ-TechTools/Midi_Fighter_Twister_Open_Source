@@ -48,14 +48,19 @@
 
 /* Variables */
 
+	// These were tentative definitions, which the linker merged as COMMON
+	// symbols. They are now extern, with one definition in sequencer_input.c.
+	// The larger ones point into the spare part of bank_arena. Refer to
+	// sequencer_alloc() in sequencer.c.
+
 	// Holds the raw encoder values 0 - 12700
-	uint16_t sequencerRawValue[16];
+	extern uint16_t *sequencerRawValue;
 	
 	// Holds the detent counter value for the filter encoders
-	int8_t  seq_detent_counter[16];
+	extern int8_t  *seq_detent_counter;
 	
 	// Used to store the current pattern settings for the memory recall mode 
-	slot_memory_t slot_memory[4];
+	extern slot_memory_t *slot_memory;
 	
 	extern int8_t   mod_level[4];
 	

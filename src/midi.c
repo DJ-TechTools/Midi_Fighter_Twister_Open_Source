@@ -199,11 +199,9 @@ int32_t update_clock_counter(void) // BKP
 	// the point at which it schedules triggers.
 	if((abs(delta) < 5) && (getTickCount() == 1)){
 		clock_stable = true;
-		#ifndef EXTENDED_BANKS
-			if(seq_traktor_mode && sequencerDisplayState == OFF){
+			if(g_seq_available && seq_traktor_mode && sequencerDisplayState == OFF){
 				sequencerDisplayState = DEFAULT;
 			}
-		#endif
 
 	} else {
 		//clock_stable = false;
@@ -241,9 +239,9 @@ void midi_clock(void)
 	// !Summer2016Update: midi_clock animation
 	uint16_t counts = update_clock_counter();
 	UNUSED(counts);
-	#ifndef EXTENDED_BANKS
-	seq_midi_clock_handler(tick_counter);
-	#endif
+	// This runs on every clock tick, in all modes. The test is necessary: in
+	// 8 bank mode the sequencer buffers are null.
+	if (g_seq_available) { seq_midi_clock_handler(tick_counter); }
 
 	// If not enabled enable MIDI Clock for animations 
 	// - !Summer2016Update: midi clock for animations
@@ -301,9 +299,7 @@ void real_time_start(void)
 void real_time_stop(void) //BKP
 {
 	// Reset the sequencer position
-	#ifndef EXTENDED_BANKS
-		reset_sequence();
-	#endif
+	if (g_seq_available) { reset_sequence(); }
 	//// Cancel any schedules sequencer tasks
 	cancel_task();
 }
@@ -345,6 +341,24 @@ void midi_stream_raw_cc(const uint8_t channel,
 	midi_event.Data1       = command | (channel & 0x0f); // 0..15
     midi_event.Data2       = cc & 0x7f;   // 0..127
     midi_event.Data3       = value & 0x7f;  // 0..127
+
+	if (midi_is_usb()) {
+		MIDI_Device_SendEventPacket(g_midi_interface_info, &midi_event);
+	} else {
+		#if ENABLE_LEGACY_MIDI_USART_OUTPUT > 0
+			MIDI_send_legacy_packet(&midi_event);
+		#endif
+	}
+}
+
+void midi_stream_raw_program_change(const uint8_t channel, const uint8_t program)
+{
+	const uint8_t command = 0xc0;  // the program change command
+	MIDI_EventPacket_t midi_event;
+	midi_event.Event       = MIDI_EVENT(0, command);
+	midi_event.Data1       = command | (channel & 0x0f); // 0..15
+	midi_event.Data2       = program & 0x7f;  // 0..127
+	midi_event.Data3       = 0;  // unused, Program Change is a 2 byte message (CIN 0xC)
 
 	if (midi_is_usb()) {
 		MIDI_Device_SendEventPacket(g_midi_interface_info, &midi_event);
@@ -518,11 +532,12 @@ void process_midi_packet(MIDI_EventPacket_t input_event) // Midi Feedback - Pack
 			}
 			
 			// Handle Sequencer Controls in here
-			#ifndef EXTENDED_BANKS
-			if (channel == SEQ_CHANNEL){
+			// This is also how CC 15 on the sequencer channel starts the
+			// sequencer. Refer to the SEQ_ENABLE_CC handler. Thus the test
+			// keeps 8 bank mode out of the sequencer, and not only quiet.
+			if (g_seq_available && channel == SEQ_CHANNEL){
 				process_seq_midi(cc_number, cc_value);
 			}
-			#endif
 		}
 		break;
 		case 0x4 :

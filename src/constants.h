@@ -31,8 +31,8 @@
 //#define DEVICE_VERSION  		((DEVICE_VERSION_YEAR << 16) | (DEVICE_VERSION_MONTH << 8) | DEVICE_VERSION_DAY)
 
 #define DEVICE_VERSION_YEAR 	0x2026
-#define DEVICE_VERSION_MONTH	0x08
-#define DEVICE_VERSION_DAY		0x24
+#define DEVICE_VERSION_MONTH	0x09
+#define DEVICE_VERSION_DAY		0x17
 #define DEVICE_VERSION  		((DEVICE_VERSION_YEAR << 16) | (DEVICE_VERSION_MONTH << 8) | DEVICE_VERSION_DAY)
 
 // 14bit device family ID, LSB first
@@ -79,17 +79,27 @@
 
 
 // System Constants -------------------------------------------------------
-#define EXTENDED_BANKS  // Comment out to use sequencer + 4 banks
-
-#ifdef EXTENDED_BANKS
-#define NUM_BANKS 8
-#else
-#define NUM_BANKS 4
-#endif
+// Bank mode is a runtime choice. Setup mode sets it. One binary gives either
+// 4 banks with the sequencer, or 8 banks without the sequencer.
+//
+// The two modes cannot be in memory at the same time. 8 banks needs 1652 more
+// bytes than 4 banks. That gives a total of 8379 bytes, and the part has 8192.
+// Thus the live mode holds all of the storage, and the other mode has none.
+//
+// NUM_BANKS is therefore a variable. Refer to encoders.h. Use MAX_BANKS where
+// you must have a compile time bound.
+#define MAX_BANKS 8
+#define MIN_BANKS 4
 
 // Alternate USB ID Selection Constant
 
 #define USE_ALTERNATE_ID 0
+
+// Runtime device identity. USE_ALTERNATE_ID above is the compile time default
+// for a new unit. A unit set in setup mode reads its identity from EEPROM.
+// Eight identities add 0x4007..0x7007 to the four PIDs. Thus one binary
+// replaces the four hand built variants.
+#define NUM_DEVICE_IDS				8
 
 
 // EEPROM Constants -------------------------------------------------------
@@ -99,6 +109,28 @@
 
 #define EE_EEPROM_VERSION			0x0000	//The location we store the EEPROM LAYOUT VERSION
 #define EE_MIDI_CHANNEL				0x0001  //The Base MIDI Channel
+// Runtime selected USB identity, 0..NUM_DEVICE_IDS-1. Page 0 is free from
+// 0x0012 to 0x001F. This byte is outside the ranges that the factory resets
+// clear, thus a reset does not change the number of the unit. An unwritten byte
+// reads 0xFF, and the unit then uses 0.
+#define EE_DEVICE_IDENTITY			0x0012
+
+// Runtime bank mode. Page 0 is free from 0x0013 to 0x001F. Like the identity
+// above, this byte is outside the ranges that a factory reset clears. Thus a
+// reset keeps the mode that the user selected.
+//
+// Only the value EE_BANK_MODE_8 selects 8 banks. All other values, which
+// include the 0xFF of an unwritten byte, select 4 banks and the sequencer.
+// Thus a new unit and all units in the field keep the usual behavior.
+#define EE_BANK_MODE				0x0013
+#define EE_BANK_MODE_8				0xA8
+
+// The unit sets this after it writes defaults to the bank 5 to 8 EEPROM pages.
+// Without this flag, each change from 4 banks to 8 banks erases banks 5 to 8
+// again. Nothing else tells a first change from a later change.
+#define EE_BANK_HI_INIT				0x0014
+#define EE_BANK_HI_INIT_DONE		0xB8
+
 #define EE_SELF_TEST_FLAG			0x0002  //Internal self test flag
 
 #define EE_BANK_SIDE_SW				0x0003	//Bank Side Setting
@@ -141,6 +173,38 @@
 #define DEV_SETTINGS_START_PAGE      0
 #define ENC_SETTINGS_START_PAGE		 1
 #define SEQ_EEPROM_START_PAGE		31
+
+// RGB white balance calibration ----------------------------------------------
+// The trim is on EEPROM page 63. This is the only page that is free in both
+// bank modes. With 8 banks the encoder settings reach page 32, and with 4 banks
+// the sequencer reaches page 62. The block has its own magic and checksum, and
+// does not use EEPROM_LAYOUT. Thus a new layout version resets the user
+// configuration but keeps the LED calibration of the unit.
+#define EE_CAL_START				0x07E0	// page 63
+#define EE_CAL_PAGE					63
+#define EE_CAL_MAGIC_OFFSET			0x00
+#define EE_CAL_VERSION_OFFSET		0x01
+#define EE_CAL_GLOBAL_OFFSET		0x02	// 3 bytes: R, G, B
+#define EE_CAL_DELTA_OFFSET			0x05	// 24 bytes: 48 signed nibbles
+#define EE_CAL_CHECKSUM_OFFSET		0x1D	// sum of 0x02..0x1C
+#define EE_CAL_MAGIC				0xC5
+#define EE_CAL_VERSION				0x01
+
+// build_rgb resolves ~80 duty steps with thresholds at 0,2,4..158, so any
+// channel value >= 160 is indistinguishable from 255. Trims must stay at or
+// below 158 or the control has no visible effect.
+#define CAL_TRIM_MIN				64
+#define CAL_TRIM_MAX				158
+#define CAL_DELTA_MIN				(-8)
+#define CAL_DELTA_MAX				7
+#define CAL_DELTA_SCALE				2		// matches the PWM threshold spacing
+
+// The defaults are the old hard coded GAIN_R, GAIN_G and GAIN_B, clamped to the
+// usable range. 245 and 235 were both saturated already. Thus the display looks
+// the same, and the green and blue controls respond from the first detent.
+#define DEF_CAL_TRIM_R				140
+#define DEF_CAL_TRIM_G				CAL_TRIM_MAX
+#define DEF_CAL_TRIM_B				CAL_TRIM_MAX
 
 // Defaults -------------------------------------------------------------------
 // System 

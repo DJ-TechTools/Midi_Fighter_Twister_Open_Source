@@ -29,9 +29,10 @@
 
 #include <display_driver.h>
 
-extern uint8_t switch_color_buffer[NUM_BANKS][16];
-extern uint8_t indicator_value_buffer[NUM_BANKS][16];
-extern encoder_config_t encoder_settings[];
+// These point into bank_arena. Refer to encoders_alloc() in encoders.c.
+extern uint8_t (*switch_color_buffer)[16];
+extern uint8_t (*indicator_value_buffer)[16];
+extern encoder_config_t *encoder_settings;
 
 /* Variables: */
 static uint8_t display_frame_buffer[DMA_BUFFER_SIZE]; 
@@ -522,14 +523,34 @@ int build_indicator_pattern(indicator_bit_mask_t *result,
 	return 1;	
 }
 
-// Per-channel white balance gains (0..255, where 255 = 1.0x)
-#define GAIN_R 140
-#define GAIN_G 245
-#define GAIN_B 235
+// White balance trim for each encoder and each channel (0..255, where 255 =
+// 1.0x). These hold the values of clamp(global + delta*CAL_DELTA_SCALE). The
+// arithmetic occurs one time in apply_rgb_trim(), and never in build_rgb. The
+// defaults are the gains that this file had before.
+static uint8_t rgb_trim[16][3] = {
+	[0 ... 15] = { DEF_CAL_TRIM_R, DEF_CAL_TRIM_G, DEF_CAL_TRIM_B }
+};
+
+// Only the channel select flash of calibration mode sets this. The flash then
+// shows a pure channel at full brightness, and not a trimmed channel.
+static bool rgb_trim_bypass = false;
 
 static inline uint8_t scale8(uint8_t v, uint8_t s)
 {
 	return (uint8_t)(((uint16_t)v * (uint16_t)s) / 255u);
+}
+
+void set_rgb_trim(uint8_t encoder, uint8_t red, uint8_t green, uint8_t blue)
+{
+	if (encoder >= 16) { return; }
+	rgb_trim[encoder][0] = red;
+	rgb_trim[encoder][1] = green;
+	rgb_trim[encoder][2] = blue;
+}
+
+void set_rgb_trim_bypass(bool bypass)
+{
+	rgb_trim_bypass = bypass;
 }
 
 /** Builds RGB color bit patterns in the display frame buffer
@@ -560,10 +581,16 @@ void build_rgb(uint8_t encoder, uint32_t color, uint8_t level)
 	uint8_t blue_byte =  (uint8_t)(color & 0xFF);
 	#endif
 
-	if (activeColorMap == colorMap64) {
-		red_byte   = scale8(red_byte,   GAIN_R);
-		green_byte = scale8(green_byte, GAIN_G);
-		blue_byte  = scale8(blue_byte,  GAIN_B);
+	// White balance is a property of the physical LED. Thus it applies to all
+	// colors on all paths, which include both palettes and native mode. This must
+	// stay before the level scale below. The level scales all three channels by
+	// the same ratio, thus a trim that comes first stays correct when the LED dims.
+	// A trim must not be more than CAL_TRIM_MAX, or the ratio breaks against the
+	// PWM ceiling.
+	if (!rgb_trim_bypass) {
+		red_byte   = scale8(red_byte,   rgb_trim[encoder][0]);
+		green_byte = scale8(green_byte, rgb_trim[encoder][1]);
+		blue_byte  = scale8(blue_byte,  rgb_trim[encoder][2]);
 	}
 
 	if (level) {
@@ -667,6 +694,25 @@ void set_encoder_rgb_level(uint8_t encoder, uint8_t color, uint8_t brightness)
  *  encoder - which encoder to set indent color for
  *  color_index - 7 bit color setting
  */
+/**
+ * Turns an encoder's detent LED fully off.
+ *
+ * set_encoder_indent() mixes red and blue, and has no index that turns both
+ * off. Thus a caller that must turn the detent LED off needs this. It changes
+ * only bits 0 and 1, the detent lane, and not the RGB and white lanes.
+ */
+void clear_encoder_indent(uint8_t encoder)
+{
+	uint8_t *ptr = display_frame_buffer;
+	ptr += ((15-encoder)*2);
+
+	for (uint8_t i=0;i<NUM_OF_FRAMES;++i)
+	{
+		*ptr |= 0x03;
+		ptr += 32;
+	}
+}
+
 void set_encoder_indent(uint8_t encoder, uint8_t color_index)
 {
 	uint8_t red_byte = (uint8_t)(0xFF - (color_index*2));
@@ -1142,7 +1188,7 @@ void bank_change_animation_tick(void)
 	if (animation_frames_remaining > 0) return;
 
 	if (!s_bank_anim_fading) {
-		// Flash done — switch bank, begin fade
+		// Flash done - switch bank, begin fade
 		for (uint8_t e = 0; e < 16; e++) {
 			build_rgb(e, 0, 1);
 			set_indicator_pattern(e, 0x0000);

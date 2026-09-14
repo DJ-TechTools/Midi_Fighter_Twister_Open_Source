@@ -37,9 +37,7 @@
 	
 	#include "encoders.h"
 	#include "sysex.h"
-	#ifndef EXTENDED_BANKS
 	#include "sequencer.h"
-	#endif
 
 
 /* Constants: */
@@ -125,6 +123,8 @@
 							   const uint8_t cc,
 							   const uint8_t value);
 							   
+	void	midi_stream_raw_program_change(const uint8_t channel, const uint8_t program);
+
 	void	midi_stream_raw_pitchbend(const uint8_t channel, const uint16_t value);
 
 

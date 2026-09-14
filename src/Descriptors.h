@@ -104,4 +104,9 @@
 		} SerialString_t;
 		extern SerialString_t SerialString;
 
+		// Runtime selected USB identity, 0..NUM_DEVICE_IDS-1. Picks the product
+		// ID and product string. Loaded from EEPROM by identity_init().
+		extern uint8_t g_device_identity;
+
+
 #endif

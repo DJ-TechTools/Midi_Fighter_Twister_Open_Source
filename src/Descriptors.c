@@ -48,34 +48,176 @@
  *  process begins.
  */
 
-const USB_Descriptor_Device_t PROGMEM DeviceDescriptor =
+// Runtime selected USB identity. identity_init() reads it from EEPROM before
+// the unit services the host, thus the first enumeration uses it.
+uint8_t g_device_identity = 0;
+
+/** Device descriptors, one per identity, identical but for the product ID.
+ *  Whole descriptors in flash rather than one patched in RAM, because
+ *  USE_FLASH_DESCRIPTORS is on and LUFA streams these straight out of flash.
+ */
+const USB_Descriptor_Device_t PROGMEM DeviceDescriptors[NUM_DEVICE_IDS] =
 {
-	.Header                 = {.Size = sizeof(USB_Descriptor_Device_t), .Type = DTYPE_Device},
+	{
+		.Header                 = {.Size = sizeof(USB_Descriptor_Device_t), .Type = DTYPE_Device},
 
-	.USBSpecification       = VERSION_BCD(1,1,0),
-	.Class                  = USB_CSCP_NoDeviceClass,
-	.SubClass               = USB_CSCP_NoDeviceSubclass,
-	.Protocol               = USB_CSCP_NoDeviceProtocol,
+		.USBSpecification       = VERSION_BCD(1,1,0),
+		.Class                  = USB_CSCP_NoDeviceClass,
+		.SubClass               = USB_CSCP_NoDeviceSubclass,
+		.Protocol               = USB_CSCP_NoDeviceProtocol,
 
-	.Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
+		.Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
 
-	.VendorID               = 0x2580,
-	#if USE_ALTERNATE_ID == 0
-	.ProductID              = 0x0007,
-	#elif USE_ALTERNATE_ID == 1
-	.ProductID              = 0x1007,
-	#elif USE_ALTERNATE_ID == 2
-	.ProductID              = 0x2007,
-	#else // USE_ALTERNATE_ID == 3
-	.ProductID              = 0x3007,
-	#endif
-	.ReleaseNumber          = VERSION_BCD(0,0,1),
+		.VendorID               = 0x2580,
+		.ProductID              = 0x0007,
+		.ReleaseNumber          = VERSION_BCD(0,0,1),
 
-	.ManufacturerStrIndex   = STRING_ID_Manufacturer,
-	.ProductStrIndex        = STRING_ID_Product,
-	.SerialNumStrIndex      = STRING_ID_Serial,
+		.ManufacturerStrIndex   = STRING_ID_Manufacturer,
+		.ProductStrIndex        = STRING_ID_Product,
+		.SerialNumStrIndex      = STRING_ID_Serial,
 
-	.NumberOfConfigurations = FIXED_NUM_CONFIGURATIONS
+		.NumberOfConfigurations = FIXED_NUM_CONFIGURATIONS
+	},
+	{
+		.Header                 = {.Size = sizeof(USB_Descriptor_Device_t), .Type = DTYPE_Device},
+
+		.USBSpecification       = VERSION_BCD(1,1,0),
+		.Class                  = USB_CSCP_NoDeviceClass,
+		.SubClass               = USB_CSCP_NoDeviceSubclass,
+		.Protocol               = USB_CSCP_NoDeviceProtocol,
+
+		.Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
+
+		.VendorID               = 0x2580,
+		.ProductID              = 0x1007,
+		.ReleaseNumber          = VERSION_BCD(0,0,1),
+
+		.ManufacturerStrIndex   = STRING_ID_Manufacturer,
+		.ProductStrIndex        = STRING_ID_Product,
+		.SerialNumStrIndex      = STRING_ID_Serial,
+
+		.NumberOfConfigurations = FIXED_NUM_CONFIGURATIONS
+	},
+	{
+		.Header                 = {.Size = sizeof(USB_Descriptor_Device_t), .Type = DTYPE_Device},
+
+		.USBSpecification       = VERSION_BCD(1,1,0),
+		.Class                  = USB_CSCP_NoDeviceClass,
+		.SubClass               = USB_CSCP_NoDeviceSubclass,
+		.Protocol               = USB_CSCP_NoDeviceProtocol,
+
+		.Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
+
+		.VendorID               = 0x2580,
+		.ProductID              = 0x2007,
+		.ReleaseNumber          = VERSION_BCD(0,0,1),
+
+		.ManufacturerStrIndex   = STRING_ID_Manufacturer,
+		.ProductStrIndex        = STRING_ID_Product,
+		.SerialNumStrIndex      = STRING_ID_Serial,
+
+		.NumberOfConfigurations = FIXED_NUM_CONFIGURATIONS
+	},
+	{
+		.Header                 = {.Size = sizeof(USB_Descriptor_Device_t), .Type = DTYPE_Device},
+
+		.USBSpecification       = VERSION_BCD(1,1,0),
+		.Class                  = USB_CSCP_NoDeviceClass,
+		.SubClass               = USB_CSCP_NoDeviceSubclass,
+		.Protocol               = USB_CSCP_NoDeviceProtocol,
+
+		.Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
+
+		.VendorID               = 0x2580,
+		.ProductID              = 0x3007,
+		.ReleaseNumber          = VERSION_BCD(0,0,1),
+
+		.ManufacturerStrIndex   = STRING_ID_Manufacturer,
+		.ProductStrIndex        = STRING_ID_Product,
+		.SerialNumStrIndex      = STRING_ID_Serial,
+
+		.NumberOfConfigurations = FIXED_NUM_CONFIGURATIONS
+	},
+	{
+		.Header                 = {.Size = sizeof(USB_Descriptor_Device_t), .Type = DTYPE_Device},
+
+		.USBSpecification       = VERSION_BCD(1,1,0),
+		.Class                  = USB_CSCP_NoDeviceClass,
+		.SubClass               = USB_CSCP_NoDeviceSubclass,
+		.Protocol               = USB_CSCP_NoDeviceProtocol,
+
+		.Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
+
+		.VendorID               = 0x2580,
+		.ProductID              = 0x4007,
+		.ReleaseNumber          = VERSION_BCD(0,0,1),
+
+		.ManufacturerStrIndex   = STRING_ID_Manufacturer,
+		.ProductStrIndex        = STRING_ID_Product,
+		.SerialNumStrIndex      = STRING_ID_Serial,
+
+		.NumberOfConfigurations = FIXED_NUM_CONFIGURATIONS
+	},
+	{
+		.Header                 = {.Size = sizeof(USB_Descriptor_Device_t), .Type = DTYPE_Device},
+
+		.USBSpecification       = VERSION_BCD(1,1,0),
+		.Class                  = USB_CSCP_NoDeviceClass,
+		.SubClass               = USB_CSCP_NoDeviceSubclass,
+		.Protocol               = USB_CSCP_NoDeviceProtocol,
+
+		.Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
+
+		.VendorID               = 0x2580,
+		.ProductID              = 0x5007,
+		.ReleaseNumber          = VERSION_BCD(0,0,1),
+
+		.ManufacturerStrIndex   = STRING_ID_Manufacturer,
+		.ProductStrIndex        = STRING_ID_Product,
+		.SerialNumStrIndex      = STRING_ID_Serial,
+
+		.NumberOfConfigurations = FIXED_NUM_CONFIGURATIONS
+	},
+	{
+		.Header                 = {.Size = sizeof(USB_Descriptor_Device_t), .Type = DTYPE_Device},
+
+		.USBSpecification       = VERSION_BCD(1,1,0),
+		.Class                  = USB_CSCP_NoDeviceClass,
+		.SubClass               = USB_CSCP_NoDeviceSubclass,
+		.Protocol               = USB_CSCP_NoDeviceProtocol,
+
+		.Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
+
+		.VendorID               = 0x2580,
+		.ProductID              = 0x6007,
+		.ReleaseNumber          = VERSION_BCD(0,0,1),
+
+		.ManufacturerStrIndex   = STRING_ID_Manufacturer,
+		.ProductStrIndex        = STRING_ID_Product,
+		.SerialNumStrIndex      = STRING_ID_Serial,
+
+		.NumberOfConfigurations = FIXED_NUM_CONFIGURATIONS
+	},
+	{
+		.Header                 = {.Size = sizeof(USB_Descriptor_Device_t), .Type = DTYPE_Device},
+
+		.USBSpecification       = VERSION_BCD(1,1,0),
+		.Class                  = USB_CSCP_NoDeviceClass,
+		.SubClass               = USB_CSCP_NoDeviceSubclass,
+		.Protocol               = USB_CSCP_NoDeviceProtocol,
+
+		.Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
+
+		.VendorID               = 0x2580,
+		.ProductID              = 0x7007,
+		.ReleaseNumber          = VERSION_BCD(0,0,1),
+
+		.ManufacturerStrIndex   = STRING_ID_Manufacturer,
+		.ProductStrIndex        = STRING_ID_Product,
+		.SerialNumStrIndex      = STRING_ID_Serial,
+
+		.NumberOfConfigurations = FIXED_NUM_CONFIGURATIONS
+	},
 };
 
 /** Configuration descriptor structure. This descriptor, located in FLASH memory, describes the usage
@@ -284,32 +426,52 @@ const USB_Descriptor_String_t PROGMEM ManufacturerString =
  *  and is read out upon request by the host when the appropriate string ID is requested, listed in the Device
  *  Descriptor.
  */
-const USB_Descriptor_String_t PROGMEM ProductString =
+/** Product descriptor strings, one for each identity. USB_Descriptor_String_t
+ *  ends in a flexible array member, and C does not permit an array of it. Thus
+ *  this type copies it with a fixed length string. Header.Size holds the true
+ *  length, and the host reads only that length. Slot 0 keeps the original name
+ *  with no number.
+ */
+typedef struct
 {
+	USB_Descriptor_Header_t Header;
+	wchar_t                 UnicodeString[23];
+} ATTR_PACKED ProductString_t;
 
-	#if USE_ALTERNATE_ID == 0
-	.Header                 = {.Size = USB_STRING_LEN(20), .Type = DTYPE_String},
-	.UnicodeString          = L"Midi Fighter Twister"
-	
-	#elif USE_ALTERNATE_ID == 1
-	.Header                 = {.Size = USB_STRING_LEN(22), .Type = DTYPE_String},
-	.UnicodeString          = L"Midi Fighter Twister 2"
-	
-	#elif USE_ALTERNATE_ID == 2
-	.Header                 = {.Size = USB_STRING_LEN(22), .Type = DTYPE_String},
-	.UnicodeString          = L"Midi Fighter Twister 3"
-	
-	#else //if USE_ALTERNATE_ID == 3
-	.Header                 = {.Size = USB_STRING_LEN(22), .Type = DTYPE_String},
-	.UnicodeString          = L"Midi Fighter Twister 4"
-	
-	#endif
-	//Address = &ProductString;
-	//Size    = pgm_read_byte(&ProductString.Header.Size);
-	//#else
-	//Address = &ProductString_Alternate;
-	//Size    = pgm_read_byte(&ProductString_Alternate.Header.Size);
-	//#endif
+const ProductString_t PROGMEM ProductStrings[NUM_DEVICE_IDS] =
+{
+	{
+		.Header                 = {.Size = USB_STRING_LEN(20), .Type = DTYPE_String},
+		.UnicodeString          = L"Midi Fighter Twister"
+	},
+	{
+		.Header                 = {.Size = USB_STRING_LEN(22), .Type = DTYPE_String},
+		.UnicodeString          = L"Midi Fighter Twister 2"
+	},
+	{
+		.Header                 = {.Size = USB_STRING_LEN(22), .Type = DTYPE_String},
+		.UnicodeString          = L"Midi Fighter Twister 3"
+	},
+	{
+		.Header                 = {.Size = USB_STRING_LEN(22), .Type = DTYPE_String},
+		.UnicodeString          = L"Midi Fighter Twister 4"
+	},
+	{
+		.Header                 = {.Size = USB_STRING_LEN(22), .Type = DTYPE_String},
+		.UnicodeString          = L"Midi Fighter Twister 5"
+	},
+	{
+		.Header                 = {.Size = USB_STRING_LEN(22), .Type = DTYPE_String},
+		.UnicodeString          = L"Midi Fighter Twister 6"
+	},
+	{
+		.Header                 = {.Size = USB_STRING_LEN(22), .Type = DTYPE_String},
+		.UnicodeString          = L"Midi Fighter Twister 7"
+	},
+	{
+		.Header                 = {.Size = USB_STRING_LEN(22), .Type = DTYPE_String},
+		.UnicodeString          = L"Midi Fighter Twister 8"
+	},
 };
 
 /** Device Serial Numbers - We have four to allow users to user multiple MF3Ds at once
@@ -358,7 +520,7 @@ uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue,
 	switch (DescriptorType)
 	{
 case DTYPE_Device:
-Address = &DeviceDescriptor;
+Address = &DeviceDescriptors[g_device_identity];
 Size    = sizeof(USB_Descriptor_Device_t);
 break;
 
@@ -378,8 +540,8 @@ break;
 					Size    = pgm_read_byte(&ManufacturerString.Header.Size);
 					break;
 				case STRING_ID_Product:
-					Address = &ProductString;
-					Size    = pgm_read_byte(&ProductString.Header.Size);
+					Address = &ProductStrings[g_device_identity];
+					Size    = pgm_read_byte(&ProductStrings[g_device_identity].Header.Size);
 				break;
 				//case STRING_ID_Serial:  // !Summer2016Update: could add serial number to descriptors (not necessary, used additional Product IDs)
 					//Address = &SerialString;

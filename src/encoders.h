@@ -38,7 +38,19 @@
 	//#define BANKED_ENCODERS 64 // essentially virtual encoders but not including 'shifted' encoders.
 	//#define BANKED_ENCODER_MASK 0x3F // For Determining banked encoder id from the virtual encoder id
 	//#define VIRTUAL_ENCODERS 128  // Twister Firmware supports 4 Banks of 16 Encoders, each containing a virtual shift encoder (4x16x2=128)
+	// Bank mode is a runtime choice, thus NUM_BANKS is a variable and not a
+	// constant. Refer to constants.h. The macro keeps the name, because the
+	// approximately 70 sites that use these three values are all loop bounds
+	// or index arithmetic. No site does a #if or a case label on them, thus
+	// no site changes.
+	//
+	// Where you must have a compile time bound, for example an array size,
+	// use MAX_BANKS.
+	extern uint8_t g_num_banks;
+	#define NUM_BANKS g_num_banks
 	#define BANKED_ENCODERS (NUM_BANKS * PHYSICAL_ENCODERS)
+	// This mask is correct only because 4 and 8 are both powers of two. If you
+	// add a third bank count that is not a power of two, this breaks quietly.
 	#define BANKED_ENCODER_MASK (BANKED_ENCODERS - 1)
 	#define VIRTUAL_ENCODERS (NUM_BANKS * PHYSICAL_ENCODERS * 2)
 	
@@ -69,6 +81,7 @@
 			ENC_FINE_ADJUST,
 			ENC_SHIFT_HOLD,
 			ENC_SHIFT_TOGGLE,
+			PC_RESEND = 9, // On press, re-sends Bank Select and Program Change for a program knob
 		} enc_sw_action_type_t;
 	
 		// Encoder switch movement enum
@@ -87,6 +100,7 @@
 			SEND_SWITCH_VEL_CONTROL = 3, // For 'Encoders' only, sends like send_cc, but also adjusts the button output velocity.
 			SEND_REL_ENC_MOUSE_EMU_DRAG = 4, // For 'Encoders' only, sends like rel_enc, but tells MF Utility, to drag the mouse for controlling on-screen elements with the mouse
 			SEND_REL_ENC_MOUSE_EMU_SCROLL = 5, // For 'Encoders' only, sends like rel_enc, but tells MF Utility, to drag the mouse for controlling on-screen elements with the mouse
+			SEND_PROGRAM_CHANGE = 6, // For 'Encoders' only, sends Bank Select from the page's CC0/CC32 knobs on the same channel, then Program Change
 		} midi_type_t;
 
 		// Encoder Movement Type Enum
@@ -108,6 +122,13 @@
 		// Tag-Value table which holds the configuration for 1 encoder
 		#define ENC_CFG_SIZE 15
 		#define ENC_REL_FINE_LIMIT 0x04 // how many 'ticks' per output when encoder is Relative and Fine
+		#define ENC_REL_OUTPUT_MIN 0x01 // Relative binary offset floor (64-63), clamps the CCW output so it cannot wrap
+		#define ENC_REL_OUTPUT_MAX 0x7F // Relative binary offset ceiling (64+63), clamps the CW output so it cannot wrap
+		// Velocity sensitive step mapping. The relative encoder path and Native Mode
+		//   both use it, thus the two cannot drift apart. 'base' is the 1..256
+		//   multiplier that convert_ticks_per_scan_to_value_multiplier() returns.
+		#define ENC_REL_VELOCITY_STEP_MAX 17
+		#define ENC_REL_VELOCITY_STEP(base) (1 + (((base) >> 4) & 0x1F)) // 1..17
 		typedef union {  // Each of these fields is designed to be written to directly from MIDI Sysex Data
 			struct {     // - so you can only use 7-bits of these uint8_t's to store data.
 				uint8_t			has_detent;
@@ -139,8 +160,12 @@
 		
 		//extern uint8_t indicator_value_buffer[4][16];
 		//extern encoder_config_t encoder_settings[64];
-		extern uint8_t indicator_value_buffer[NUM_BANKS][16];
-		extern encoder_config_t encoder_settings[NUM_BANKS * PHYSICAL_ENCODERS];
+		// These point into bank_arena. Refer to encoders_alloc(). The arena
+		// holds the storage for the live bank mode, thus the size is available at
+		// run time only. Every use is arr[i] or arr[bank][enc], which reads
+		// the same through a pointer, thus no use site changes.
+		extern uint8_t (*indicator_value_buffer)[16];
+		extern encoder_config_t *encoder_settings;
 		// - overall, the use of input_map over an enlarged encoder_settings saves about 236 Bytes of RAM (624->960)
 		// -- But logically, the use of encoder_settings is a much simpler and faster implementation
 
@@ -148,7 +173,18 @@
 		void get_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_ptr);
 		void save_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_ptr);
 		void factory_reset_encoder_config(void);
+		// Resets a range of encoder settings pages only. The count starts at the
+		// first such page. A change of bank mode uses this to give defaults to
+		// the pages that the new mode will read. 4 pages make one bank.
+		void factory_reset_encoder_pages(uint8_t first_page, uint8_t last_page);
 		
+		// Divides bank_arena for the given bank count. Call one time at boot,
+		// before anything reads or writes bank scaled storage.
+		void encoders_alloc(uint8_t banks);
+		// The part of the arena that the live bank mode does not use. The
+		// sequencer puts its large data here in 4 bank mode.
+		uint8_t* bank_arena_spare(uint16_t *size);
+
 		void encoders_init(void);
 		void process_encoder_input_rotary(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, uint16_t bit);
 
@@ -164,6 +200,10 @@
 			bool process_encoder_input_rotary_deadzone(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value);
 		#endif
 
+		#if VELOCITY_CALC_METHOD > VELOCITY_CALC_M_NONE
+			// Converts encoder speed (ticks per scan cycle) into a 1..256 value multiplier.
+			uint16_t convert_ticks_per_scan_to_value_multiplier(uint8_t tick_count, uint16_t cycles_count);
+		#endif
 
 		void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, uint16_t bit);
 		void process_encoder_input(void);

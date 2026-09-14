@@ -43,10 +43,10 @@
 #include "side_switch.h"
 #include "Descriptors.h"
 #include "jump_to_bootloader.h"
-#ifndef EXTENDED_BANKS
 #include "sequencer.h"
-#endif
 #include "self_test.h"
+#include "calibration.h"
+#include "setup_mode.h"
 
 //#define DEMO 
 	
@@ -138,12 +138,11 @@ void Midifighter_Task(void); // -Wmissing-prototypes
 		}
 		break;
 		case sequencer:{
-			#ifndef EXTENDED_BANKS
-			process_seq_side_buttons();
-			process_sequencer_input();
-			run_sequencer_display();
-			#endif
-
+			if (g_seq_available) {
+				process_seq_side_buttons();
+				process_sequencer_input();
+				run_sequencer_display();
+			}
 		}
 		break;
 	}
@@ -250,9 +249,24 @@ void main_loop(void) {
 
 int main (void)
 {	
+	// A watchdog reset does not clear WDT.CTRL on this part, thus the timeout
+	// that caused the reset is still running now. setup_reboot() uses 16 ms,
+	// which start up can pass before the first wdt_reset(), and more so with 8
+	// banks, where encoders_init() reads 128 encoder settings and not 64. The
+	// unit then resets again and again, and only a power cycle clears it.
+	//
+	// Start up must therefore not inherit a watchdog from what caused the
+	// reset. EVENT_USB_Device_ConfigurationChanged() arms the 2 second
+	// watchdog that the unit runs with.
+	wdt_disable();
+
 	// Initialize all systems	
 	system_init();
 	//clock_init();
+	// This must come before config_init(). It sets the live bank count, divides
+	// bank_arena, and config_init() can do a factory reset. That reset writes a
+	// number of EEPROM pages that depends on the count.
+	bank_mode_init();
 	config_init();
 	load_config();
 		
@@ -261,9 +275,12 @@ int main (void)
 	encoders_init();
 	side_switch_init();	
 	display_init();
-	#ifndef EXTENDED_BANKS
-	sequencer_init();
-	#endif
+	// sequencer_alloc() gives the sequencer the part of bank_arena that the
+	// banks do not use. It fails in 8 bank mode, where there is no spare, and
+	// then the sequencer stays off. Refer to g_seq_available.
+	if (sequencer_alloc()) {
+		sequencer_init();
+	}
 	
 	// Disable the display until we are connected and ready to start the 
 	// start-up animation.
@@ -275,6 +292,10 @@ int main (void)
 	
 	// Check if we need to perform any self tests
 	check_self_test();
+	
+	// A hold of the setup entry side button opens the setup menu. It blocks until
+	// the user saves or discards. Then the boot sequence continues.
+	check_setup_mode();
 	
 	//Then check for the four corner boot loader input pattern
 	if(update_encoder_switch_state() == 0x9009)

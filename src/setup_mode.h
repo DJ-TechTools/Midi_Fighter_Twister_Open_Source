@@ -1,0 +1,51 @@
+/*
+ * setup_mode.h
+ *
+ * DJTT - Midi Fighter Twister - Embedded Software License
+ * Copyright (c) 2026: DJ TechTools
+ * Permission is hereby granted, free of charge, to any person owning or possessing 
+ * a DJ TechTools Midi Fighter Twister Hardware Device to view and modify this source 
+ * code for personal use. Person may not publish, distribute, sublicense, or sell 
+ * the source code (modified or un-modified). Person may not use this source code 
+ * or any diminutive works for commercial purposes. The permission to use this source 
+ * code is also subject to the following conditions:
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  FITNESS FOR A 
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION 
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+#ifndef SETUP_MODE_H_
+#define SETUP_MODE_H_
+
+	/* Includes: */
+	#include <asf.h>
+
+	#include "constants.h"
+
+	/* Function Prototypes: */
+
+	// Boot hook, like check_self_test(). If the user holds the entry button, runs
+	// setup mode and returns true. If not, does nothing and returns false.
+	bool check_setup_mode(void);
+
+	// Loads the stored USB identity into g_device_identity. This must run before
+	// the unit services the host. load_config() is early enough.
+	void identity_init(void);
+
+	// Reads the stored bank mode and divides bank_arena for it. Must be the
+	// first call in main(), before config_init().
+	void bank_mode_init(void);
+
+	// Stores the USB identity, 0 to NUM_DEVICE_IDS-1. The unit ignores a value out
+	// of range. The host reads the new product ID on the next enumeration.
+	void identity_set(uint8_t identity);
+
+	// Stores the bank mode, MIN_BANKS or MAX_BANKS, and gives defaults to the
+	// EEPROM pages that the new mode will read. The caller must then reset the
+	// unit, because encoders_alloc() divides bank_arena at boot only.
+	void bank_mode_set(uint8_t banks);
+
+#endif /* SETUP_MODE_H_ */

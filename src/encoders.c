@@ -39,23 +39,52 @@ const uint16_t encoder_detent_limit_high = 6450; // 6450 - ok for all modes, (no
 
 // Locals
 
-uint8_t indicator_value_buffer[NUM_BANKS][16];	 // Holds the 7 bit indicator value
+// Bank scaled storage ---------------------------------------------------------
+//
+// The live bank count is a runtime value, but C needs an array size at compile
+// time. Thus the large bank scaled arrays are pointers into one arena, which
+// encoders_alloc() divides at boot. The arena is large enough for 8 banks.
+//
+// In 4 bank mode only one half of the arena is in use. The sequencer puts its
+// large data in the other half. Refer to bank_arena_spare(). Thus one binary
+// holds both modes, and the live mode holds all of the storage.
+//
+// No use site changes, because arr[i] and ptr[i] have the same syntax, and
+// because no site does sizeof() or memcpy() on these arrays.
 
-uint8_t switch_color_buffer[NUM_BANKS][16];      // Holds the switch color setting 
+#define ARENA_BYTES_PER_BANK	400		// refer to encoders_alloc()
+#define ARENA_SIZE				(MAX_BANKS * ARENA_BYTES_PER_BANK)
 
-uint8_t switch_animation_buffer[NUM_BANKS][16];  // Holds the switch animation setting
-uint8_t encoder_animation_buffer[NUM_BANKS][16];  // Holds the encoder animation setting
+// ARENA_BYTES_PER_BANK must agree with what encoders_alloc() gives out. If it is
+// too small, the last bank runs past the arena. If it is too large,
+// bank_arena_spare() gives the sequencer less space than is available.
+_Static_assert(ARENA_BYTES_PER_BANK == (32 * 2) + (16 * 2) + (16 * ENC_CFG_SIZE) + (16 * 4),
+               "ARENA_BYTES_PER_BANK disagrees with encoders_alloc()");
 
-uint16_t enc_switch_midi_state[NUM_BANKS][16];	 // Holds the switch states
+static uint8_t bank_arena[ARENA_SIZE];
 
-uint16_t enc_switch_toggle_state[NUM_BANKS];	 // 16-Encoders Per Bank/ 1-bit per Encoder
+uint8_t g_num_banks = MIN_BANKS;				 // 4 or 8, refer to encoders_alloc()
+
+uint8_t (*indicator_value_buffer)[16];			 // Holds the 7 bit indicator value
+
+uint8_t (*switch_color_buffer)[16];				 // Holds the switch color setting 
+
+uint8_t (*switch_animation_buffer)[16];			 // Holds the switch animation setting
+uint8_t (*encoder_animation_buffer)[16];		 // Holds the encoder animation setting
+
+uint16_t (*enc_switch_midi_state)[16];			 // Holds the switch states
+
+// These three are one 16 bit word for each bank. At 8 banks that is 6 bytes
+// more than at 4 banks, thus they stay as arrays. In the arena they cost more in
+// pointers and code than they save.
+uint16_t enc_switch_toggle_state[MAX_BANKS];	 // 16-Encoders Per Bank/ 1-bit per Encoder
 							// toggle state is not tied directly 
 							// to the MIDI state we use this to track.
 												 
-uint16_t switch_color_overide[NUM_BANKS];		 // Bit field to track if color override
+uint16_t switch_color_overide[MAX_BANKS];		 // Bit field to track if color override
 												 // was received for switch color
 												 
-uint16_t enc_indicator_overide[NUM_BANKS];       // Bit field to track if indicator override
+uint16_t enc_indicator_overide[MAX_BANKS];       // Bit field to track if indicator override
 												 // was received for indicator
 												 
 											
@@ -69,22 +98,17 @@ uint16_t shift_mode_midi_override[2];		    // Bit field to track the midi state 
 
 int8_t encoder_detent_counter[PHYSICAL_ENCODERS]; 
 //~ input_map_t input_map[BANKED_ENCODERS]; // !Summer2016Update: Removed in favor of expanding encoder_settings
-int16_t  raw_encoder_value[VIRTUAL_ENCODERS]; // !Summer2016Update: Expanded to store values for all banks and shifted encoders
+int16_t  *raw_encoder_value; // !Summer2016Update: Expanded to store values for all banks and shifted encoders
 // - indexed by Virtual Encoder ID
-// --- 0-15: Encoders Bank 1 (Unshifted)
-// --- 16-31: Encoders Bank 2 (Unshifted)
-// --- 32-47: Encoders Bank 3 (Unshifted)
-// --- 48-63: Encoders Bank 4 (Unshifted)
-// --- 64-79: Encoders Bank 1 (Shifted)
-// --- 80-95: Encoders Bank 2 (Shifted)
-// --- 96-111: Encoders Bank 3 (Shifted)
-// --- 112-127: Encoders Bank 4 (Shifted)
+// - the unshifted encoders of all banks come first, then the shifted encoders
+//   of all banks. With 4 banks that is 0-63 unshifted and 64-127 shifted. With
+//   8 banks it is 0-127 unshifted and 128-255 shifted.
 
 static uint8_t encoder_bank = 0;
 static int8_t g_detent_size;
 static int8_t g_dead_zone_size;
 //static encoder_config_t encoder_settings[PHYSICAL_ENCODERS];
-encoder_config_t encoder_settings[BANKED_ENCODERS];
+encoder_config_t *encoder_settings;
 //static encoder_config_t encoder_settings_transfer_buffer[1];
 
 
@@ -144,6 +168,37 @@ static void sync_indicator_from_raw(uint8_t bank, uint8_t encoder, uint8_t virtu
 	indicator_value_buffer[bank][encoder] = (uint8_t)(raw_encoder_value[virtual_encoder_id]/100);
 }
 
+// Returns the value of the CC0 or CC32 knob on the current page on this channel, or -1 if none.
+// Reads raw_encoder_value, not indicator_value_buffer: both layers share that buffer, and the
+// detent handler writes 63 into it without sending.
+static int8_t bank_select_value(uint8_t channel, uint8_t cc)
+{
+	uint8_t first = encoder_bank * PHYSICAL_ENCODERS;
+	for (uint8_t i = 0; i < PHYSICAL_ENCODERS; ++i) {
+		const encoder_config_t *cfg = &encoder_settings[first + i];
+		if (cfg->encoder_midi_type != SEND_CC || cfg->encoder_midi_number != cc) { continue; }
+		bool on_base  = (cfg->encoder_midi_channel == channel);
+		bool on_shift = (cfg->encoder_shift_midi_channel == channel);
+		if (!on_base && !on_shift) { continue; }
+		// If both layers are on this channel, use the layer on display
+		bool use_shift = on_shift && (!on_base || encoder_is_in_shift_state(encoder_bank, i));
+		uint8_t idx = first + i + (use_shift ? BANKED_ENCODERS : 0);
+		return (int8_t)scale_encoder_value(raw_encoder_value[idx]);
+	}
+	return -1;
+}
+
+// Sends Bank Select MSB, then LSB, then Program Change, in the order the MIDI spec requires.
+// A bank select is only sent if a knob on the page supplies it.
+static void send_program_selection(uint8_t channel, uint8_t program)
+{
+	int8_t msb = bank_select_value(channel, 0);
+	int8_t lsb = bank_select_value(channel, 32);
+	if (msb >= 0) { midi_stream_raw_cc(channel, 0, (uint8_t)msb); }
+	if (lsb >= 0) { midi_stream_raw_cc(channel, 32, (uint8_t)lsb); }
+	midi_stream_raw_program_change(channel, program);
+}
+
 // encoder_maps_match: Compares MIDI Mapping Parameters common to both 'shift' and 'unshifted' states.
 // - returns true if the mappings match, otherwise returns false.
 bool encoder_maps_match(uint8_t this_banked_encoder_id, uint8_t that_banked_encoder_id) {
@@ -197,6 +252,57 @@ void transfer_encoder_values_to_other_banks(uint8_t current_bank){
 	for (uint8_t this_encoder = 0; this_encoder < PHYSICAL_ENCODERS; this_encoder++){
 		transfer_this_encoder_value_to_other_banks(current_bank, this_encoder);
 	}
+}
+
+/**
+ * Divides bank_arena between the bank scaled arrays, for the given bank count.
+ *
+ * Call this one time at boot, before any other code reads or writes bank
+ * scaled storage. encoders_init() and load_config() both do, thus this must
+ * come before them. Refer to bank_mode_init() in setup_mode.c.
+ *
+ * The clear keeps a condition that the sequencer overlay needs: its buffers
+ * must start at zero. No other code initializes slot_memory, because
+ * pattern_memory_init() only reads the EEPROM slot flags. bank_arena is in
+ * .bss now, and start up clears .bss. Thus the clear protects against a later
+ * change, and is not necessary now.
+ *
+ * \param banks [in]	MIN_BANKS or MAX_BANKS
+ */
+void encoders_alloc(uint8_t banks)
+{
+	if (banks != MAX_BANKS) { banks = MIN_BANKS; }
+	g_num_banks = banks;
+
+	memset(bank_arena, 0, ARENA_SIZE);
+
+	uint8_t *p = bank_arena;
+
+	// The 16 bit arrays come first, to keep each one on an even offset.
+	raw_encoder_value     = (int16_t *)p;             p += banks * 32 * 2;
+	enc_switch_midi_state = (uint16_t (*)[16])p;      p += banks * 16 * 2;
+	encoder_settings      = (encoder_config_t *)p;    p += banks * 16 * sizeof(encoder_config_t);
+
+	indicator_value_buffer   = (uint8_t (*)[16])p;    p += banks * 16;
+	switch_color_buffer      = (uint8_t (*)[16])p;    p += banks * 16;
+	switch_animation_buffer  = (uint8_t (*)[16])p;    p += banks * 16;
+	encoder_animation_buffer = (uint8_t (*)[16])p;    p += banks * 16;
+
+}
+
+/**
+ * Returns the part of the arena that the live bank mode does not use.
+ *
+ * With 4 banks this is one half of the arena, which is enough for the
+ * sequencer. With 8 banks it is empty, and the sequencer must not run.
+ *
+ * \param size [out]	Number of bytes available
+ */
+uint8_t* bank_arena_spare(uint16_t *size)
+{
+	uint16_t used = (uint16_t)g_num_banks * ARENA_BYTES_PER_BANK;
+	*size = ARENA_SIZE - used;
+	return bank_arena + used;
 }
 
 void encoders_init(void)
@@ -333,9 +439,10 @@ void get_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_ptr
  */
 void save_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_ptr)
 {	
-	// Record the new setting to RAM first
-	uint8_t virtual_encoder_id = get_virtual_encoder_id (bank, encoder);
-	encoder_settings[virtual_encoder_id] = *cfg_ptr;
+	// NOTE: the end of this function refreshes the RAM copy from the stored data.
+	// Do not assign *cfg_ptr into encoder_settings[] here. Fields that the push
+	// does not update arrive as 0x80 sentinels, thus a full copy of the tag table
+	// fills the RAM config with garbage.
 	
 	// Create a tempory page_buffer;
 	uint8_t page_buffer[EEPROM_PAGE_SIZE];
@@ -347,6 +454,11 @@ void save_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_pt
 	
 	uint8_t* buffer_ptr = page_buffer;
 	buffer_ptr += (8 * (encoder % 4));
+	
+	// Keep a copy of the 8 bytes of this encoder. Then the code below can tell if
+	// the page needs a new write. Only these 8 bytes can change below.
+	uint8_t slot_original[8];
+	for (uint8_t i = 0; i < 8; ++i) { slot_original[i] = buffer_ptr[i]; }
 	
 	// Switch Action, Switch MIDI type & Switch MIDI channel are saved
 	// in the first byte
@@ -413,7 +525,7 @@ void save_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_pt
 		*buffer_ptr &= ~0xF0;
 		*buffer_ptr |= (0xF0 & ((cfg_ptr->encoder_midi_channel - 1) << 4));
 	}
-	buffer_ptr++;	// 2-bits Open 0xC0
+	buffer_ptr++;	// 1-bit Open 0x08
 	
 	// Encoder MIDI number & is super knob flag are saved in the 8th byte
 	if (cfg_ptr->encoder_midi_number < 0x80){
@@ -428,11 +540,29 @@ void save_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_pt
 	
 	uint8_t page_index = ENC_SETTINGS_START_PAGE + (4 * bank) + (encoder / 4);
 	
-	// Save the updated page buffer back to EEPROM
-	cpu_irq_disable();
-	nvm_eeprom_load_page_to_buffer(page_buffer);
-	nvm_eeprom_atomic_write_page(page_index);
-	cpu_irq_enable();
+	// Write the page only if a value changed. A config push sends two messages for
+	// each encoder, and the utility sends the full sweep several times. Thus most of
+	// these writes are not necessary. Each write blocks for milliseconds with
+	// interrupts disabled (nvm_wait_until_ready). During a bulk transfer, the USB
+	// endpoint gets no service for that time.
+	uint8_t* slot_ptr = page_buffer + (8 * (encoder % 4));
+	bool slot_changed = false;
+	for (uint8_t i = 0; i < 8; ++i) {
+		if (slot_ptr[i] != slot_original[i]) { slot_changed = true; break; }
+	}
+	
+	if (slot_changed) {
+		// Save the updated page buffer back to EEPROM
+		cpu_irq_disable();
+		nvm_eeprom_load_page_to_buffer(page_buffer);
+		nvm_eeprom_atomic_write_page(page_index);
+		cpu_irq_enable();
+	}
+	
+	// Refresh the RAM copy from the stored data, thus encoder_settings[] always
+	// agrees with EEPROM. The index is the banked id. get_virtual_encoder_id() adds
+	// BANKED_ENCODERS for a shifted encoder, and that index runs past the array.
+	get_encoder_config(bank, encoder, &encoder_settings[encoder + bank*PHYSICAL_ENCODERS]);
 
 	// !Summer2016Update: Match the newly changed input_map to match the output_map saved in eeprom
 	// - removed in favor of expanding encoder_map
@@ -443,6 +573,29 @@ void save_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_pt
  * Returns all encoder configuration data to the factory defaults  
 **/
 void factory_reset_encoder_config(void)
+{
+	factory_reset_encoder_pages(0, (4 * NUM_BANKS) - 1);
+}
+
+/**
+ * Returns a range of encoder settings pages to the factory defaults.
+ *
+ * A change of bank mode uses this to give defaults to the pages that the new
+ * mode is about to read. Without it, banks 5 to 8 come up with the 0xFF of an
+ * unwritten EEPROM, which is not a default but nonsense.
+ *
+ * The page count starts at the first encoder settings page, thus page 0 here is
+ * EEPROM page ENC_SETTINGS_START_PAGE. There are 4 pages for each bank, one
+ * for each row of 4 encoders.
+ *
+ * The loop goes through all of the pages, but writes only the pages in range.
+ * This keeps the MIDI numbers the same as a full reset gives, because each
+ * page adds 4 to the number of the page before it.
+ *
+ * \param first_page [in]	First page to reset, 0 based
+ * \param last_page [in]	Last page to reset, 0 based
+ */
+void factory_reset_encoder_pages(uint8_t first_page, uint8_t last_page)
 {
 	// Create a table of the default settings common to all encoders
 	encoder_config_t enc_default;
@@ -465,13 +618,15 @@ void factory_reset_encoder_config(void)
 	// !Summer2016Update active/inactive colors modified to be fixed per bank
 	uint8_t color_map = eeprom_read_byte((uint8_t*)EE_COLOR_MAP);
 
-	uint8_t active_colors[NUM_BANKS] = {
+	// MAX_BANKS, not NUM_BANKS: these have 8 initializers, and NUM_BANKS is a
+	// runtime value. The code reads only the first NUM_BANKS entries.
+	uint8_t active_colors[MAX_BANKS] = {
 		DEF_ACTIVE_COLOR_BANK1_CLASSIC, DEF_ACTIVE_COLOR_BANK2_CLASSIC,
 		DEF_ACTIVE_COLOR_BANK3_CLASSIC, DEF_ACTIVE_COLOR_BANK4_CLASSIC,
 		DEF_ACTIVE_COLOR_BANK5_CLASSIC, DEF_ACTIVE_COLOR_BANK6_CLASSIC,
 		DEF_ACTIVE_COLOR_BANK7_CLASSIC, DEF_ACTIVE_COLOR_BANK8_CLASSIC
 	};
-	uint8_t inactive_colors[NUM_BANKS] = {
+	uint8_t inactive_colors[MAX_BANKS] = {
 		DEF_INACTIVE_COLOR_BANK1_CLASSIC, DEF_INACTIVE_COLOR_BANK2_CLASSIC,
 		DEF_INACTIVE_COLOR_BANK3_CLASSIC, DEF_INACTIVE_COLOR_BANK4_CLASSIC,
 		DEF_INACTIVE_COLOR_BANK5_CLASSIC, DEF_INACTIVE_COLOR_BANK6_CLASSIC,
@@ -534,7 +689,8 @@ void factory_reset_encoder_config(void)
 	
 	// For Each Memory Page
 	// - Modify the Template, and write the page
-	for(uint8_t i=0;i<4*NUM_BANKS;++i){		// 4*NUM_BANKS, aka. NUM_ROWS_PER_BANK*NUM_BANKS 
+	for(uint8_t i=0;i<4*MAX_BANKS;++i){		// 4*MAX_BANKS, aka. NUM_ROWS_PER_BANK*MAX_BANKS 
+		bool in_range = (i >= first_page) && (i <= last_page);
 		// for each Row in each Bank modify the default settings
 		/* We now save the buffer to EEPROM, then increment the settings 
 		   which are unique to each encoder ie MIDI number/pitch and repeat 
@@ -551,10 +707,12 @@ void factory_reset_encoder_config(void)
 		}
 
 		// Write the Page
-		cpu_irq_disable();
-		nvm_eeprom_load_page_to_buffer(page_buffer);
-		nvm_eeprom_atomic_write_page(page_index);
-		cpu_irq_enable();
+		if (in_range) {
+			cpu_irq_disable();
+			nvm_eeprom_load_page_to_buffer(page_buffer);
+			nvm_eeprom_atomic_write_page(page_index);
+			cpu_irq_enable();
+		}
 		
 		// Modify Mapping Parameters for the next item.
 		for(uint8_t j=0;j<4;++j){  // For each Data Page (Corresponds to 1 - Horizontal Row of Encoders)
@@ -627,8 +785,13 @@ void process_encoder_input_rotary(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 
 	if (new_value) { // if Encoder Has Moved
     reset_idle_timer();
-		if(native_mode_process_encoder_input_rotary(i, new_value))
+		#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
+		if(native_mode_process_encoder_input_rotary(i, new_value, cycle_count))
 			return;
+		#else
+		if(native_mode_process_encoder_input_rotary(i, new_value, 0))
+			return;
+		#endif
 			
 		// --- Detents and Deadzones
 		#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
@@ -712,25 +875,31 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
 	} else if (!encoder_is_in_deadzone(value)) {
 		return false;
 	}
-	// The encoder is in a end zone, only change the encoder value
-	//   once we have moved out of the dead zone.
+	// The encoder is in an end zone. Only consecutive ticks away from the end count, so a
+	// knob resting against the end can wobble without leaving it.
 	if( ((raw_encoder_value[virtual_encoder_id] < 100) && (new_value > 0)) ||
 	((raw_encoder_value[virtual_encoder_id] > 12600) && (new_value < 0)) ) {
-		
 		encoder_detent_counter[i] += new_value;
+	} else {
+		encoder_detent_counter[i] = 0;
 	}
 	// - Allow movement to get us out of the dead zone, if we've traveled enough.
+	bool leaving = false;
 	if ((encoder_detent_counter[i] > g_dead_zone_size) &&
 	(raw_encoder_value[virtual_encoder_id] < 100)) { // CW
-		
 		raw_encoder_value[virtual_encoder_id] = 100;
-		encoder_detent_counter[i] = 0;
-		
+		leaving = true;
 	} else if ((encoder_detent_counter[i] < -g_dead_zone_size) &&
 	(raw_encoder_value[virtual_encoder_id] > 12600)) {  // CCW
-		
 		raw_encoder_value[virtual_encoder_id] = 12600;
+		leaving = true;
+	}
+	if (leaving) { // Leave on exactly one step, whatever the sensitivity, and send it now
 		encoder_detent_counter[i] = 0;
+		uint8_t control_change_value = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
+		bool shifted = encoder_is_in_shift_state(encoder_bank, i);
+		send_encoder_midi(banked_encoder_id, control_change_value, true, shifted);
+		indicator_value_buffer[encoder_bank][i] = control_change_value;
 	}
 	return true;
 }
@@ -748,7 +917,7 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
 
 	// Calculate Output Value 
 	// new_value will be 1 or -1 if it gets here(though technically it could hold values higher)
-	uint8_t output_value;// = 64 + new_value;	// Relative: Bin Offset
+	int16_t output_value;// = 64 + new_value;	// Relative: Bin Offset (int16 so the clamp below can catch overflow)
 	// Case A: Relative Encoder Fine Adjustments
 	if (encoder_settings[banked_encoder_id].switch_action_type == ENC_FINE_ADJUST && get_enc_switch_state() & bit) { // !Summer2016Update: Relative Encoder Fine Adjustment Added
 		static int16_t relative_fine_value[PHYSICAL_ENCODERS] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  // Counter
@@ -775,7 +944,7 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
 				int8_t tick_count = new_value < 0 ? -1*new_value : new_value;
 				//uint16_t cycle_count = encoder_event_cycle_counts[i];
 				uint16_t base_multiplier = convert_ticks_per_scan_to_value_multiplier(tick_count , cycle_count);
-				int16_t scaled_mult = 1 + ((base_multiplier >> 4) & 0x1F); // 0-16
+				int16_t scaled_mult = ENC_REL_VELOCITY_STEP(base_multiplier); // 1..17
 				output_value = 64 + new_value*scaled_mult;	// Relative: Bin Offset
 			} else {
 				output_value = 64 + new_value;	// Relative: Bin Offset
@@ -794,12 +963,19 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
 		// !revision use the unused switch midi number: midi_number = encoder_settings[banked_encoder_id].switch_midi_number ? 20190806
 		//midi_channel = encoder_settings[banked_encoder_id].switch_midi_channel;
 	}
+	// Clamp to the 7-bit binary offset range, a multi-tick event at a high
+	//   velocity multiplier can push the raw sum past 127 and wrap the direction.
+	if (output_value > ENC_REL_OUTPUT_MAX) {
+		output_value = ENC_REL_OUTPUT_MAX;
+	} else if (output_value < ENC_REL_OUTPUT_MIN) {
+		output_value = ENC_REL_OUTPUT_MIN;
+	}
 	// Send Message
 	// Relative output does not need to call 'Send Encoder' as it just always outputs 'CC' 
 	if (output_value != 64) { // !Summer2016Update: Relative Encoder Fine Adjustment Bugfix, disallow non-moving
 		midi_stream_raw_cc(midi_channel, 
 					encoder_settings[banked_encoder_id].encoder_midi_number, 
-					output_value);	
+					(uint8_t)output_value);	
 	}
 	return true;
 }
@@ -831,15 +1007,23 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
 	// Calculate Value to write into raw_encoder_value
 	scaled_value = new_value*base_multiplier;
 
+	uint8_t prev_value = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
 	// Update the Stored raw_encoder_value
 	raw_encoder_value[virtual_encoder_id] += scaled_value;
 	raw_encoder_value[virtual_encoder_id] = clamp_encoder_raw_value(raw_encoder_value[virtual_encoder_id]);
+	if (encoder_is_in_deadzone(raw_encoder_value[virtual_encoder_id])) {
+		encoder_detent_counter[i] = 0;	// Arriving at an end: count its sticky ticks from zero
+	}
 	// Translate the raw value into a MIDI value, send & save the new value
 	uint8_t control_change_value = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
 	//send_element_midi(SWITCH, i, control_change_value, true);
 	uint8_t this_bank = encoder_bank;// banked_encoder_id >> 4; // !review !test this_bank
 	bool shifted = encoder_is_in_shift_state(this_bank, i);
-	send_encoder_midi(banked_encoder_id, control_change_value, true, shifted); // !Summer2016Update: Shifted Encoders now always output as Encoders
+	// Fine adjust and slow velocity turns repeat a value; a synth reloads the patch on every Program Change
+	if (encoder_settings[banked_encoder_id].encoder_midi_type != SEND_PROGRAM_CHANGE ||
+	    control_change_value != prev_value) {
+		send_encoder_midi(banked_encoder_id, control_change_value, true, shifted); // !Summer2016Update: Shifted Encoders now always output as Encoders
+	}
 	indicator_value_buffer[encoder_bank][i]=control_change_value;
 	return true;
   }
@@ -861,15 +1045,23 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
 			scaled_value = new_value*ENCODER_VALUE_SCALAR_EMULATION;   
 			//scaled_value = new_value*200;   
 	}
+	uint8_t prev_value = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
 	// Update the Stored raw_encoder_value
 	raw_encoder_value[virtual_encoder_id] += scaled_value;
 	raw_encoder_value[virtual_encoder_id] = clamp_encoder_raw_value(raw_encoder_value[virtual_encoder_id]);
+	if (encoder_is_in_deadzone(raw_encoder_value[virtual_encoder_id])) {
+		encoder_detent_counter[i] = 0;	// Arriving at an end: count its sticky ticks from zero
+	}
 	// Translate the raw value into a MIDI value, send & save the new value 	
 	uint8_t control_change_value = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
 	//send_element_midi(SWITCH, i, control_change_value, true);
 	uint8_t this_bank = encoder_bank;// banked_encoder_id >> 4; // !review !test this_bank
 	bool shifted = encoder_is_in_shift_state(this_bank, i);
-	send_encoder_midi(banked_encoder_id, control_change_value, true, shifted); // !Summer2016Update: Shifted Encoders now always output as Encoders
+	// Fine adjust and slow velocity turns repeat a value; a synth reloads the patch on every Program Change
+	if (encoder_settings[banked_encoder_id].encoder_midi_type != SEND_PROGRAM_CHANGE ||
+	    control_change_value != prev_value) {
+		send_encoder_midi(banked_encoder_id, control_change_value, true, shifted); // !Summer2016Update: Shifted Encoders now always output as Encoders
+	}
 	indicator_value_buffer[encoder_bank][i]=control_change_value;
 	return true;
 }
@@ -941,6 +1133,18 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 				LED does not change state with this action */
 			case ENC_FINE_ADJUST:{}
 			break;	
+			
+			/*	Re-sends the program knob's selection on press, even if it has not
+				changed. The LED does not change state with this action */
+			case PC_RESEND:{
+				if ((bit & get_enc_switch_down()) &&
+					encoder_settings[banked_encoder_id].encoder_midi_type == SEND_PROGRAM_CHANGE) {
+					// The switch is taken by this action, thus the knob can't be shifted
+					send_program_selection(encoder_settings[banked_encoder_id].encoder_midi_channel,
+										   scale_encoder_value(raw_encoder_value[banked_encoder_id]));
+				}
+			}
+			break;
 			
 			case ENC_RESET_VALUE:{
 				// Reset the encoder value
@@ -1173,6 +1377,8 @@ void send_encoder_midi(uint8_t banked_encoder_idx, uint8_t value, bool state, bo
 		encoder_settings[banked_encoder_idx].encoder_midi_number,
 		true,
 		value);
+	} else if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_PROGRAM_CHANGE) {
+		send_program_selection(midi_channel, value);
 	}
 }
 
@@ -1256,6 +1462,8 @@ void send_element_midi(enc_control_type_t type, uint8_t banked_encoder_idx, uint
 				midi_stream_raw_cc(encoder_settings[banked_encoder_idx].encoder_midi_channel,
 										   encoder_settings[banked_encoder_idx].encoder_midi_number,
 										   value);
+			} else if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_PROGRAM_CHANGE) {
+				send_program_selection(encoder_settings[banked_encoder_idx].encoder_midi_channel, value);
 			}
 		}
 		break;
@@ -1423,7 +1631,7 @@ void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t
 							return;
 							#endif							
 						}
-					} else {
+					} else if (action_type != PC_RESEND) { // PC_RESEND sends no CC, thus it takes no CC feedback
 						// All other Switch Output Types will output a CC Message, and should expect to receive one in return.
 						if (type == SEND_CC){
 							process_sw_rgb_update(i, value);

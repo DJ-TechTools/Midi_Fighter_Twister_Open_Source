@@ -40,6 +40,18 @@
 	#define SIDE_SW3		IOPORT_CREATE_PIN(PORTA, 0)
 	#define SIDE_SW2		IOPORT_CREATE_PIN(PORTA, 1)
 	#define SIDE_SW1		IOPORT_CREATE_PIN(PORTA, 2)
+
+	// Side switch bit assignments, as update_side_switch_state() returns them.
+	// Bits 0-5 are SIDE_SW1..SIDE_SW6, left column then right. This agrees with
+	// the hardware, self_test.c side_pattern[], doc/NativeMode.md, and the
+	// sequencer combo on 0x12.
+	#define SW_LEFT_TOP			(1u << 0)
+	#define SW_LEFT_MID			(1u << 1)
+	#define SW_LEFT_BOT			(1u << 2)
+	#define SW_RIGHT_TOP		(1u << 3)
+	#define SW_RIGHT_MID		(1u << 4)
+	#define SW_RIGHT_BOT		(1u << 5)
+
 	
 	#define ENC_LATCH       IOPORT_CREATE_PIN(PORTC, 0)
 	#define ENC_CLK			IOPORT_CREATE_PIN(PORTC, 1)
