@@ -48,7 +48,7 @@
 		
 	/* Typedefs: */
 		
-		#define GLOBAL_TABLE_SIZE 18
+		#define GLOBAL_TABLE_SIZE 20
 		// The global table holds the Twister global settings
 		typedef union {
 			struct {
@@ -71,6 +71,8 @@
 				uint8_t sleepTimeout;
 				uint8_t sleepAnimation;
 				uint8_t bankAnimationsEnabled;
+				uint8_t detentSize;           // 39, sent as size + 1 (0 = not sent)
+				uint8_t deadZoneSize;         // 40, sent as size + 1 (0 = not sent)
 				
 			};
 			uint8_t bytes[GLOBAL_TABLE_SIZE];
@@ -84,6 +86,8 @@
 		uint8_t midi_system_channel;
 		uint8_t global_animation_channels;
 		uint8_t global_bank_animations_enabled;
+		uint8_t global_detent_size;
+		uint8_t global_dead_zone_size;
 
 
 		#define GET_ENC_ANIM_CHANNEL(packed)  (((packed) >> 4) & 0x0F)
@@ -95,6 +99,7 @@
 		void load_config(void);
 		void send_config_data (void);
 		void config_factory_reset(void);
+		void detent_settings_save(uint8_t detent_size, uint8_t dead_zone_size);
 		
 	
 	/*	Inline Functions: */

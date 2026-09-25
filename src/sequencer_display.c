@@ -63,8 +63,9 @@
 		// Initialize all indicators for the four slots
 		for(uint8_t i=0;i<4;++i){
 		
-			// Dim the brightness if the slot is muted
-			uint8_t rgb_brightness = !slotSettings[i].mute_on ? pgm_read_byte(&brightnessMap[global_rgb_brightness]) : 10;
+			// Dim the brightness if the slot is muted. The RGB level is doubled, as
+			// in set_encoder_rgb(), because build_rgb takes a level of 0-255.
+			uint8_t rgb_brightness = !slotSettings[i].mute_on ? pgm_read_byte(&brightnessMap[global_rgb_brightness]) * 2 : 10;
 			uint8_t ind_brightness = !slotSettings[i].mute_on ? pgm_read_byte(&brightnessMap[global_ind_brightness]) : 10;
 		
 			// If FX send is enabled for a slot we turn on the RGB of th clip selector encoder
@@ -187,7 +188,7 @@
 		uint8_t currentValue = SeqIndicatorValue[idx];
 	
 		// Get the display brightness values
-		uint8_t rgb_bright = pgm_read_byte(&brightnessMap[global_rgb_brightness]);
+		uint8_t rgb_bright = pgm_read_byte(&brightnessMap[global_rgb_brightness]) * 2;	// build_rgb takes 0-255
 		uint8_t ind_bright = pgm_read_byte(&brightnessMap[global_ind_brightness]);
 		uint8_t brightness;
 
@@ -245,14 +246,14 @@
 		
 			// Draw the slot volume indicator
 			case volumeAdjust: {
-				uint8_t brightness = !slotSettings[idx-8].mute_on ? 127 : 10;
+				uint8_t brightness = !slotSettings[idx-8].mute_on ? ind_bright : 10;
 				set_encoder_indicator_level(idx, slotSettings[idx-8].volume, false, BLENDED_BAR, 0, brightness);
 			}
 			break;
 		
 			// Draw the slot filter indicator
 			case filterAdjust: {
-				uint8_t brightness = !slotSettings[idx-12].mute_on ? 127 : 10;
+				uint8_t brightness = !slotSettings[idx-12].mute_on ? ind_bright : 10;
 				set_encoder_indicator_level(idx, slotSettings[idx-12].filter, true, BLENDED_BAR, FILTER_DETENT_COLOR, brightness);
 			}
 			break;

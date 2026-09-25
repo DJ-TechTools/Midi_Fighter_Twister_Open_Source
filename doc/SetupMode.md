@@ -2,11 +2,12 @@
 
 Setup mode is a menu on the Twister itself. Use it for the settings that you cannot set from the Midi Fighter Utility.
 
-There are three settings at this time:
+There are four settings at this time:
 
 - White balance calibration: refer to [White Balance Calibration](WhiteCalibration.md).
 - Device number: use a different number for each Twister when you connect more than one unit to the same computer.
 - Bank mode: select 4 banks with the sequencer, or 8 banks without the sequencer.
+- Detent: set how far you turn an encoder to leave its detent, and to leave the ends of its range.
 
 **What to know before you start:**
 
@@ -27,7 +28,7 @@ Encoder|Color|Function
 Bottom row, first|Blue|Turn to select the device number. The ring shows the number.
 Bottom row, second|Orange|Turn to select the bank mode. The ring shows which mode.
 Bottom row, third|White|Press to start white balance calibration.
-Bottom row, fourth|Off|Not in use at this time.
+Bottom row, fourth|Off, blue detent dot|Press to set the detent.
 Top row, first|Off, ring lit|Hold for one second to put the unit in bootloader mode.
 Top row, third|Red|Press to leave setup mode. Your changes are lost.
 Top row, fourth|Green|Press to save your changes and leave setup mode.
@@ -48,8 +49,8 @@ Set the device number of one unit at a time. Give each unit a different number.
 
 The Twister gives you a choice of two bank modes:
 
-- **4 banks with the sequencer.** This is the default. It is what all Twisters do unless you change this setting.
-- **8 banks without the sequencer.** This gives you 8 banks of 16 encoders. The sequencer is not available in this mode.
+- 4 banks with the sequencer: the default, and what all Twisters do unless you change this setting.
+- 8 banks without the sequencer: 8 banks of 16 encoders, with no sequencer.
 
 The Twister has memory for one mode only, thus you must select one of the two.
 
@@ -75,6 +76,31 @@ Your settings for banks 1 to 4 are never affected by this setting.
 
 The Midi Fighter Utility reads the number of banks from the Twister. Thus the Utility shows 4 or 8 banks to match. Connect the Twister to the Utility again after a change of mode.
 
+## Detent
+
+An encoder with a detent stops at the center of its range. You must turn it a small distance before its value changes again. The ends of the range also hold the encoder a small distance. These two settings set the distances. They apply to all encoders.
+
+1. Enter setup mode.
+2. Press the **bottom right encoder**. Its ring shows only the blue detent dot. The top two rows then show the detent page.
+3. Turn the **blue encoder** to set the detent size. Turn the **cyan encoder** to set the dead zone size at the ends. One click changes the size by one. The ring shows the size as one dot: LED 1 for size 1, and so on to LED 11 for size 11. No dot is size 0.
+4. Turn the **first encoder** in the top row to try the detent. Turn the **first encoder** in the second row to try the dead zone without a detent. Each test encoder has the color of the size on its row. Both use the sizes that you set. Press a test encoder to put it back at its start.
+5. To go back to the default sizes, press the **middle left side button**. This is the same button that resets the white balance calibration.
+6. Press the **top left side button** to go back to the setup menu.
+7. Press the **green encoder** to save.
+
+Encoder|Color|Function
+--|--|--
+Top row, first|Blue, blue detent dot|Turn to try the detent. Press to go back to the center.
+Top row, second and third|Off|Not in use.
+Top row, fourth|Blue|Turn to set the detent size.
+Second row, first|Cyan|Turn to try the dead zone. It has no detent and starts at 127. Press to go back to 127.
+Second row, second and third|Off|Not in use.
+Second row, fourth|Cyan|Turn to set the dead zone size.
+
+The sizes are 0 to 11. The detent size is 8 and the dead zone size is 2 unless you change them. A larger size holds the encoder longer. The encoder must turn one pulse more than the size to leave. There are four pulses in one click, thus size 8 is a little more than two clicks.
+
+The detent page writes nothing. Your changes are saved with the other setup mode changes when you press the green encoder. The Twister does not restart for this setting.
+
 ## Bootloader mode
 
 Bootloader mode lets the Midi Fighter Utility write new firmware to the Twister.
@@ -91,7 +117,7 @@ You must hold this encoder, because a press is not sufficient. Only the Midi Fig
 
 Release the encoder before all of the LEDs go off to stop. The ring comes on again and nothing occurs.
 
-**This command does not save your setup mode changes.** If you changed the device number, the bank mode, or the white balance, press the green encoder first. Then enter setup mode again, and hold this encoder.
+**This command does not save your setup mode changes.** If you changed the device number, the bank mode, the detent, or the white balance, press the green encoder first. Then enter setup mode again, and hold this encoder.
 
 To leave bootloader mode without new firmware, use the Midi Fighter Utility, or disconnect the cable and connect it again.
 
@@ -130,6 +156,17 @@ Byte|Contents
 `<maxbanks>`|The largest bank count the firmware has. This is 08 at this time.
 
 The two count bytes let the Utility build its lists from what the unit reports, and not from a value written into the Utility.
+
+### Detent sizes
+
+The detent sizes are global settings. They go with the other global settings, in the push and pull configuration commands (`01` and `02`).
+
+Tag|Setting|Value
+--|--|--
+39|Detent size|The size plus 1, thus `01` to `0C`.
+40|Dead zone size|The size plus 1, thus `01` to `0C`.
+
+The value is the size plus 1, because a push with no tag gives 0. Thus the unit keeps the stored size if the Utility does not send the tag. A value above 12 gives size 11.
 
 ### Write a setting
 

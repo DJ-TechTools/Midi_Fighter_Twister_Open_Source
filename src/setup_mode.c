@@ -46,6 +46,7 @@
 #define SETUP_ENC_DEVICE_ID			12
 #define SETUP_ENC_BANKS				13
 #define SETUP_ENC_CALIBRATE			14
+#define SETUP_ENC_DETENT			15
 #define SETUP_ENC_BOOTLOADER		0
 #define SETUP_ENC_DISCARD			2
 #define SETUP_ENC_SAVE				3
@@ -55,6 +56,27 @@
 #define SETUP_COLOR_SAVE			0x00FF00
 #define SETUP_COLOR_DISCARD			0xFF0000
 #define SETUP_COLOR_BANKS			0xFF8000
+
+// Detent page. Row 1: a demo encoder with a detent, two blanks, the detent
+// size. Row 2: a demo encoder without a detent, two blanks, the dead zone size.
+// The demos use the values on the page, thus the user feels a change before
+// the save.
+#define DETENT_ENC_DEMO				0
+#define DETENT_ENC_SIZE				3
+#define DETENT_ENC_DEMO_PLAIN		4
+#define DETENT_ENC_DEAD_ZONE		7
+#define DETENT_SW_BACK				SW_LEFT_TOP
+#define DETENT_SW_RESTORE			SW_LEFT_MID	// same button as the calibration restore
+#define DETENT_COLOR_SIZE			0x0000FF
+#define DETENT_COLOR_DEAD_ZONE		0x00FFFF
+
+// Detent dot color index. 0 is red and 127 is blue.
+#define SETUP_DETENT_DOT_BLUE		127
+
+// Start values. The detent demo starts at the center, as encoders_init() sets
+// it. The plain demo starts at 127, thus the user tries the dead zone first.
+#define DETENT_DEMO_CENTER			6300
+#define DETENT_DEMO_PLAIN_START		12700
 
 // Ring readouts for the bank mode. The 11 LEDs run from bit 15 for LED 1 down
 // to bit 5 for LED 11.
@@ -94,6 +116,17 @@ static uint8_t	setup_banks;			// bank count in the menu, MIN_BANKS or MAX_BANKS
 static bool		setup_banks_dirty;
 static int8_t	setup_banks_accum;		// pulses not yet worth a step
 static uint16_t	setup_boot_held;		// passes the bootloader encoder was held
+static uint8_t	setup_detent_size;		// 0..MAX_DETENT_SIZE
+static uint8_t	setup_dead_zone_size;	// 0..MAX_DEAD_ZONE_SIZE
+static bool		setup_detent_dirty;
+
+// One demo encoder on the detent page.
+typedef struct {
+	int16_t	raw;		// raw_encoder_value units, 0..12700
+	int8_t	count;		// encoder_detent_counter
+	bool	has_detent;
+	bool	left;		// the last pulse took it out of the detent
+} detent_demo_t;
 
 
 /**
@@ -197,6 +230,17 @@ static uint16_t bar_pattern(uint8_t count)
 }
 
 /**
+ * Builds a dot on ring LED N alone, in the same bit order as bar_pattern().
+ * N = 0 lights no LED.
+ */
+static uint16_t dot_pattern(uint8_t led)
+{
+	if ((led == 0) || (led > 11)) { return 0x0000; }
+
+	return (uint16_t)(1u << (16 - led));
+}
+
+/**
  * Builds the bootloader ring, with the given number of odd LEDs lit.
  *
  * The odd LEDs are 1, 3, 5, 7, 9 and 11, thus LED number 1 + 2i. LED n is bit
@@ -242,6 +286,10 @@ static void setup_draw(void)
 														   : SETUP_BANKS_4_PATTERN,
 								SETUP_RING_BRIGHTNESS);
 
+	// Detent page. The ring shows an encoder at its detent: only the blue dot.
+	set_encoder_indicator_level(SETUP_ENC_DETENT, 63, true, BLENDED_BAR,
+								SETUP_DETENT_DOT_BLUE, SETUP_RING_BRIGHTNESS);
+
 	build_rgb(SETUP_ENC_DISCARD, SETUP_COLOR_DISCARD, 0);
 	build_rgb(SETUP_ENC_SAVE,    SETUP_COLOR_SAVE,    0);
 
@@ -250,6 +298,225 @@ static void setup_draw(void)
 	set_indicator_pattern_level(SETUP_ENC_BOOTLOADER,
 								SETUP_BOOTLOADER_PATTERN,
 								SETUP_RING_BRIGHTNESS);
+}
+
+/**
+ * Puts a demo encoder at its start value.
+ */
+static void detent_demo_reset(detent_demo_t *demo)
+{
+	demo->raw   = demo->has_detent ? DETENT_DEMO_CENTER : DETENT_DEMO_PLAIN_START;
+	demo->count = 0;
+	demo->left  = false;
+}
+
+/**
+ * Moves a demo encoder with absolute output, with the sizes on the page. Keep
+ * this the same as process_encoder_input_rotary_detent(),
+ * process_encoder_input_rotary_deadzone() and
+ * process_encoder_input_rotary_absolute() at standard sensitivity. The demo is
+ * otherwise not a true test.
+ *
+ * Like the encoder code, this does not zero the count when the encoder leaves
+ * the detent. Only the arrival at an end zeroes it.
+ */
+static void detent_demo_move(detent_demo_t *demo, int8_t pulses)
+{
+	demo->left = false;
+
+	if (demo->has_detent && encoder_is_in_detent(demo->raw)) {
+		demo->count += pulses;
+		if (demo->count > (int8_t)setup_detent_size) {
+			demo->raw  = encoder_detent_limit_high;
+			demo->left = true;
+		} else if (demo->count < -(int8_t)setup_detent_size) {
+			demo->raw  = encoder_detent_limit_low;
+			demo->left = true;
+		}
+		return;
+	}
+
+	if (encoder_is_in_deadzone(demo->raw)) {
+		// Only consecutive pulses away from the end count.
+		if (((demo->raw < 100) && (pulses > 0)) || ((demo->raw > 12600) && (pulses < 0))) {
+			demo->count += pulses;
+		} else {
+			demo->count = 0;
+		}
+
+		if ((demo->count > (int8_t)setup_dead_zone_size) && (demo->raw < 100)) {
+			demo->raw   = 100;
+			demo->count = 0;
+		} else if ((demo->count < -(int8_t)setup_dead_zone_size) && (demo->raw > 12600)) {
+			demo->raw   = 12600;
+			demo->count = 0;
+		}
+		return;
+	}
+
+	demo->raw = clamp_encoder_raw_value(demo->raw + (pulses * ENCODER_VALUE_SCALAR_DIRECT));
+	if (encoder_is_in_deadzone(demo->raw)) {
+		demo->count = 0;
+	}
+}
+
+/**
+ * Paints one demo encoder. The encoder code shows 63 for all of the detent, and
+ * also for the pulse that leaves it, because the exit does not update the ring.
+ * Thus the demo does too.
+ */
+static void detent_demo_draw(uint8_t encoder, const detent_demo_t *demo)
+{
+	uint8_t position = scale_encoder_value(demo->raw);
+
+	if (demo->has_detent && (encoder_is_in_detent(demo->raw) || demo->left)) {
+		position = 63;
+	}
+	set_encoder_indicator_level(encoder, position, demo->has_detent, BLENDED_BAR,
+								SETUP_DETENT_DOT_BLUE, SETUP_RING_BRIGHTNESS);
+}
+
+/**
+ * Paints the detent page.
+ */
+static void detent_draw(const detent_demo_t *demo, const detent_demo_t *plain)
+{
+	for (uint8_t encoder = 0; encoder < 16; ++encoder) {
+		build_rgb(encoder, 0x000000, 1);
+		set_indicator_pattern(encoder, 0x0000);
+	}
+
+	// Each demo has the color of the size on its row, thus the user sees
+	// which knob changes it.
+	build_rgb(DETENT_ENC_DEMO, DETENT_COLOR_SIZE, 0);
+	detent_demo_draw(DETENT_ENC_DEMO, demo);
+	build_rgb(DETENT_ENC_DEMO_PLAIN, DETENT_COLOR_DEAD_ZONE, 0);
+	detent_demo_draw(DETENT_ENC_DEMO_PLAIN, plain);
+
+	build_rgb(DETENT_ENC_SIZE, DETENT_COLOR_SIZE, 0);
+	set_indicator_pattern_level(DETENT_ENC_SIZE, dot_pattern(setup_detent_size),
+								SETUP_RING_BRIGHTNESS);
+
+	build_rgb(DETENT_ENC_DEAD_ZONE, DETENT_COLOR_DEAD_ZONE, 0);
+	set_indicator_pattern_level(DETENT_ENC_DEAD_ZONE, dot_pattern(setup_dead_zone_size),
+								SETUP_RING_BRIGHTNESS);
+}
+
+/**
+ * Steps a size by whole clicks and clamps it. Returns true if the size changed.
+ */
+static bool detent_step_size(uint8_t *size, int8_t *accum, int8_t pulses, uint8_t max)
+{
+	*accum += pulses;
+
+	int8_t steps = *accum / SETUP_PULSES_PER_STEP;
+	if (steps == 0) { return false; }
+	*accum -= (int8_t)(steps * SETUP_PULSES_PER_STEP);
+
+	int16_t value = (int16_t)*size + steps;
+	if (value < 0)   { value = 0; }
+	if (value > max) { value = max; }
+
+	if ((uint8_t)value == *size) { return false; }
+	*size = (uint8_t)value;
+	return true;
+}
+
+/**
+ * The detent page. It changes the menu values only and writes nothing. It
+ * returns when the user presses Back, as calibration_edit() does.
+ *
+ * Returns true if the user changed a size.
+ */
+static bool detent_edit(void)
+{
+	detent_demo_t demo;
+	detent_demo_t plain;
+	int8_t  size_accum = 0;
+	int8_t  dead_accum = 0;
+	bool    dirty      = false;
+	bool    touched    = false;
+
+	demo.has_detent  = true;
+	plain.has_detent = false;
+	detent_demo_reset(&demo);
+	detent_demo_reset(&plain);
+
+	// Paint first, and discard the press that opened this page.
+	detent_draw(&demo, &plain);
+	for (uint8_t encoder = 0; encoder < 16; ++encoder) {
+		get_encoder_value(encoder);
+	}
+	update_encoder_switch_state();
+	update_side_switch_state();
+
+	while (true) {
+		update_side_switch_state();
+		uint16_t side_down = get_side_switch_down();
+		if (side_down & DETENT_SW_BACK) {
+			return touched;
+		}
+
+		// Restore the defaults in the menu values. The user must still save.
+		if (side_down & DETENT_SW_RESTORE) {
+			setup_detent_size    = DEF_DETENT_SIZE;
+			setup_dead_zone_size = DEF_DEAD_ZONE_SIZE;
+			touched = true;
+			dirty   = true;
+		}
+
+		// A press on a demo puts it back at its start value.
+		update_encoder_switch_state();
+		uint16_t enc_down = get_enc_switch_down();
+		if (enc_down & (0x0001 << DETENT_ENC_DEMO)) {
+			detent_demo_reset(&demo);
+			dirty = true;
+		}
+		if (enc_down & (0x0001 << DETENT_ENC_DEMO_PLAIN)) {
+			detent_demo_reset(&plain);
+			dirty = true;
+		}
+
+		// Read all encoders on each pass. Otherwise an encoder keeps its
+		// movement for later.
+		int16_t demo_pulses  = 0;
+		int16_t plain_pulses = 0;
+		int16_t size_pulses  = 0;
+		int16_t dead_pulses  = 0;
+		for (uint8_t encoder = 0; encoder < 16; ++encoder) {
+			int8_t value = get_encoder_value(encoder);
+			if (encoder == DETENT_ENC_DEMO)       { demo_pulses  += value; }
+			if (encoder == DETENT_ENC_DEMO_PLAIN) { plain_pulses += value; }
+			if (encoder == DETENT_ENC_SIZE)       { size_pulses  += value; }
+			if (encoder == DETENT_ENC_DEAD_ZONE)  { dead_pulses  += value; }
+		}
+
+		// The demos take pulses, not clicks, as the encoder code does.
+		if (demo_pulses != 0) {
+			detent_demo_move(&demo, (int8_t)demo_pulses);
+			dirty = true;
+		}
+		if (plain_pulses != 0) {
+			detent_demo_move(&plain, (int8_t)plain_pulses);
+			dirty = true;
+		}
+		if ((size_pulses != 0) &&
+		    detent_step_size(&setup_detent_size, &size_accum, (int8_t)size_pulses, MAX_DETENT_SIZE)) {
+			touched = true;
+			dirty   = true;
+		}
+		if ((dead_pulses != 0) &&
+		    detent_step_size(&setup_dead_zone_size, &dead_accum, (int8_t)dead_pulses, MAX_DEAD_ZONE_SIZE)) {
+			touched = true;
+			dirty   = true;
+		}
+
+		if (dirty) {
+			detent_draw(&demo, &plain);
+			dirty = false;
+		}
+		_delay_ms(2);
+	}
 }
 
 /**
@@ -346,6 +613,10 @@ static void setup_commit_all(void)
 	if (setup_banks_dirty) {
 		bank_mode_set(setup_banks);
 	}
+
+	if (setup_detent_dirty) {
+		detent_settings_save(setup_detent_size, setup_dead_zone_size);
+	}
 }
 
 /**
@@ -363,6 +634,9 @@ static void setup_run(uint16_t entry_mask)
 	setup_banks_dirty    = false;
 	setup_banks_accum    = 0;
 	setup_boot_held      = 0;
+	setup_detent_size    = global_detent_size;
+	setup_dead_zone_size = global_dead_zone_size;
+	setup_detent_dirty   = false;
 
 	setup_shell_enter(entry_mask);
 
@@ -433,6 +707,14 @@ static void setup_run(uint16_t entry_mask)
 		if (enc_down & (0x0001 << SETUP_ENC_CALIBRATE)) {
 			if (calibration_edit()) {
 				setup_trim_dirty = true;
+			}
+			dirty = true;
+		}
+
+		if (enc_down & (0x0001 << SETUP_ENC_DETENT)) {
+			if (detent_edit()) {
+				setup_detent_dirty = (setup_detent_size    != global_detent_size) ||
+				                     (setup_dead_zone_size != global_dead_zone_size);
 			}
 			dirty = true;
 		}

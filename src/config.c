@@ -28,6 +28,8 @@
 uint8_t global_super_knob_start;
 uint8_t global_super_knob_end;
 uint8_t global_bank_animations_enabled;
+uint8_t global_detent_size;
+uint8_t global_dead_zone_size;
 
 
 
@@ -49,11 +51,23 @@ void global_tv_table_decode(global_tvtable_t* table, uint8_t* buffer, uint8_t si
 		// Hack to avoid messy utility changes
         if (tag < GLOBAL_TAG_LOW_UPPER) {
             table->bytes[tag] = buffer[idx];
-        } else if (tag > GLOBAL_TAG_HIGH_LOWER){
+        } else if (tag > GLOBAL_TAG_HIGH_LOWER && tag - ENCODER_RESV_RANGE - 1 < GLOBAL_TABLE_SIZE){
 			table->bytes[tag-ENCODER_RESV_RANGE - 1] = buffer[idx];
 		}
         ++idx;
     }
+}
+
+/**
+ * Stores the detent and dead zone sizes and makes them live. The encoder code
+ * reads the globals on each movement, thus no reset is necessary. Values out of
+ * range are clamped.
+ */
+void detent_settings_save(uint8_t detent_size, uint8_t dead_zone_size)
+{
+	global_detent_size    = min(detent_size, MAX_DETENT_SIZE);
+	global_dead_zone_size = min(dead_zone_size, MAX_DEAD_ZONE_SIZE);
+	eeprom_write(EE_DETENT_SETTINGS, PACK_DETENT_SETTINGS(global_detent_size, global_dead_zone_size));
 }
 
 static void sysExCmdPushConfig (uint8_t length, uint8_t* buffer)
@@ -85,6 +99,9 @@ static void sysExCmdPushConfig (uint8_t length, uint8_t* buffer)
 	eeprom_write(EE_ANIMATION_CHANNELS, PACK_ANIM_CHANNELS(enc_ch, sw_ch));
 	eeprom_write(EE_SLEEP_SETTINGS, PACK_SLEEP_SETTINGS(config.sleepTimeout, config.sleepAnimation));
 	eeprom_write(EE_BANK_ANIMATIONS_ENABLED, config.bankAnimationsEnabled);
+	// Utilities that predate these tags send nothing, which decodes as 0: keep the live value
+	detent_settings_save(config.detentSize   > 0 ? config.detentSize - 1   : global_detent_size,
+	                     config.deadZoneSize > 0 ? config.deadZoneSize - 1 : global_dead_zone_size);
 	real_time_start;
 	reset_idle_timer();
 	setting_confirmation_animation(0x00FF00);
@@ -132,6 +149,8 @@ void send_config_data (void)
 								36, GET_SLEEP_TIMEOUT(sleep_settings),
 								37, GET_SLEEP_ANIMATION(sleep_settings),
 								38, global_bank_animations_enabled,
+								39, global_detent_size + 1,
+								40, global_dead_zone_size + 1,
 
                                 0xf7};
 								
@@ -518,6 +537,12 @@ void load_config(void)
 	sleep_timeout_minutes = sleep_timeout_map[timeout_index];
 	sleep_animation_type  = GET_SLEEP_ANIMATION(sleep_settings);
 	global_bank_animations_enabled = eeprom_read(EE_BANK_ANIMATIONS_ENABLED);
+	// Added without an EEPROM layout bump, so an unwritten 0xFF gives the defaults
+	uint8_t detent_settings = eeprom_read(EE_DETENT_SETTINGS);
+	global_detent_size    = GET_DETENT_SIZE(detent_settings);
+	global_dead_zone_size = GET_DEAD_ZONE_SIZE(detent_settings);
+	if (global_detent_size > MAX_DETENT_SIZE)       global_detent_size    = DEF_DETENT_SIZE;
+	if (global_dead_zone_size > MAX_DEAD_ZONE_SIZE) global_dead_zone_size = DEF_DEAD_ZONE_SIZE;
 	
 	side_switch_config(&side_sw_cfg);
 	
@@ -563,6 +588,7 @@ void config_factory_reset(void)
 	eeprom_write(EE_ANIMATION_CHANNELS, PACK_ANIM_CHANNELS(DEF_ENCODER_ANIMATION_CH, DEF_SWITCH_ANIMATION_CH));
 	eeprom_write(EE_SLEEP_SETTINGS, DEF_SLEEP_SETTINGS);
 	eeprom_write(EE_BANK_ANIMATIONS_ENABLED, DEF_BANK_ANIMATIONS_ENABLED);
+	eeprom_write(EE_DETENT_SETTINGS, PACK_DETENT_SETTINGS(DEF_DETENT_SIZE, DEF_DEAD_ZONE_SIZE));
 
 	// A factory reset keeps the bank mode, as it keeps the device identity,
 	// because the user selected it. It does not keep this flag. The flag

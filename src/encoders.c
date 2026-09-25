@@ -105,8 +105,6 @@ int16_t  *raw_encoder_value; // !Summer2016Update: Expanded to store values for 
 //   8 banks it is 0-127 unshifted and 128-255 shifted.
 
 static uint8_t encoder_bank = 0;
-static int8_t g_detent_size;
-static int8_t g_dead_zone_size;
 //static encoder_config_t encoder_settings[PHYSICAL_ENCODERS];
 encoder_config_t *encoder_settings;
 //static encoder_config_t encoder_settings_transfer_buffer[1];
@@ -368,9 +366,6 @@ void encoders_init(void)
 		//~ sync_input_map_to_output_map(i);
 	//~ }
 		
-	// Set the de-tent size	TODO THIS SHOULD BE A SETTING
-	g_detent_size = 8;	
-	g_dead_zone_size = 2;	
 }
 
 /**
@@ -846,11 +841,11 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
 
 
 	encoder_detent_counter[i] += new_value;
-	if (encoder_detent_counter[i] > g_detent_size){ // Exiting detent (CW)
+	if (encoder_detent_counter[i] > global_detent_size){ // Exiting detent (CW)
 		//raw_encoder_value[virtual_encoder_id] = 6500;
 		raw_encoder_value[virtual_encoder_id] = encoder_detent_limit_high;
 		//midi_stream_raw_cc(9,99,11);
-	} else if (encoder_detent_counter[i] < -g_detent_size) { // Exiting detent (CCW)
+	} else if (encoder_detent_counter[i] < -global_detent_size) { // Exiting detent (CCW)
 		//raw_encoder_value[virtual_encoder_id] = 6200;
 		raw_encoder_value[virtual_encoder_id] = encoder_detent_limit_low;
 		//midi_stream_raw_cc(9,99,12);
@@ -885,11 +880,11 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
 	}
 	// - Allow movement to get us out of the dead zone, if we've traveled enough.
 	bool leaving = false;
-	if ((encoder_detent_counter[i] > g_dead_zone_size) &&
+	if ((encoder_detent_counter[i] > global_dead_zone_size) &&
 	(raw_encoder_value[virtual_encoder_id] < 100)) { // CW
 		raw_encoder_value[virtual_encoder_id] = 100;
 		leaving = true;
-	} else if ((encoder_detent_counter[i] < -g_dead_zone_size) &&
+	} else if ((encoder_detent_counter[i] < -global_dead_zone_size) &&
 	(raw_encoder_value[virtual_encoder_id] > 12600)) {  // CCW
 		raw_encoder_value[virtual_encoder_id] = 12600;
 		leaving = true;

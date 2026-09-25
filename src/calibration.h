@@ -30,15 +30,16 @@
 
 	/* Function Prototypes: */
 
-	// Reads the stored trim from EEPROM into the display driver, or the defaults
-	// if the block is absent or its checksum fails.
+	// Reads the stored calibration from EEPROM into the display driver, or the
+	// defaults if the block is absent or its checksum fails. A format 1 block is
+	// converted in RAM.
 	void calibration_init(void);
 
 	// Runs the calibration editor from the setup menu. It blocks until the user
 	// presses Back. It edits RAM only, and returns true if the user changed a value.
 	bool calibration_edit(void);
 
-	// Normalizes the trim in RAM, then writes it to EEPROM.
+	// Writes the calibration in RAM to EEPROM.
 	void calibration_commit(void);
 
 #endif /* CALIBRATION_H_ */

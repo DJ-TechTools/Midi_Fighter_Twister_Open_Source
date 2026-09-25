@@ -524,9 +524,9 @@ int build_indicator_pattern(indicator_bit_mask_t *result,
 }
 
 // White balance trim for each encoder and each channel (0..255, where 255 =
-// 1.0x). These hold the values of clamp(global + delta*CAL_DELTA_SCALE). The
-// arithmetic occurs one time in apply_rgb_trim(), and never in build_rgb. The
-// defaults are the gains that this file had before.
+// 1.0x). These hold the trim of each calibration level. calibration_apply()
+// sets them one time, and build_rgb never does this arithmetic. The defaults
+// are the factory white point, until calibration_init() runs.
 static uint8_t rgb_trim[16][3] = {
 	[0 ... 15] = { DEF_CAL_TRIM_R, DEF_CAL_TRIM_G, DEF_CAL_TRIM_B }
 };
@@ -671,7 +671,9 @@ void set_indicator_pattern_level(uint8_t encoder, uint16_t pattern, uint8_t brig
 **/
 void set_encoder_rgb(uint8_t encoder, uint8_t color)
 {
-	uint8_t rgb_brightness = pgm_read_byte(&brightnessMap[global_rgb_brightness]);
+	// brightnessMap tops out at 127, but build_rgb takes a level of 0-255. The
+	// doubling lets the maximum setting reach full duty, as native mode does.
+	uint8_t rgb_brightness = pgm_read_byte(&brightnessMap[global_rgb_brightness]) * 2;
 	set_encoder_rgb_level(encoder, color, rgb_brightness);
 }
 
@@ -1200,13 +1202,24 @@ void bank_change_animation_tick(void)
 		return;
 	}
 
+	// The fade ramps up to the RGB Brightness setting, doubled as in
+	// set_encoder_rgb(). A level of 0 means full brightness in build_rgb, thus
+	// the minimum is 1, which is off.
+	uint16_t rgb_target = (uint16_t)pgm_read_byte(&brightnessMap[global_rgb_brightness]) * 2;
+	uint8_t rgb_level = (uint8_t)((s_bank_anim_level * rgb_target) / 127);
+	if (rgb_level == 0) { rgb_level = 1; }
+	// The white rings ramp up to the Indicator Brightness setting. Their level
+	// needs no doubling, and 0 is off.
+	uint16_t ind_target = pgm_read_byte(&brightnessMap[global_ind_brightness]);
+	uint8_t ind_level = (uint8_t)((s_bank_anim_level * ind_target) / 127);
+
 	for (uint8_t e = 0; e < 16; e++) {
 		uint8_t banked_idx = e + s_bank_anim_bank * PHYSICAL_ENCODERS;
-		set_encoder_rgb_level(e, switch_color_buffer[s_bank_anim_bank][e], s_bank_anim_level);
+		set_encoder_rgb_level(e, switch_color_buffer[s_bank_anim_bank][e], rgb_level);
 		set_encoder_indicator_level(e, indicator_value_buffer[s_bank_anim_bank][e],
 		encoder_settings[banked_idx].has_detent,
 		encoder_settings[banked_idx].indicator_display_type,
-		encoder_settings[banked_idx].detent_color, s_bank_anim_level);
+		encoder_settings[banked_idx].detent_color, ind_level);
 	}
 
 	s_bank_anim_level += 4;

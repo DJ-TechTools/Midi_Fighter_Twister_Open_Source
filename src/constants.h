@@ -32,7 +32,7 @@
 
 #define DEVICE_VERSION_YEAR 	0x2026
 #define DEVICE_VERSION_MONTH	0x09
-#define DEVICE_VERSION_DAY		0x17
+#define DEVICE_VERSION_DAY		0x24
 #define DEVICE_VERSION  		((DEVICE_VERSION_YEAR << 16) | (DEVICE_VERSION_MONTH << 8) | DEVICE_VERSION_DAY)
 
 // 14bit device family ID, LSB first
@@ -148,10 +148,22 @@
 #define EE_ANIMATION_CHANNELS		0x000F	//Encoder and switch animation channels
 #define EE_SLEEP_SETTINGS			0x0010  // Timeout (6 bits) + Animation (2 bits)
 #define EE_BANK_ANIMATIONS_ENABLED	0x0011	// Bank change animations on/off
+// Detent size (low 4 bits) + dead zone size (high 4 bits), each 0 to 11. The
+// layout version did not change for this byte. A nibble above 11 cannot be
+// stored, thus an unwritten 0xFF gives the defaults.
+#define EE_DETENT_SETTINGS			0x0015
+
+// The end of the white balance calibration, 0x0016 to 0x001A. Refer to
+// EE_CAL_EXTRA_START. Like the identity, a factory reset does not write these
+// bytes, thus the calibration survives it. 0x001B to 0x001F are free.
 
 #define PACK_SLEEP_SETTINGS(timeout, anim)   (((timeout) & 0x3F) | (((anim) & 0x03) << 6))
 #define GET_SLEEP_TIMEOUT(val)               ((val) & 0x3F)
 #define GET_SLEEP_ANIMATION(val)             (((val) >> 6) & 0x03)
+
+#define PACK_DETENT_SETTINGS(detent, dead)   (((detent) & 0x0F) | (((dead) & 0x0F) << 4))
+#define GET_DETENT_SIZE(val)                 ((val) & 0x0F)
+#define GET_DEAD_ZONE_SIZE(val)              (((val) >> 4) & 0x0F)
 
 #define EE_ENC_SETTING_START		0x0020  //Start of encoder settings
 #define EE_HAS_DETENT_OFFSET		0x0000  //Has Detent setting offset			    //
@@ -175,36 +187,56 @@
 #define SEQ_EEPROM_START_PAGE		31
 
 // RGB white balance calibration ----------------------------------------------
-// The trim is on EEPROM page 63. This is the only page that is free in both
-// bank modes. With 8 banks the encoder settings reach page 32, and with 4 banks
-// the sequencer reaches page 62. The block has its own magic and checksum, and
-// does not use EEPROM_LAYOUT. Thus a new layout version resets the user
-// configuration but keeps the LED calibration of the unit.
+// The calibration is on EEPROM page 63, the only page that is free in both
+// bank modes, and 5 bytes in page 0. With 8 banks the encoder settings reach
+// page 32, and with 4 banks the sequencer reaches page 62. The block has its
+// own check and does not use EEPROM_LAYOUT, and a factory reset does not write
+// it. Thus a new layout version resets the user configuration but keeps the LED
+// calibration of the unit.
+//
+// Format 2 holds one 6 bit level for each encoder and channel, packed LSB
+// first: 48 levels in 36 bytes. Page 63 holds the first 32 bytes. Page 0 holds
+// the last 4, then one check byte: EE_CAL_CHECK_SEED plus the sum of all 36.
+// The seed is also the format version. It makes the check of an unwritten
+// block (0xFF everywhere) fail, and a format 1 page is recognized first.
 #define EE_CAL_START				0x07E0	// page 63
 #define EE_CAL_PAGE					63
-#define EE_CAL_MAGIC_OFFSET			0x00
-#define EE_CAL_VERSION_OFFSET		0x01
-#define EE_CAL_GLOBAL_OFFSET		0x02	// 3 bytes: R, G, B
-#define EE_CAL_DELTA_OFFSET			0x05	// 24 bytes: 48 signed nibbles
-#define EE_CAL_CHECKSUM_OFFSET		0x1D	// sum of 0x02..0x1C
-#define EE_CAL_MAGIC				0xC5
-#define EE_CAL_VERSION				0x01
+#define EE_CAL_DATA_BYTES			36
+#define EE_CAL_EXTRA_START			0x0016	// page 0: data bytes 32 to 35
+#define EE_CAL_CHECK				0x001A	// page 0: the check byte
+#define EE_CAL_CHECK_SEED			0xC6
+
+// Format 1 held a global trim for each channel and a signed 4 bit delta for
+// each encoder channel. calibration_init() converts it, and the next save
+// writes format 2.
+#define EE_CAL_V1_MAGIC				0xC5
+#define EE_CAL_V1_VERSION_OFFSET	0x01
+#define EE_CAL_V1_VERSION			0x01
+#define EE_CAL_V1_GLOBAL_OFFSET		0x02	// 3 bytes: R, G, B
+#define EE_CAL_V1_DELTA_OFFSET		0x05	// 24 bytes: 48 signed nibbles
+#define EE_CAL_V1_CHECKSUM_OFFSET	0x1D	// sum of 0x02..0x1C
+#define EE_CAL_V1_DELTA_SCALE		2
+#define EE_CAL_V1_TRIM_MIN			64
 
 // build_rgb resolves ~80 duty steps with thresholds at 0,2,4..158, so any
 // channel value >= 160 is indistinguishable from 255. Trims must stay at or
 // below 158 or the control has no visible effect.
-#define CAL_TRIM_MIN				64
+#define CAL_TRIM_MIN				48
 #define CAL_TRIM_MAX				158
-#define CAL_DELTA_MIN				(-8)
-#define CAL_DELTA_MAX				7
-#define CAL_DELTA_SCALE				2		// matches the PWM threshold spacing
+// One level for each visible step: the trims 48, 50, 52 .. 158. build_rgb
+// shows each even trim as a different duty, and an odd trim as the even trim
+// below it.
+#define CAL_LEVEL_BITS				6
+#define CAL_LEVEL_STEP				2
+#define CAL_LEVEL_MAX				((CAL_TRIM_MAX - CAL_TRIM_MIN) / CAL_LEVEL_STEP)	// 55
 
-// The defaults are the old hard coded GAIN_R, GAIN_G and GAIN_B, clamped to the
-// usable range. 245 and 235 were both saturated already. Thus the display looks
-// the same, and the green and blue controls respond from the first detent.
-#define DEF_CAL_TRIM_R				140
+// The factory white point. The old defaults (R 140, G and B at the top) showed
+// a pink white on two units, and a calibration by eye on one of them needed
+// less red and less blue. These are most of that correction. All three are
+// levels, thus they are exact.
+#define DEF_CAL_TRIM_R				88
 #define DEF_CAL_TRIM_G				CAL_TRIM_MAX
-#define DEF_CAL_TRIM_B				CAL_TRIM_MAX
+#define DEF_CAL_TRIM_B				116
 
 // Defaults -------------------------------------------------------------------
 // System 
@@ -231,6 +263,12 @@
 #define DEF_SLEEP_ANIMATION			1		// Default 0 = lights off, 1 = rainbow wave
 #define DEF_SLEEP_SETTINGS			PACK_SLEEP_SETTINGS(DEF_SLEEP_TIMEOUT, DEF_SLEEP_ANIMATION)
 #define DEF_BANK_ANIMATIONS_ENABLED	true
+// Pulses to leave the center detent and the 0/127 end stops. The encoder
+// leaves when the count exceeds the size, thus 8 needs 9 pulses.
+#define DEF_DETENT_SIZE				8
+#define DEF_DEAD_ZONE_SIZE			2
+#define MAX_DETENT_SIZE				11		// One ring LED per step in setup mode
+#define MAX_DEAD_ZONE_SIZE			11
 
 
 
