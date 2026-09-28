@@ -30,6 +30,7 @@ uint8_t global_super_knob_end;
 uint8_t global_bank_animations_enabled;
 uint8_t global_detent_size;
 uint8_t global_dead_zone_size;
+uint8_t global_disable_shift_sw_midi;
 
 
 
@@ -102,6 +103,9 @@ static void sysExCmdPushConfig (uint8_t length, uint8_t* buffer)
 	// Utilities that predate these tags send nothing, which decodes as 0: keep the live value
 	detent_settings_save(config.detentSize   > 0 ? config.detentSize - 1   : global_detent_size,
 	                     config.deadZoneSize > 0 ? config.deadZoneSize - 1 : global_dead_zone_size);
+	if (config.disableShiftSwMidi > 0) {
+		eeprom_write(EE_DISABLE_SHIFT_SW_MIDI, (config.disableShiftSwMidi - 1) ? 1 : 0);
+	}
 	real_time_start;
 	reset_idle_timer();
 	setting_confirmation_animation(0x00FF00);
@@ -151,6 +155,7 @@ void send_config_data (void)
 								38, global_bank_animations_enabled,
 								39, global_detent_size + 1,
 								40, global_dead_zone_size + 1,
+								41, global_disable_shift_sw_midi + 1,
 
                                 0xf7};
 								
@@ -543,6 +548,8 @@ void load_config(void)
 	global_dead_zone_size = GET_DEAD_ZONE_SIZE(detent_settings);
 	if (global_detent_size > MAX_DETENT_SIZE)       global_detent_size    = DEF_DETENT_SIZE;
 	if (global_dead_zone_size > MAX_DEAD_ZONE_SIZE) global_dead_zone_size = DEF_DEAD_ZONE_SIZE;
+	// Only 1 enables it, thus an unwritten 0xFF gives the default
+	global_disable_shift_sw_midi = (eeprom_read(EE_DISABLE_SHIFT_SW_MIDI) == 1);
 	
 	side_switch_config(&side_sw_cfg);
 	
@@ -589,6 +596,7 @@ void config_factory_reset(void)
 	eeprom_write(EE_SLEEP_SETTINGS, DEF_SLEEP_SETTINGS);
 	eeprom_write(EE_BANK_ANIMATIONS_ENABLED, DEF_BANK_ANIMATIONS_ENABLED);
 	eeprom_write(EE_DETENT_SETTINGS, PACK_DETENT_SETTINGS(DEF_DETENT_SIZE, DEF_DEAD_ZONE_SIZE));
+	eeprom_write(EE_DISABLE_SHIFT_SW_MIDI, DEF_DISABLE_SHIFT_SW_MIDI);
 
 	// A factory reset keeps the bank mode, as it keeps the device identity,
 	// because the user selected it. It does not keep this flag. The flag

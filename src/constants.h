@@ -32,7 +32,7 @@
 
 #define DEVICE_VERSION_YEAR 	0x2026
 #define DEVICE_VERSION_MONTH	0x09
-#define DEVICE_VERSION_DAY		0x24
+#define DEVICE_VERSION_DAY		0x28
 #define DEVICE_VERSION  		((DEVICE_VERSION_YEAR << 16) | (DEVICE_VERSION_MONTH << 8) | DEVICE_VERSION_DAY)
 
 // 14bit device family ID, LSB first
@@ -153,6 +153,11 @@
 // stored, thus an unwritten 0xFF gives the defaults.
 #define EE_DETENT_SETTINGS			0x0015
 
+// Shift switches send no MIDI, and their channel and number belong to the
+// shift layer.
+// Only 1 enables it, thus an unwritten 0xFF reads as off.
+#define EE_DISABLE_SHIFT_SW_MIDI	0x001B
+
 // The end of the white balance calibration, 0x0016 to 0x001A. Refer to
 // EE_CAL_EXTRA_START. Like the identity, a factory reset does not write these
 // bytes, thus the calibration survives it. 0x001B to 0x001F are free.
@@ -263,6 +268,7 @@
 #define DEF_SLEEP_ANIMATION			1		// Default 0 = lights off, 1 = rainbow wave
 #define DEF_SLEEP_SETTINGS			PACK_SLEEP_SETTINGS(DEF_SLEEP_TIMEOUT, DEF_SLEEP_ANIMATION)
 #define DEF_BANK_ANIMATIONS_ENABLED	true
+#define DEF_DISABLE_SHIFT_SW_MIDI	false
 // Pulses to leave the center detent and the 0/127 end stops. The encoder
 // leaves when the count exceeds the size, thus 8 needs 9 pulses.
 #define DEF_DETENT_SIZE				8

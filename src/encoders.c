@@ -199,6 +199,36 @@ static void send_program_selection(uint8_t channel, uint8_t program)
 
 // encoder_maps_match: Compares MIDI Mapping Parameters common to both 'shift' and 'unshifted' states.
 // - returns true if the mappings match, otherwise returns false.
+// True when this encoder's shift layer borrows the switch MIDI mapping. The
+// switch then sends nothing, which is what frees it. Refer to
+// EE_DISABLE_SHIFT_SW_MIDI.
+static bool shift_mapping_active(uint8_t banked_encoder_id) {
+	if (!global_disable_shift_sw_midi) { return false; }
+	uint8_t action = encoder_settings[banked_encoder_id].switch_action_type;
+	return (action == ENC_SHIFT_HOLD) || (action == ENC_SHIFT_TOGGLE);
+}
+
+// The MIDI number an encoder sends on. The shift layer takes the switch number
+// when the switch gave its mapping up.
+static uint8_t encoder_output_number(uint8_t banked_encoder_id, bool shifted) {
+	if (shifted && shift_mapping_active(banked_encoder_id)) {
+		return encoder_settings[banked_encoder_id].switch_midi_number;
+	}
+	return encoder_settings[banked_encoder_id].encoder_midi_number;
+}
+
+// The MIDI channel an encoder sends on. The switch gives up its whole mapping,
+// channel as well as number, thus the shift layer takes both together.
+static uint8_t encoder_output_channel(uint8_t banked_encoder_id, bool shifted) {
+	if (!shifted) {
+		return encoder_settings[banked_encoder_id].encoder_midi_channel;
+	}
+	if (shift_mapping_active(banked_encoder_id)) {
+		return encoder_settings[banked_encoder_id].switch_midi_channel;
+	}
+	return encoder_settings[banked_encoder_id].encoder_shift_midi_channel;
+}
+
 bool encoder_maps_match(uint8_t this_banked_encoder_id, uint8_t that_banked_encoder_id) {
 	if (encoder_settings[this_banked_encoder_id].encoder_midi_number != encoder_settings[that_banked_encoder_id].encoder_midi_number)
 		{ return false; }
@@ -229,8 +259,10 @@ void transfer_this_encoder_value_to_other_banks(uint8_t current_bank, uint8_t en
 						indicator_value_buffer[that_bank][that_encoder] = indicator_value_buffer[current_bank][encoder_id];
 					}
 				}
-				// - Check the shifted channel
-				if (encoder_settings[this_banked_encoder_id].encoder_shift_midi_channel == encoder_settings[that_banked_encoder_id].encoder_shift_midi_channel) {
+				// - Check the shifted channel and number. Both can differ from the
+				//   unshifted ones when a switch gave its mapping to the shift layer.
+				if (encoder_output_channel(this_banked_encoder_id, true) == encoder_output_channel(that_banked_encoder_id, true)
+				    && encoder_output_number(this_banked_encoder_id, true) == encoder_output_number(that_banked_encoder_id, true)) {
 					// Transfer the Value (note: must translate banked_encoder_id to virtual_encoder_id)
 					raw_encoder_value[that_banked_encoder_id+BANKED_ENCODERS] = raw_encoder_value[this_banked_encoder_id+BANKED_ENCODERS];
 					// Update Display if applicable				
@@ -1195,14 +1227,12 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 					
 					// Update the indicator display with the shift value
 					sync_indicator_from_raw(encoder_bank, i, virtual_encoder_id);
-					// Send a Note On
-					//midi_stream_raw_note(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
-					midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
-					encoder_settings[banked_encoder_id].switch_midi_number,
-					//midi_stream_raw_note(encoder_settings[banked_encoder_id].encoder_midi_channel,
-					//encoder_settings[banked_encoder_id].encoder_midi_number,
-					//true,
-					127);
+					// Send a CC, unless the switch gave its mapping to the shift layer
+					if (!shift_mapping_active(banked_encoder_id)) {
+						midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
+						encoder_settings[banked_encoder_id].switch_midi_number,
+						127);
+					}
 					
 				} else if (bit & get_enc_switch_up()) {
 					// Update the display the inactive color
@@ -1213,14 +1243,12 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 					
 					// Update the indicator display with the base encoder value
 					sync_indicator_from_raw(encoder_bank, i, virtual_encoder_id);
-					// Send a Note Off
-					//midi_stream_raw_note(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
-					midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
-					encoder_settings[banked_encoder_id].switch_midi_number,
-					//midi_stream_raw_note(encoder_settings[banked_encoder_id].encoder_midi_channel,
-					//encoder_settings[banked_encoder_id].encoder_midi_number,
-					//false,
-					0);
+					// Send a CC, unless the switch gave its mapping to the shift layer
+					if (!shift_mapping_active(banked_encoder_id)) {
+						midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
+						encoder_settings[banked_encoder_id].switch_midi_number,
+						0);
+					}
 				}
 			}
 			break;
@@ -1242,13 +1270,13 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 						// Update the indicator display with the shift value
 						sync_indicator_from_raw(encoder_bank, i, virtual_encoder_id);
 						
-						// Send a CC
+						// Send a CC, unless the switch gave its mapping to the shift layer
 						// !Summer2016Update: Encoder Shift Switches now output CCs on Switch Channel like other special function switches
-						//midi_stream_raw_note(encoder_settings[banked_encoder_id].switch_midi_channel,
-						midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel,
-						encoder_settings[banked_encoder_id].switch_midi_number,
-						//true,
-						127);
+						if (!shift_mapping_active(banked_encoder_id)) {
+							midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel,
+							encoder_settings[banked_encoder_id].switch_midi_number,
+							127);
+						}
 						
 					} else {
 						// Update the display the inactive color
@@ -1260,13 +1288,13 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 						// Update the indicator display with the base encoder value
 						sync_indicator_from_raw(encoder_bank, i, virtual_encoder_id);
 						
-						// Send a CC
+						// Send a CC, unless the switch gave its mapping to the shift layer
 						// !Summer2016Update: Encoder Shift Switches now output CCs on Switch Channel like other special function switches
-						//midi_stream_raw_note(encoder_settings[banked_encoder_id].switch_midi_channel,
-						midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel, 
-						encoder_settings[banked_encoder_id].switch_midi_number,
-						//false,
-						0);
+						if (!shift_mapping_active(banked_encoder_id)) {
+							midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel,
+							encoder_settings[banked_encoder_id].switch_midi_number,
+							0);
+						}
 						
 					}
 				}
@@ -1338,14 +1366,14 @@ void run_shift_mode(uint8_t page){
 
 void send_encoder_midi(uint8_t banked_encoder_idx, uint8_t value, bool state, bool shifted)
 {
-	uint8_t midi_channel = shifted ? encoder_settings[banked_encoder_idx].encoder_shift_midi_channel: encoder_settings[banked_encoder_idx].encoder_midi_channel;
-	// !revision resuse unused switch midi number for shifts: midi_number = shifted? encoder_midi_num/ switch_midi_num 20190806 
+	uint8_t midi_channel = encoder_output_channel(banked_encoder_idx, shifted);
+	uint8_t midi_number = encoder_output_number(banked_encoder_idx, shifted);
 	// Sending encoder as note is not useful so this can likely be simplified
 	// once incremental messages are added
 	if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_CC || encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_SWITCH_VEL_CONTROL)
 	{
 		midi_stream_raw_cc(midi_channel,
-		encoder_settings[banked_encoder_idx].encoder_midi_number,
+		midi_number,
 		value);
 		//if (encoder_settings[banked_encoder_idx].is_super_knob && (value >= global_super_knob_start)) {
 		if (encoder_settings[banked_encoder_idx].is_super_knob) {
@@ -1369,7 +1397,7 @@ void send_encoder_midi(uint8_t banked_encoder_idx, uint8_t value, bool state, bo
 		}			
 	} else if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_NOTE) {
 		midi_stream_raw_note(midi_channel,
-		encoder_settings[banked_encoder_idx].encoder_midi_number,
+		midi_number,
 		true,
 		value);
 	} else if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_PROGRAM_CHANGE) {
@@ -1558,10 +1586,13 @@ void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t
 		// Otherwise the input is re mappable so scan through the input map for a match
 		for(uint8_t i=0;i<BANKED_ENCODERS;++i){
 			// Search the input map for a match
-			if(encoder_settings[i].encoder_midi_number == number){  // !revision: reuse unused switch midi number for shifted encoder midi number
+			// The shift layer answers on the switch number when the switch gave it up
+			bool base_number_match  = (encoder_settings[i].encoder_midi_number == number);
+			bool shift_number_match = (encoder_output_number(i, true) == number);
+			if(base_number_match || shift_number_match){
 				uint8_t output_type = encoder_settings[i].encoder_midi_type;
 				// Check Encoder Mapping for a Match
-				if(encoder_settings[i].encoder_midi_channel == channel){
+				if(base_number_match && encoder_settings[i].encoder_midi_channel == channel){
 					// Matched to an encoder indicator
 					// - !Summer2016Update: MIDI Type Filtering for MIDI Feedback
 					if(type == SEND_CC){  
@@ -1581,7 +1612,7 @@ void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t
 					#if ENABLE_DUPLICATE_INPUT_MAPPINGS == 0
 					return;
 					#endif
-				} else if(encoder_settings[i].encoder_shift_midi_channel == channel){
+				} else if(shift_number_match && encoder_output_channel(i, true) == channel){
 					// Matched to an shifted encoder's indicator
 					// - !Summer2016Update: MIDI Type Filtering for MIDI Feedback
 					if(type == SEND_CC){ 
