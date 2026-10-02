@@ -88,7 +88,7 @@ slotSettings_t *slotSettings;
  * sequencer_init(). In 8 bank mode the banks use all of the arena and the
  * sequencer must not run. Refer to g_seq_available in sequencer.h.
  *
- * encoders_alloc() clears the arena, thus these buffers start at zero. Keep
+ * encoders_alloc() clears the arena, so these buffers start at zero. Keep
  * that order. No other code initializes slot_memory, because
  * pattern_memory_init() only reads the EEPROM slot flags.
  *
@@ -444,11 +444,11 @@ void sync_clock(void){
 }
 
 /**
- * Shifts a pattern forwards or back 1 beat.
+ * Shifts a pattern forward or back 1 beat.
  * 
  * \param pattern_ptr [in] A pointer to the pattern we are editing
  *
- * \param direction [in] If true shift forwards, otherwise shift back
+ * \param direction [in] If true shift forward, otherwise shift back
  *
  */
 

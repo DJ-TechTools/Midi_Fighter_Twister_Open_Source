@@ -94,12 +94,12 @@
 	
 	void build_rgb(uint8_t encoder, uint32_t color, uint8_t level);
 
-	// Per-encoder white balance trim, applied inside build_rgb to every colour
+	// Per-encoder white balance trim, applied inside build_rgb to every color
 	// on every path. Values are the resolved gains, already clamped to
 	// [CAL_TRIM_MIN, CAL_TRIM_MAX] by the caller.
 	void set_rgb_trim(uint8_t encoder, uint8_t red, uint8_t green, uint8_t blue);
 
-	// For calibration mode only. This suppresses the trim, thus the display can
+	// For calibration mode only. This suppresses the trim, so the display can
 	// show a pure channel at full brightness.
 	void set_rgb_trim_bypass(bool bypass);
 	

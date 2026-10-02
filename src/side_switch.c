@@ -30,10 +30,21 @@
 
 
 // Holds all configurable side switch settings
+// A held direct bank jump comes back on release, as ToggleOrHoldBehaviour does
+// in the Ableton scripts: a tap latches the bank and a hold shows it only while
+// the button is down. Live splits the two at MOMENTARY_DELAY, 0.3 seconds, and
+// process_side_switch_input() runs one time per main loop pass at about 1.21ms.
+#define BANK_HOLD_REVERT_SCANS 248
+#define BANK_HOLD_NONE         0xFF
+
+static uint8_t bank_hold_switch = BANK_HOLD_NONE;	// side switch that owns the hold
+static uint8_t bank_hold_origin = 0;				// bank to come back to
+static uint8_t bank_hold_scans  = 0;				// scans the button has been down
+
 static side_sw_settings_t side_sw_cfg;
 
 // Holds toggle state for switch if configured for MIDI toggle action
-// MAX_BANKS, not NUM_BANKS: this is one byte per bank, thus 4 bytes more at 8
+// MAX_BANKS, not NUM_BANKS: this is one byte per bank, so 4 bytes more at 8
 // banks. That is less than the cost of putting it in the arena.
 static uint8_t side_switch_toggle_state[MAX_BANKS];
 bool g_bank_select_active = false;
@@ -110,7 +121,7 @@ side_sw_settings_t* get_side_switch_config(void)
 // Native mode toggle combo: both bottom side buttons pressed simultaneously.
 // get_side_switch_state() bits 0-5 are SIDE_SW1..SW6. Bits 0, 1 and 2 are the
 // left top, middle and bottom buttons. Bits 3, 4 and 5 are the right top,
-// middle and bottom buttons. Thus the bottom pair is bits 2 and 5. This agrees
+// middle and bottom buttons. The bottom pair is bits 2 and 5. This agrees
 // with the hardware, self_test.c side_pattern[], doc/NativeMode.md, and the
 // sequencer combo below, which fires on the middle pair (0x12).
 #define NATIVE_MODE_TOGGLE_COMBO 0x24
@@ -176,6 +187,21 @@ void draw_bank_select_overlay(void) {
 			build_rgb(i, 0x0000FF, 0);
 		}
 	}
+}
+
+/**
+ * Changes bank the way a direct jump does: the MIDI pair, then the animation.
+ *
+ * \param target [in]	Bank to show, already known to be in range
+ */
+static void bank_jump_to(uint8_t target)
+{
+	midi_stream_raw_cc(midi_system_channel, current_encoder_bank(), 0);
+	midi_stream_raw_cc(midi_system_channel, target, 127);
+	if (global_bank_animations_enabled) {
+		bank_change_animation(target);
+	}
+	change_encoder_bank(target);
 }
 
 void do_side_switch_function(uint8_t switch_num, switch_event_t state)
@@ -316,85 +342,38 @@ void do_side_switch_function(uint8_t switch_num, switch_event_t state)
 				refresh_display();
 			}
 		} break;
-		case GLOBAL_BANK_1:{
-			if((state == SW_DOWN) && (NUM_BANKS > 0)){
-				midi_stream_raw_cc(midi_system_channel, current_encoder_bank(), 0);
-				midi_stream_raw_cc(midi_system_channel, 0, 127);
-				if (global_bank_animations_enabled) {
-					bank_change_animation(0);
-				}
-				change_encoder_bank(0);
-			}
-		} break;
-		case GLOBAL_BANK_2:{
-			if((state == SW_DOWN) && (NUM_BANKS > 1)){
-				midi_stream_raw_cc(midi_system_channel, current_encoder_bank(), 0);
-				midi_stream_raw_cc(midi_system_channel, 1, 127);
-				if (global_bank_animations_enabled) {
-					bank_change_animation(1);
-				}
-				change_encoder_bank(1);
-			}
-		} break;
-		case GLOBAL_BANK_3:{
-			if((state == SW_DOWN) && (NUM_BANKS > 2)){
-				midi_stream_raw_cc(midi_system_channel, current_encoder_bank(), 0);
-				midi_stream_raw_cc(midi_system_channel, 2, 127);
-				if (global_bank_animations_enabled) {
-					bank_change_animation(2);
-				}
-				change_encoder_bank(2);
-			}
-		} break;
-		case GLOBAL_BANK_4:{
-			if((state == SW_DOWN) && (NUM_BANKS > 3)){
-				midi_stream_raw_cc(midi_system_channel, current_encoder_bank(), 0);
-				midi_stream_raw_cc(midi_system_channel, 3, 127);
-				if (global_bank_animations_enabled) {
-					bank_change_animation(3);
-				}
-				change_encoder_bank(3);
-			}
-		} break;
-		case GLOBAL_BANK_5:{
-			if((state == SW_DOWN) && (NUM_BANKS > 4)){
-				midi_stream_raw_cc(midi_system_channel, current_encoder_bank(), 0);
-				midi_stream_raw_cc(midi_system_channel, 4, 127);
-				if (global_bank_animations_enabled) {
-					bank_change_animation(4);
-				}
-				change_encoder_bank(4);
-			}
-		} break;
-		case GLOBAL_BANK_6:{
-			if((state == SW_DOWN) && (NUM_BANKS > 5)){
-				midi_stream_raw_cc(midi_system_channel, current_encoder_bank(), 0);
-				midi_stream_raw_cc(midi_system_channel, 5, 127);
-				if (global_bank_animations_enabled) {
-					bank_change_animation(5);
-				}
-				change_encoder_bank(5);
-			}
-		} break;
-		case GLOBAL_BANK_7:{
-			if((state == SW_DOWN) && (NUM_BANKS > 6)){
-				midi_stream_raw_cc(midi_system_channel, current_encoder_bank(), 0);
-				midi_stream_raw_cc(midi_system_channel, 6, 127);
-				if (global_bank_animations_enabled) {
-					bank_change_animation(6);
-				}
-				change_encoder_bank(6);
-			}
-		} break;
+		case GLOBAL_BANK_1:
+		case GLOBAL_BANK_2:
+		case GLOBAL_BANK_3:
+		case GLOBAL_BANK_4:
+		case GLOBAL_BANK_5:
+		case GLOBAL_BANK_6:
+		case GLOBAL_BANK_7:
 		case GLOBAL_BANK_8:{
-			if((state == SW_DOWN) && (NUM_BANKS > 7)){
-				midi_stream_raw_cc(midi_system_channel, current_encoder_bank(), 0);
-				midi_stream_raw_cc(midi_system_channel, 7, 127);
-				if (global_bank_animations_enabled) {
-					bank_change_animation(7);
+			// The eight actions are contiguous, so the bank is the offset from the first.
+			uint8_t target = side_sw_cfg.sw_action[switch_num] - GLOBAL_BANK_1;
+			if (target >= NUM_BANKS) { break; }
+
+			if (state == SW_DOWN) {
+				bank_hold_switch = switch_num;
+				bank_hold_origin = current_encoder_bank();
+				bank_hold_scans  = 0;
+				bank_jump_to(target);
+			} else if ((state == SW_HELD) && (bank_hold_switch == switch_num)) {
+				if (bank_hold_scans < BANK_HOLD_REVERT_SCANS) { bank_hold_scans++; }
+			} else if ((state == SW_UP) && (bank_hold_switch == switch_num)) {
+				// A tap leaves the new bank latched. A hold comes back, unless the
+				// jump went nowhere or something else moved the bank while it was down.
+				if ((bank_hold_scans >= BANK_HOLD_REVERT_SCANS)
+				 && (bank_hold_origin != target)
+				 && (current_encoder_bank() == target)) {
+					bank_jump_to(bank_hold_origin);
 				}
-				change_encoder_bank(7);
+				bank_hold_switch = BANK_HOLD_NONE;
 			}
+			// The sequencer combo routes the side buttons elsewhere, so a hold that
+			// enters it never sees its SW_UP. The stale owner is harmless: the next
+			// SW_DOWN overwrites all three values.
 		} break;
 		case CYCLE_BANK:{
 			if(state == SW_DOWN){

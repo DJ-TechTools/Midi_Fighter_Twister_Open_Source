@@ -32,14 +32,14 @@ Control|Function
 
 Calibration has no save button. You save in the setup menu, with the green encoder. One save keeps all of your setup mode changes.
 
-At the start you adjust all of the encoders together. Use single encoder mode if one LED looks different from the others. Each encoder keeps its own value and has the full range, thus you can also calibrate only the encoders that you use for white.
+At the start you adjust all of the encoders together. Use single encoder mode if one LED looks different from the others. Each encoder keeps its own value and has the full range, so you can also calibrate only the encoders that you use for white.
 
 ## Lights
 
 LEDs|Description
 --|--
 **Encoder color**|White, as your current settings show it.
-**White ring**|The level of that encoder for the channel that you adjust. Each encoder shows its own level. Thus you can see the difference between all 16 encoders.
+**White ring**|The level of that encoder for the channel that you adjust. Each encoder shows its own level. You can see the difference between all 16 encoders.
 **Blue detent dot**|This is the encoder in single encoder mode.
 **Red detent dot**|You turned this encoder past the end of its range. It no longer follows the others.
 **Magenta detent dot**|This is the encoder in single encoder mode, and you turned it past the end of its range.
@@ -72,7 +72,7 @@ To match a second Twister, put the two units side by side. Use one unit as the r
 
 Green starts at the top of its range. If you increase it, nothing occurs. The ring shows that all 11 LEDs are already on. This is correct, because that position gives you the maximum brightness.
 
-Thus you usually set the white point when you decrease the channel that is too strong. Red and blue start below the top of their range, thus you can also increase them.
+You usually set the white point when you decrease the channel that is too strong. Red and blue start below the top of their range, so you can also increase them.
 
 ### Brightness
 

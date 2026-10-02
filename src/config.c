@@ -61,7 +61,7 @@ void global_tv_table_decode(global_tvtable_t* table, uint8_t* buffer, uint8_t si
 
 /**
  * Stores the detent and dead zone sizes and makes them live. The encoder code
- * reads the globals on each movement, thus no reset is necessary. Values out of
+ * reads the globals on each movement, so no reset is necessary. Values out of
  * range are clamped.
  */
 void detent_settings_save(uint8_t detent_size, uint8_t dead_zone_size)
@@ -175,7 +175,7 @@ void sysExCmdSystem (uint8_t, uint8_t*); // -Wmissing-prototype
  * Shows a confirmation, then resets the unit.
  *
  * The system commands that change a boot time setting use this. The MIDI input
- * handler disables interrupts, thus this turns them on again. Without this, the
+ * handler disables interrupts, so this turns them on again. Without this, the
  * display does not show the confirmation.
  *
  * \param color [in]	24 bit confirmation color
@@ -239,12 +239,12 @@ void sysExCmdSystem (uint8_t length, uint8_t* buffer)
     case 3:
         {
 			// Set the USB device number, 0 to NUM_DEVICE_IDS-1. The product ID
-			// and the product string both follow it, thus the unit resets and
+			// and the product string both follow it, so the unit resets and
 			// the host sees a different device.
 			//
 			// On macOS the new MIDI port sometimes comes back but does not pass
 			// data, and the user must then disconnect the cable. This occurred one
-			// time in four identity changes. Thus the host must not expect the port
+			// time in four identity changes. The host must not expect the port
 			// to be usable immediately. A change of bank mode keeps the product ID,
 			// and the port always came back.
 			if (length < 2) { return; }
@@ -277,7 +277,7 @@ void sysExCmdSystem (uint8_t length, uint8_t* buffer)
 			// Read back the device number and the bank mode.
 			//
 			// Byte 0x0 is a request and 0x1 is a response, as in the get device
-			// ID command. Thus the unit does not answer a response that comes
+			// ID command. The unit does not answer a response that comes
 			// back to it.
 			if ((length >= 2) && (buffer[1] != 0x00)) { return; }
 
@@ -548,7 +548,7 @@ void load_config(void)
 	global_dead_zone_size = GET_DEAD_ZONE_SIZE(detent_settings);
 	if (global_detent_size > MAX_DETENT_SIZE)       global_detent_size    = DEF_DETENT_SIZE;
 	if (global_dead_zone_size > MAX_DEAD_ZONE_SIZE) global_dead_zone_size = DEF_DEAD_ZONE_SIZE;
-	// Only 1 enables it, thus an unwritten 0xFF gives the default
+	// Only 1 enables it, so an unwritten 0xFF gives the default
 	global_disable_shift_sw_midi = (eeprom_read(EE_DISABLE_SHIFT_SW_MIDI) == 1);
 	
 	side_switch_config(&side_sw_cfg);
@@ -557,7 +557,7 @@ void load_config(void)
 
 	// White balance trim. It is outside the block above, by design. The trim has
 	// its own EEPROM page and magic, and is not part of the layout versioned
-	// settings. Thus a factory reset and a new EEPROM_LAYOUT both keep it.
+	// settings. A factory reset and a new EEPROM_LAYOUT both keep it.
 	calibration_init();
 
 	// Runtime USB identity. It must be live before the unit services the host.

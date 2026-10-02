@@ -383,14 +383,23 @@ int build_indicator_pattern(indicator_bit_mask_t *result,
 	bool		is_blended = false;
 	bool        is_bar_display     = false;
 	bool		is_spread = false;
+	// A V-Pot in the boost or cut ring mode draws from the center like a detent
+	// encoder, but must not take the detent path: that draws the detent dot alone
+	// and blanks the ring at the center, which is where a pan sits.
+	bool        force_center = false;
 
 	float       remainder = 0;
 	
 	if (type == BLENDED_BAR){// || type == BLENDED_DOT) {
 		is_blended = true;
 	}
-	if (type ==  BAR || type == BLENDED_BAR) {
+	if (type ==  BAR || type == BLENDED_BAR || type == CENTER_BAR) {
 		is_bar_display = true;
+	}
+
+	if (type == CENTER_BAR) {
+		is_blended = true;
+		force_center = true;
 	}
 	
 	if (type == SPREAD_BAR) {
@@ -430,9 +439,9 @@ int build_indicator_pattern(indicator_bit_mask_t *result,
 		}
 		return 1;
 	}
-	if (has_detent) {	
+	if (has_detent || force_center) {	
 		// 
-		if (position == 63 || position == 64 ) {
+		if (has_detent && (position == 63 || position == 64) ) {
 			// The encoder is in its detent position, set the detent indicator
 			// to its color and return.
 			result->pattern_A = 0x0001;  // detent color 1 flag 
@@ -581,10 +590,10 @@ void build_rgb(uint8_t encoder, uint32_t color, uint8_t level)
 	uint8_t blue_byte =  (uint8_t)(color & 0xFF);
 	#endif
 
-	// White balance is a property of the physical LED. Thus it applies to all
+	// White balance is a property of the physical LED. It applies to all
 	// colors on all paths, which include both palettes and native mode. This must
 	// stay before the level scale below. The level scales all three channels by
-	// the same ratio, thus a trim that comes first stays correct when the LED dims.
+	// the same ratio, so a trim that comes first stays correct when the LED dims.
 	// A trim must not be more than CAL_TRIM_MAX, or the ratio breaks against the
 	// PWM ceiling.
 	if (!rgb_trim_bypass) {
@@ -700,7 +709,7 @@ void set_encoder_rgb_level(uint8_t encoder, uint8_t color, uint8_t brightness)
  * Turns an encoder's detent LED fully off.
  *
  * set_encoder_indent() mixes red and blue, and has no index that turns both
- * off. Thus a caller that must turn the detent LED off needs this. It changes
+ * off. A caller that must turn the detent LED off needs this. It changes
  * only bits 0 and 1, the detent lane, and not the RGB and white lanes.
  */
 void clear_encoder_indent(uint8_t encoder)
@@ -1203,7 +1212,7 @@ void bank_change_animation_tick(void)
 	}
 
 	// The fade ramps up to the RGB Brightness setting, doubled as in
-	// set_encoder_rgb(). A level of 0 means full brightness in build_rgb, thus
+	// set_encoder_rgb(). A level of 0 means full brightness in build_rgb, so
 	// the minimum is 1, which is off.
 	uint16_t rgb_target = (uint16_t)pgm_read_byte(&brightnessMap[global_rgb_brightness]) * 2;
 	uint8_t rgb_level = (uint8_t)((s_bank_anim_level * rgb_target) / 127);

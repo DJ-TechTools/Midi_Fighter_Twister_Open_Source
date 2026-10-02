@@ -4,7 +4,7 @@
 
 // Native mode lives entirely on the system channel, in a CC block of its own.
 // - Base 64 clears bank change (CC 0-3 with 4 banks, or 0-7 with 8) and the side
-//   switches (CC 8-31 with 4 banks, or 8-55 with 8). Thus the block is correct in
+//   switches (CC 8-31 with 4 banks, or 8-55 with 8). The block is correct in
 //   both bank modes. Shift shares the channel but uses notes, so it never
 //   collides.
 #define NATIVE_MODE_CC_BASE 64
@@ -227,7 +227,7 @@ static void native_mode_handle_sysex_set_native_mode(uint8_t length, uint8_t *bu
 void native_mode_toggle(void)
 {
 	// Flip the active state (always a change), applying the same entry
-	// behaviour as the SysEx "set native mode" command.
+	// behavior as the SysEx "set native mode" command.
 	if (native_mode_set_active(!native_mode_is_active()))
 	{
 		if (native_mode_is_active())

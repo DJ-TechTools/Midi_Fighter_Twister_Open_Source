@@ -42,11 +42,11 @@ const uint16_t encoder_detent_limit_high = 6450; // 6450 - ok for all modes, (no
 // Bank scaled storage ---------------------------------------------------------
 //
 // The live bank count is a runtime value, but C needs an array size at compile
-// time. Thus the large bank scaled arrays are pointers into one arena, which
+// time. The large bank scaled arrays are pointers into one arena, which
 // encoders_alloc() divides at boot. The arena is large enough for 8 banks.
 //
 // In 4 bank mode only one half of the arena is in use. The sequencer puts its
-// large data in the other half. Refer to bank_arena_spare(). Thus one binary
+// large data in the other half. Refer to bank_arena_spare(). One binary
 // holds both modes, and the live mode holds all of the storage.
 //
 // No use site changes, because arr[i] and ptr[i] have the same syntax, and
@@ -75,7 +75,7 @@ uint8_t (*encoder_animation_buffer)[16];		 // Holds the encoder animation settin
 uint16_t (*enc_switch_midi_state)[16];			 // Holds the switch states
 
 // These three are one 16 bit word for each bank. At 8 banks that is 6 bytes
-// more than at 4 banks, thus they stay as arrays. In the arena they cost more in
+// more than at 4 banks, so they stay as arrays. In the arena they cost more in
 // pointers and code than they save.
 uint16_t enc_switch_toggle_state[MAX_BANKS];	 // 16-Encoders Per Bank/ 1-bit per Encoder
 							// toggle state is not tied directly 
@@ -122,6 +122,7 @@ void send_encoder_midi(uint8_t banked_encoder_idx, uint8_t value, bool state, bo
 uint8_t scale_encoder_value(int16_t value);
 int16_t clamp_encoder_raw_value(int16_t value);
 bool encoder_is_in_detent(int16_t value);
+static void process_vpot_ring_update(uint8_t idx, uint8_t ring, uint8_t rx_msg_shifted_mapping);
 bool color_overide_active(uint8_t bank, uint8_t encoder);
 // - Encoder Banks
 bool encoder_maps_match(uint8_t this_banked_encoder_id, uint8_t that_banked_encoder_id);
@@ -160,7 +161,8 @@ static void sync_indicator_from_raw(uint8_t bank, uint8_t encoder, uint8_t virtu
 	uint8_t banked_encoder_id = encoder + bank*PHYSICAL_ENCODERS;
 	uint8_t midi_type = encoder_settings[banked_encoder_id].encoder_midi_type;
 	if (midi_type == SEND_REL_ENC || midi_type == SEND_REL_ENC_MOUSE_EMU_DRAG ||
-		midi_type == SEND_REL_ENC_MOUSE_EMU_SCROLL) {
+		midi_type == SEND_REL_ENC_MOUSE_EMU_SCROLL ||
+		midi_type == SEND_MCU_VPOT) {
 		return;
 	}
 	indicator_value_buffer[bank][encoder] = (uint8_t)(raw_encoder_value[virtual_encoder_id]/100);
@@ -199,34 +201,157 @@ static void send_program_selection(uint8_t channel, uint8_t program)
 
 // encoder_maps_match: Compares MIDI Mapping Parameters common to both 'shift' and 'unshifted' states.
 // - returns true if the mappings match, otherwise returns false.
-// True when this encoder's shift layer borrows the switch MIDI mapping. The
-// switch then sends nothing, which is what frees it. Refer to
+// True when this encoder's shift layer borrows the switch MIDI number. The
+// switch then sends nothing, which is what frees the number. Refer to
 // EE_DISABLE_SHIFT_SW_MIDI.
-static bool shift_mapping_active(uint8_t banked_encoder_id) {
+static bool shift_number_active(uint8_t banked_encoder_id) {
 	if (!global_disable_shift_sw_midi) { return false; }
 	uint8_t action = encoder_settings[banked_encoder_id].switch_action_type;
 	return (action == ENC_SHIFT_HOLD) || (action == ENC_SHIFT_TOGGLE);
 }
 
+// Fader touch state, per physical encoder. The note is stored and not
+// recomputed, so a bank change during a gesture cannot leave the host holding a
+// touch on a strip the device no longer sends.
+static uint8_t mcu_touch_note[PHYSICAL_ENCODERS];
+static uint8_t mcu_touch_timer[PHYSICAL_ENCODERS];
+
+// Mackie faders are 14 bit pitch bend where raw_encoder_value is 0..12700.
+static uint16_t raw_to_pitchbend(int16_t raw) {
+	if (raw < 0) { raw = 0; }
+	if (raw > 12700) { raw = 12700; }
+	return (uint16_t)(((uint32_t)raw * MCU_FADER_MAX) / 12700u);
+}
+
+static int16_t pitchbend_to_raw(uint16_t bend) {
+	if (bend > MCU_FADER_MAX) { bend = MCU_FADER_MAX; }
+	return (int16_t)(((uint32_t)bend * 12700u + (MCU_FADER_MAX / 2)) / MCU_FADER_MAX);
+}
+
+// Surface state, read from the lamps the host sends back. It owns them, so
+// the echo is right even when the user changes Flip in the DAW or on another
+// surface. Both start off, because the device cannot know until the host sends
+// its first refresh.
+static bool mcu_flip_on = false;
+static uint8_t mcu_assignment = MCU_ASSIGN_UNKNOWN;
+
+// The color a V-Pot's assignment mode calls for, or -1 to leave the encoder its
+// own color. The host names the mode with the row of lamps it lights, so before
+// it has said anything there is nothing to show.
+static int8_t mcu_mode_color(uint8_t banked_encoder_id)
+{
+	if (encoder_settings[banked_encoder_id].encoder_midi_type != SEND_MCU_VPOT) { return -1; }
+
+	// Only the eight strip V-Pots follow the page. The same output type also
+	// drives the jog wheel, which belongs to no strip and no page.
+	{
+		uint8_t number = encoder_settings[banked_encoder_id].encoder_midi_number;
+		if ((number < MCU_VPOT_CC_FIRST) || (number >= (MCU_VPOT_CC_FIRST + MCU_STRIPS))) { return -1; }
+	}
+
+	// The index means a different color in each map, so read the one in use.
+	bool ext = (activeColorMap == colorMap64);
+
+	switch (mcu_assignment) {
+		case MCU_ASSIGN_IO:      return ext ? MCU_COLOR_MODE_IO_64      : MCU_COLOR_MODE_IO;
+		case MCU_ASSIGN_SENDS:   return ext ? MCU_COLOR_MODE_SENDS_64   : MCU_COLOR_MODE_SENDS;
+		case MCU_ASSIGN_PAN:     return ext ? MCU_COLOR_MODE_PAN_64     : MCU_COLOR_MODE_PAN;
+		case MCU_ASSIGN_PLUGINS: return ext ? MCU_COLOR_MODE_PLUGINS_64 : MCU_COLOR_MODE_PLUGINS;
+		default:                 return -1;
+	}
+}
+
+// Watches the lamp feedback without consuming it, since an encoder may also be
+// mapped to these notes.
+void mcu_observe_feedback_note(uint8_t channel, uint8_t note, uint8_t velocity, bool note_on)
+{
+	if (channel != MCU_TOUCH_CHANNEL) { return; }
+
+	bool lit = note_on && (velocity > 0);
+
+	if (note == MCU_FLIP_NOTE) {
+		mcu_flip_on = lit;
+	} else if ((note >= MCU_ASSIGN_FIRST) && (note <= MCU_ASSIGN_LAST) && lit) {
+		mcu_assignment = note;  // the host lights one at a time
+	}
+}
+
+// A Mackie fader's detent is tactile only. Passing has_detent to the
+// display would blank its ring at mid travel, because build_indicator_pattern()
+// draws the detent dot alone at position 63 and 64.
+static bool encoder_shows_detent(uint8_t banked_encoder_id)
+{
+	if (encoder_settings[banked_encoder_id].encoder_midi_type == SEND_MCU_FADER) { return false; }
+	return encoder_settings[banked_encoder_id].has_detent;
+}
+
+// The indicator type a fader draws with.
+//
+// Flip swaps the fader and the V-Pot, and the assignment mode says what the
+// V-Pot holds, so a flipped fader in the pan assignment holds a pan and reads
+// from the center. Both facts come from the host: note 50 for flip and notes 40
+// to 45 for the mode. mcu_fader_detent_raw() puts the tactile detent there,
+// and this keeps the ring from disagreeing with the feel.
+//
+// The ring byte cannot answer this. Captured under flip, it changed from boost
+// and cut to wrap, so it follows what the V-Pot took on and never describes the
+// fader.
+static uint16_t mcu_fader_display_type(uint8_t banked_encoder_id)
+{
+	if ((encoder_settings[banked_encoder_id].encoder_midi_type == SEND_MCU_FADER)
+	 && mcu_flip_on && (mcu_assignment == MCU_ASSIGN_PAN)) {
+		return CENTER_BAR;
+	}
+	return encoder_settings[banked_encoder_id].indicator_display_type;
+}
+
+// Where a fader detents, in raw units, or -1 for no detent.
+//
+// Only a flipped fader in the pan assignment has one. Flip hands it whatever the
+// V-Pot held, a pan centers, and a send or a plugin parameter does not.
+static int16_t mcu_fader_detent_raw(uint8_t banked_encoder_id)
+{
+	if (encoder_settings[banked_encoder_id].encoder_midi_type != SEND_MCU_FADER) { return -1; }
+	if (!encoder_settings[banked_encoder_id].has_detent) { return -1; }
+
+	return (mcu_flip_on && (mcu_assignment == MCU_ASSIGN_PAN)) ? MCU_CENTER_RAW : -1;
+}
+
+// Starts or extends a fader touch. A real fader reports the hand, so this
+// follows movement and not the push switch.
+static void mcu_fader_touch(uint8_t encoder_idx, uint8_t banked_encoder_id, bool shifted)
+{
+	uint8_t channel = shifted ? encoder_settings[banked_encoder_id].encoder_shift_midi_channel
+	                          : encoder_settings[banked_encoder_id].encoder_midi_channel;
+	uint8_t note = MCU_TOUCH_NOTE_BASE + channel;
+
+	if (mcu_touch_note[encoder_idx] == MCU_TOUCH_NONE) {
+		mcu_touch_note[encoder_idx] = note;
+		midi_stream_raw_note(MCU_TOUCH_CHANNEL, note, true, 127);
+	}
+	mcu_touch_timer[encoder_idx] = MCU_TOUCH_HOLD_SCANS;
+}
+
+// Releases a touch once the encoder has been still. Call one time per scan for
+// each encoder.
+static void mcu_fader_touch_tick(uint8_t encoder_idx)
+{
+	if (mcu_touch_note[encoder_idx] == MCU_TOUCH_NONE) { return; }
+	if (mcu_touch_timer[encoder_idx] > 0) {
+		mcu_touch_timer[encoder_idx]--;
+		return;
+	}
+	midi_stream_raw_note(MCU_TOUCH_CHANNEL, mcu_touch_note[encoder_idx], false, 0);
+	mcu_touch_note[encoder_idx] = MCU_TOUCH_NONE;
+}
+
 // The MIDI number an encoder sends on. The shift layer takes the switch number
 // when the switch gave its mapping up.
 static uint8_t encoder_output_number(uint8_t banked_encoder_id, bool shifted) {
-	if (shifted && shift_mapping_active(banked_encoder_id)) {
+	if (shifted && shift_number_active(banked_encoder_id)) {
 		return encoder_settings[banked_encoder_id].switch_midi_number;
 	}
 	return encoder_settings[banked_encoder_id].encoder_midi_number;
-}
-
-// The MIDI channel an encoder sends on. The switch gives up its whole mapping,
-// channel as well as number, thus the shift layer takes both together.
-static uint8_t encoder_output_channel(uint8_t banked_encoder_id, bool shifted) {
-	if (!shifted) {
-		return encoder_settings[banked_encoder_id].encoder_midi_channel;
-	}
-	if (shift_mapping_active(banked_encoder_id)) {
-		return encoder_settings[banked_encoder_id].switch_midi_channel;
-	}
-	return encoder_settings[banked_encoder_id].encoder_shift_midi_channel;
 }
 
 bool encoder_maps_match(uint8_t this_banked_encoder_id, uint8_t that_banked_encoder_id) {
@@ -234,7 +359,7 @@ bool encoder_maps_match(uint8_t this_banked_encoder_id, uint8_t that_banked_enco
 		{ return false; }
 	if (encoder_settings[this_banked_encoder_id].encoder_midi_type != encoder_settings[that_banked_encoder_id].encoder_midi_type)
 		{ return false; }
-	if (encoder_settings[this_banked_encoder_id].encoder_midi_type == SEND_REL_ENC || encoder_settings[this_banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_DRAG || encoder_settings[this_banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_SCROLL) // Don't Transfer values for relative encoders
+	if (encoder_settings[this_banked_encoder_id].encoder_midi_type == SEND_REL_ENC || encoder_settings[this_banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_DRAG || encoder_settings[this_banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_SCROLL || encoder_settings[this_banked_encoder_id].encoder_midi_type == SEND_MCU_VPOT) // Don't Transfer values for relative encoders or V-Pots
 		{ return false; }
 	return true;
 }
@@ -259,9 +384,9 @@ void transfer_this_encoder_value_to_other_banks(uint8_t current_bank, uint8_t en
 						indicator_value_buffer[that_bank][that_encoder] = indicator_value_buffer[current_bank][encoder_id];
 					}
 				}
-				// - Check the shifted channel and number. Both can differ from the
-				//   unshifted ones when a switch gave its mapping to the shift layer.
-				if (encoder_output_channel(this_banked_encoder_id, true) == encoder_output_channel(that_banked_encoder_id, true)
+				// - Check the shifted channel and number. The numbers can differ from
+				//   the unshifted ones when a switch gave its number to the shift layer.
+				if (encoder_settings[this_banked_encoder_id].encoder_shift_midi_channel == encoder_settings[that_banked_encoder_id].encoder_shift_midi_channel
 				    && encoder_output_number(this_banked_encoder_id, true) == encoder_output_number(that_banked_encoder_id, true)) {
 					// Transfer the Value (note: must translate banked_encoder_id to virtual_encoder_id)
 					raw_encoder_value[that_banked_encoder_id+BANKED_ENCODERS] = raw_encoder_value[this_banked_encoder_id+BANKED_ENCODERS];
@@ -288,13 +413,13 @@ void transfer_encoder_values_to_other_banks(uint8_t current_bank){
  * Divides bank_arena between the bank scaled arrays, for the given bank count.
  *
  * Call this one time at boot, before any other code reads or writes bank
- * scaled storage. encoders_init() and load_config() both do, thus this must
+ * scaled storage. encoders_init() and load_config() both do, so this must
  * come before them. Refer to bank_mode_init() in setup_mode.c.
  *
  * The clear keeps a condition that the sequencer overlay needs: its buffers
  * must start at zero. No other code initializes slot_memory, because
  * pattern_memory_init() only reads the EEPROM slot flags. bank_arena is in
- * .bss now, and start up clears .bss. Thus the clear protects against a later
+ * .bss now, and start up clears .bss. The clear protects against a later
  * change, and is not necessary now.
  *
  * \param banks [in]	MIN_BANKS or MAX_BANKS
@@ -372,6 +497,8 @@ void encoders_init(void)
 	// Initialize Per-Physical Encoder related variables
 	for (uint8_t i = 0; i<PHYSICAL_ENCODERS;++i){ 
 		encoder_detent_counter[i] = 0;
+		mcu_touch_note[i] = MCU_TOUCH_NONE;
+		mcu_touch_timer[i] = 0;
 		enc_switch_toggle_state[encoder_bank] = 0;
 	}
 
@@ -435,7 +562,7 @@ void get_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_ptr
 	cfg_ptr->indicator_display_type = buffer[5] & 0x03;
 	cfg_ptr->movement				= (buffer[5] >> 2) & 0x03;
 	cfg_ptr->encoder_shift_midi_channel = (buffer[5] >> 4) & 0x0F; // !Summer2016Update: Shifted Encoder MIDI Channel
-	cfg_ptr->encoder_midi_type		= buffer[6] & 0x07; // !Spring2019Update: Added Switch Velocity Control and Mouse Emulation
+	cfg_ptr->encoder_midi_type		= buffer[6] & 0x0F; // 4 bits since SEND_MCU_FADER, which spent the spare bit 0x08
 	cfg_ptr->encoder_midi_channel   = (buffer[6] >> 4) & 0x0F;
 	cfg_ptr->encoder_midi_number	= buffer[7] & 0x7F;
 	cfg_ptr->is_super_knob          = (buffer[7] >> 7) & 0x01;
@@ -468,7 +595,7 @@ void save_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_pt
 {	
 	// NOTE: the end of this function refreshes the RAM copy from the stored data.
 	// Do not assign *cfg_ptr into encoder_settings[] here. Fields that the push
-	// does not update arrive as 0x80 sentinels, thus a full copy of the tag table
+	// does not update arrive as 0x80 sentinels, so a full copy of the tag table
 	// fills the RAM config with garbage.
 	
 	// Create a tempory page_buffer;
@@ -545,14 +672,14 @@ void save_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_pt
 	
 	// Encoder MIDI Type & MIDI channel are saved in the 7th byte
 	if (cfg_ptr->encoder_midi_type < 0x80){
-		*buffer_ptr &= ~0x07; // !Spring2019Update: Added Switch Velocity Control and Mouse Emulation
-		*buffer_ptr |= (0x07 & cfg_ptr->encoder_midi_type); // !Spring2019Update: Added Switch Velocity Control and Mouse Emulation
+		*buffer_ptr &= ~0x0F; // 4 bits since SEND_MCU_FADER, which spent the spare bit 0x08
+		*buffer_ptr |= (0x0F & cfg_ptr->encoder_midi_type);
 	}
 	if (cfg_ptr->encoder_midi_channel < 0x80){
 		*buffer_ptr &= ~0xF0;
 		*buffer_ptr |= (0xF0 & ((cfg_ptr->encoder_midi_channel - 1) << 4));
 	}
-	buffer_ptr++;	// 1-bit Open 0x08
+	buffer_ptr++;	// Full
 	
 	// Encoder MIDI number & is super knob flag are saved in the 8th byte
 	if (cfg_ptr->encoder_midi_number < 0x80){
@@ -568,7 +695,7 @@ void save_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_pt
 	uint8_t page_index = ENC_SETTINGS_START_PAGE + (4 * bank) + (encoder / 4);
 	
 	// Write the page only if a value changed. A config push sends two messages for
-	// each encoder, and the utility sends the full sweep several times. Thus most of
+	// each encoder, and the utility sends the full sweep several times. Most of
 	// these writes are not necessary. Each write blocks for milliseconds with
 	// interrupts disabled (nvm_wait_until_ready). During a bulk transfer, the USB
 	// endpoint gets no service for that time.
@@ -586,7 +713,7 @@ void save_encoder_config(uint8_t bank, uint8_t encoder, encoder_config_t *cfg_pt
 		cpu_irq_enable();
 	}
 	
-	// Refresh the RAM copy from the stored data, thus encoder_settings[] always
+	// Refresh the RAM copy from the stored data, so encoder_settings[] always
 	// agrees with EEPROM. The index is the banked id. get_virtual_encoder_id() adds
 	// BANKED_ENCODERS for a shifted encoder, and that index runs past the array.
 	get_encoder_config(bank, encoder, &encoder_settings[encoder + bank*PHYSICAL_ENCODERS]);
@@ -611,7 +738,7 @@ void factory_reset_encoder_config(void)
  * mode is about to read. Without it, banks 5 to 8 come up with the 0xFF of an
  * unwritten EEPROM, which is not a default but nonsense.
  *
- * The page count starts at the first encoder settings page, thus page 0 here is
+ * The page count starts at the first encoder settings page, so page 0 here is
  * EEPROM page ENC_SETTINGS_START_PAGE. There are 4 pages for each bank, one
  * for each row of 4 encoders.
  *
@@ -791,6 +918,7 @@ void process_encoder_input(void)  // MIDI Output: Digital Inputs -> Encoders (Ou
 		uint8_t banked_encoder_id = virtual_encoder_id & BANKED_ENCODER_MASK;
 		process_encoder_input_rotary(i, virtual_encoder_id, banked_encoder_id, bit);  // First we check for movement on each encoder
 		process_encoder_input_switch(i, virtual_encoder_id, banked_encoder_id, bit); // Then we check the movement of each switch
+		mcu_fader_touch_tick(i); // Then release a fader touch that has gone still
 		bit <<= 1;
 	}
 }
@@ -819,7 +947,20 @@ void process_encoder_input_rotary(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 		if(native_mode_process_encoder_input_rotary(i, new_value, 0))
 			return;
 		#endif
-			
+
+		// A None encoder throws the movement away. The stored value does not
+		// change, so the ring holds still. Native mode comes first, because it
+		// replaces the bank configuration while it is on.
+		if (encoder_settings[banked_encoder_id].encoder_midi_type == SEND_NONE) {
+			return;
+		}
+
+		// A fader reports touch on any movement, even movement a detent swallows,
+		// because a real fader reports the hand and not the value.
+		if (encoder_settings[banked_encoder_id].encoder_midi_type == SEND_MCU_FADER) {
+			mcu_fader_touch(i, banked_encoder_id, virtual_encoder_id >= BANKED_ENCODERS);
+		}
+
 		// --- Detents and Deadzones
 		#if VELOCITY_CALC_METHOD == VELOCITY_CALC_M_TPS_BLOCKS
 		if (process_encoder_input_rotary_detent(i, virtual_encoder_id, banked_encoder_id, new_value, cycle_count)) { }
@@ -866,7 +1007,33 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
 	if (!encoder_settings[banked_encoder_id].has_detent) {
 		//midi_stream_raw_cc(9,99,1);
 		return false;
-	} else if (!encoder_is_in_detent(raw_encoder_value[virtual_encoder_id])) {
+	}
+
+	// A V-Pot has no local value, so nothing to detent. The host owns its ring.
+	if (encoder_settings[banked_encoder_id].encoder_midi_type == SEND_MCU_VPOT) {
+		return false;
+	}
+
+	// A flipped fader holding a pan detents at the center, and shows no detent
+	// LED: the feel is the whole feature.
+	int16_t unity = mcu_fader_detent_raw(banked_encoder_id);
+	if (unity >= 0) {
+		int16_t offset = raw_encoder_value[virtual_encoder_id] - unity;
+		if ((offset > MCU_DETENT_WINDOW_RAW) || (offset < -MCU_DETENT_WINDOW_RAW)) {
+			return false;
+		}
+		encoder_detent_counter[i] += new_value;
+		if (encoder_detent_counter[i] > global_detent_size) {          // Leaving upward
+			raw_encoder_value[virtual_encoder_id] = clamp_encoder_raw_value(unity + MCU_DETENT_WINDOW_RAW + 1);
+		} else if (encoder_detent_counter[i] < -global_detent_size) {  // Leaving downward
+			raw_encoder_value[virtual_encoder_id] = clamp_encoder_raw_value(unity - MCU_DETENT_WINDOW_RAW - 1);
+		} else {                                                       // Held at 0 dB
+			raw_encoder_value[virtual_encoder_id] = unity;
+		}
+		return true;
+	}
+
+	if (!encoder_is_in_detent(raw_encoder_value[virtual_encoder_id])) {
 		//midi_stream_raw_cc(9,99,2);
 		return false;
 	}
@@ -897,7 +1064,7 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
 #endif
 {
 	uint16_t value = raw_encoder_value[virtual_encoder_id];
-	if (encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC || encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_DRAG || encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_SCROLL) {
+	if (encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC || encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_DRAG || encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_SCROLL || encoder_settings[banked_encoder_id].encoder_midi_type == SEND_MCU_VPOT) {
 		return false;
 	} else if (!encoder_is_in_deadzone(value)) {
 		return false;
@@ -938,6 +1105,23 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
   bool process_encoder_input_rotary_relative(uint8_t i, uint8_t virtual_encoder_id, uint8_t banked_encoder_id, int8_t new_value, uint16_t bit)
 #endif
 {
+	// A V-Pot is relative, but it encodes sign and magnitude where the modes
+	// below use a binary offset. It takes its own path and returns here.
+	if (encoder_settings[banked_encoder_id].encoder_midi_type == SEND_MCU_VPOT) {
+		int8_t ticks = (new_value < 0) ? -new_value : new_value;
+		if (ticks > MCU_VPOT_TICK_MAX) { ticks = MCU_VPOT_TICK_MAX; }
+
+		uint8_t out = (uint8_t)ticks;
+		if (new_value < 0) { out |= MCU_VPOT_DIRECTION; }
+
+		bool shifted = encoder_is_in_shift_state(encoder_bank, i);
+		midi_stream_raw_cc(shifted ? encoder_settings[banked_encoder_id].encoder_shift_midi_channel
+		                           : encoder_settings[banked_encoder_id].encoder_midi_channel,
+		                   encoder_settings[banked_encoder_id].encoder_midi_number,
+		                   out);
+		return true;
+	}
+
 	if (!(encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC || encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_DRAG || encoder_settings[banked_encoder_id].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_SCROLL)) {
 		return false;
 	}
@@ -1017,8 +1201,11 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
 	if(encoder_settings[banked_encoder_id].movement == VELOCITY_SENSITIVE_ENC) { // Velocity Sensitive
 		int8_t tick_count = new_value < 0 ? -1*new_value : new_value;
 		base_multiplier = convert_ticks_per_scan_to_value_multiplier(tick_count , cycle_count);
-		if (fine_adj || base_multiplier < ENCODER_VALUE_SCALAR_VELOCITY_MIN) { // Velocity Sensitive-Fine
-			base_multiplier = ENCODER_VALUE_SCALAR_VELOCITY_MIN;  // TODO: 14-bit will have a min for 14-bit and 7-bit operations
+		// A Mackie fader resolves 14 bits, so it has a finer floor than a 7 bit CC
+		uint16_t velocity_floor = (encoder_settings[banked_encoder_id].encoder_midi_type == SEND_MCU_FADER)
+		                        ? ENCODER_VALUE_SCALAR_MCU_FADER_MIN : ENCODER_VALUE_SCALAR_VELOCITY_MIN;
+		if (fine_adj || base_multiplier < velocity_floor) { // Velocity Sensitive-Fine
+			base_multiplier = velocity_floor;
 		} else if (base_multiplier > ENCODER_VALUE_SCALAR_VELOCITY_MAX) {
 			base_multiplier = ENCODER_VALUE_SCALAR_VELOCITY_MAX;  // TODO: 14-bit will have a min for 14-bit and 7-bit operations
 		}
@@ -1038,6 +1225,18 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
 	// Update the Stored raw_encoder_value
 	raw_encoder_value[virtual_encoder_id] += scaled_value;
 	raw_encoder_value[virtual_encoder_id] = clamp_encoder_raw_value(raw_encoder_value[virtual_encoder_id]);
+	// Entering the detent window lands exactly on center, so the user never stops
+	// near it. The escape count starts fresh from there.
+	{
+		int16_t unity_point = mcu_fader_detent_raw(banked_encoder_id);
+		if (unity_point >= 0) {
+			int16_t unity_offset = raw_encoder_value[virtual_encoder_id] - unity_point;
+			if ((unity_offset <= MCU_DETENT_WINDOW_RAW) && (unity_offset >= -MCU_DETENT_WINDOW_RAW)) {
+				raw_encoder_value[virtual_encoder_id] = unity_point;
+				encoder_detent_counter[i] = 0;
+			}
+		}
+	}
 	if (encoder_is_in_deadzone(raw_encoder_value[virtual_encoder_id])) {
 		encoder_detent_counter[i] = 0;	// Arriving at an end: count its sticky ticks from zero
 	}
@@ -1076,6 +1275,18 @@ bool process_encoder_input_rotary_detent(uint8_t i, uint8_t virtual_encoder_id, 
 	// Update the Stored raw_encoder_value
 	raw_encoder_value[virtual_encoder_id] += scaled_value;
 	raw_encoder_value[virtual_encoder_id] = clamp_encoder_raw_value(raw_encoder_value[virtual_encoder_id]);
+	// Entering the detent window lands exactly on center, so the user never stops
+	// near it. The escape count starts fresh from there.
+	{
+		int16_t unity_point = mcu_fader_detent_raw(banked_encoder_id);
+		if (unity_point >= 0) {
+			int16_t unity_offset = raw_encoder_value[virtual_encoder_id] - unity_point;
+			if ((unity_offset <= MCU_DETENT_WINDOW_RAW) && (unity_offset >= -MCU_DETENT_WINDOW_RAW)) {
+				raw_encoder_value[virtual_encoder_id] = unity_point;
+				encoder_detent_counter[i] = 0;
+			}
+		}
+	}
 	if (encoder_is_in_deadzone(raw_encoder_value[virtual_encoder_id])) {
 		encoder_detent_counter[i] = 0;	// Arriving at an end: count its sticky ticks from zero
 	}
@@ -1156,6 +1367,26 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 			}
 			break;
 			
+			case MCU_BUTTON:{
+				// Sends what NOTE_HOLD sends. The color is left alone on purpose,
+				// because a Mackie lamp belongs to the host: it answers the press
+				// with a note of its own, and a button the DAW ignores must not
+				// light up as though it worked.
+				if (bit & get_enc_switch_down()) {
+					enc_switch_midi_state[encoder_bank][i] = 127;
+				} else {
+					enc_switch_midi_state[encoder_bank][i] = 0;
+				}
+				send_element_midi(SWITCH, banked_encoder_id, enc_switch_midi_state[encoder_bank][i],
+				enc_switch_midi_state[encoder_bank][i]);
+			}
+			break;
+
+			/*	The switch does nothing. The case is here so that a reader sees
+				the action, and does not take it for an omission */
+			case SW_ACTION_NONE:{}
+			break;
+
 			/*	The fine adjust action is handled in the encoder code, the
 				LED does not change state with this action */
 			case ENC_FINE_ADJUST:{}
@@ -1166,7 +1397,7 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 			case PC_RESEND:{
 				if ((bit & get_enc_switch_down()) &&
 					encoder_settings[banked_encoder_id].encoder_midi_type == SEND_PROGRAM_CHANGE) {
-					// The switch is taken by this action, thus the knob can't be shifted
+					// The switch is taken by this action, so the knob can't be shifted
 					send_program_selection(encoder_settings[banked_encoder_id].encoder_midi_channel,
 										   scale_encoder_value(raw_encoder_value[banked_encoder_id]));
 				}
@@ -1217,6 +1448,7 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 				}
 			}
 			break;
+
 			case ENC_SHIFT_HOLD:{
 				if (bit & get_enc_switch_down()){
 					// Update the display with the active color
@@ -1227,8 +1459,8 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 					
 					// Update the indicator display with the shift value
 					sync_indicator_from_raw(encoder_bank, i, virtual_encoder_id);
-					// Send a CC, unless the switch gave its mapping to the shift layer
-					if (!shift_mapping_active(banked_encoder_id)) {
+					// Send a CC, unless the switch gave its number to the shift layer
+					if (!shift_number_active(banked_encoder_id)) {
 						midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
 						encoder_settings[banked_encoder_id].switch_midi_number,
 						127);
@@ -1243,8 +1475,8 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 					
 					// Update the indicator display with the base encoder value
 					sync_indicator_from_raw(encoder_bank, i, virtual_encoder_id);
-					// Send a CC, unless the switch gave its mapping to the shift layer
-					if (!shift_mapping_active(banked_encoder_id)) {
+					// Send a CC, unless the switch gave its number to the shift layer
+					if (!shift_number_active(banked_encoder_id)) {
 						midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel, // Update 20160622 - send according to switch settings
 						encoder_settings[banked_encoder_id].switch_midi_number,
 						0);
@@ -1270,9 +1502,9 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 						// Update the indicator display with the shift value
 						sync_indicator_from_raw(encoder_bank, i, virtual_encoder_id);
 						
-						// Send a CC, unless the switch gave its mapping to the shift layer
+						// Send a CC, unless the switch gave its number to the shift layer
 						// !Summer2016Update: Encoder Shift Switches now output CCs on Switch Channel like other special function switches
-						if (!shift_mapping_active(banked_encoder_id)) {
+						if (!shift_number_active(banked_encoder_id)) {
 							midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel,
 							encoder_settings[banked_encoder_id].switch_midi_number,
 							127);
@@ -1288,9 +1520,9 @@ void process_encoder_input_switch(uint8_t i, uint8_t virtual_encoder_id, uint8_t
 						// Update the indicator display with the base encoder value
 						sync_indicator_from_raw(encoder_bank, i, virtual_encoder_id);
 						
-						// Send a CC, unless the switch gave its mapping to the shift layer
+						// Send a CC, unless the switch gave its number to the shift layer
 						// !Summer2016Update: Encoder Shift Switches now output CCs on Switch Channel like other special function switches
-						if (!shift_mapping_active(banked_encoder_id)) {
+						if (!shift_number_active(banked_encoder_id)) {
 							midi_stream_raw_cc(encoder_settings[banked_encoder_id].switch_midi_channel,
 							encoder_settings[banked_encoder_id].switch_midi_number,
 							0);
@@ -1366,11 +1598,19 @@ void run_shift_mode(uint8_t page){
 
 void send_encoder_midi(uint8_t banked_encoder_idx, uint8_t value, bool state, bool shifted)
 {
-	uint8_t midi_channel = encoder_output_channel(banked_encoder_idx, shifted);
+	uint8_t midi_channel = shifted ? encoder_settings[banked_encoder_idx].encoder_shift_midi_channel: encoder_settings[banked_encoder_idx].encoder_midi_channel;
 	uint8_t midi_number = encoder_output_number(banked_encoder_idx, shifted);
 	// Sending encoder as note is not useful so this can likely be simplified
 	// once incremental messages are added
-	if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_CC || encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_SWITCH_VEL_CONTROL)
+	if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_MCU_FADER)
+	{
+		// The 7 bit value would throw away most of the travel, so take the raw
+		// value. The virtual id carries the shift layer, as get_virtual_encoder_id()
+		// builds it.
+		uint8_t virtual_id = banked_encoder_idx + (shifted ? BANKED_ENCODERS : 0);
+		midi_stream_raw_pitchbend(midi_channel, raw_to_pitchbend(raw_encoder_value[virtual_id]));
+	}
+	else if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_CC || encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_SWITCH_VEL_CONTROL)
 	{
 		midi_stream_raw_cc(midi_channel,
 		midi_number,
@@ -1524,7 +1764,8 @@ void send_element_midi(enc_control_type_t type, uint8_t banked_encoder_idx, uint
 					}
 				}		   
 			} else if (encoder_settings[banked_encoder_idx].switch_action_type == NOTE_HOLD ||
-						encoder_settings[banked_encoder_idx].switch_action_type == NOTE_TOGGLE) {
+						encoder_settings[banked_encoder_idx].switch_action_type == NOTE_TOGGLE ||
+						encoder_settings[banked_encoder_idx].switch_action_type == MCU_BUTTON) {
 					
 				uint8_t adj_val = adjust_switch_value_by_encoder_value(banked_encoder_idx, value, state);
 				midi_stream_raw_note(encoder_settings[banked_encoder_idx].switch_midi_channel, 
@@ -1562,6 +1803,12 @@ void send_element_midi(enc_control_type_t type, uint8_t banked_encoder_idx, uint
 
 void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t value, uint8_t state) // Midi Feedback - Main Routine
 {
+	// Watch the surface lamps first. This only reads them, so an encoder
+	// mapped to the same notes still works.
+	if ((type == SEND_NOTE) || (type == SEND_NOTE_OFF)) {
+		mcu_observe_feedback_note(channel, number, value, (type == SEND_NOTE));
+	}
+
 	if(native_mode_consume_midi_event(type, channel, number, value))
 		return;
 	
@@ -1586,6 +1833,20 @@ void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t
 		// Otherwise the input is re mappable so scan through the input map for a match
 		for(uint8_t i=0;i<BANKED_ENCODERS;++i){
 			// Search the input map for a match
+			// A V-Pot's ring answers on its own CC plus 0x20, so the ring byte
+			// arrives on a number no encoder is mapped to.
+			if ((type == SEND_CC) && (encoder_settings[i].encoder_midi_type == SEND_MCU_VPOT)
+			    && (number == (uint8_t)(encoder_settings[i].encoder_midi_number + MCU_VPOT_RING_OFFSET))) {
+				if (encoder_settings[i].encoder_midi_channel == channel) {
+					process_vpot_ring_update(i, value, 0);
+				} else if (encoder_settings[i].encoder_shift_midi_channel == channel) {
+					process_vpot_ring_update(i, value, 1);
+				}
+				#if ENABLE_DUPLICATE_INPUT_MAPPINGS == 0
+				continue;
+				#endif
+			}
+
 			// The shift layer answers on the switch number when the switch gave it up
 			bool base_number_match  = (encoder_settings[i].encoder_midi_number == number);
 			bool shift_number_match = (encoder_output_number(i, true) == number);
@@ -1612,7 +1873,7 @@ void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t
 					#if ENABLE_DUPLICATE_INPUT_MAPPINGS == 0
 					return;
 					#endif
-				} else if(shift_number_match && encoder_output_channel(i, true) == channel){
+				} else if(shift_number_match && encoder_settings[i].encoder_shift_midi_channel == channel){
 					// Matched to an shifted encoder's indicator
 					// - !Summer2016Update: MIDI Type Filtering for MIDI Feedback
 					if(type == SEND_CC){ 
@@ -1657,7 +1918,22 @@ void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t
 							return;
 							#endif							
 						}
-					} else if (action_type != PC_RESEND) { // PC_RESEND sends no CC, thus it takes no CC feedback
+					} else if (action_type == MCU_BUTTON) {
+						// A Mackie lamp carries a state and not a color: 0 is off,
+						// 1 blinks and 127 is solid. process_sw_rgb_update() reads
+						// 0 as the inactive color and 127 as the active one, so the
+						// user picks both, which the protocol never names.
+						if ((type == SEND_NOTE) || (type == SEND_NOTE_OFF)) {
+							uint8_t lamp = (type == SEND_NOTE) ? value : MCU_LAMP_OFF;
+							process_sw_rgb_update(i, (lamp == MCU_LAMP_OFF) ? 0 : 127);
+							process_sw_animation_update(i, (lamp == MCU_LAMP_BLINK)
+								? (midi_clock_enabled ? MCU_BLINK_RATE_CLOCKED : MCU_BLINK_RATE_FREE)
+								: 0);
+							#if ENABLE_DUPLICATE_INPUT_MAPPINGS == 0
+							return;
+							#endif
+						}
+					} else if (action_type != PC_RESEND) { // PC_RESEND sends no CC, so it takes no CC feedback
 						// All other Switch Output Types will output a CC Message, and should expect to receive one in return.
 						if (type == SEND_CC){
 							process_sw_rgb_update(i, value);
@@ -1699,6 +1975,56 @@ void process_element_midi(uint8_t channel, uint8_t type, uint8_t number, uint8_t
 // shifted: 	0 = Incoming messages is referencing base encoder mapping
 // 		1 = Incoming message is referencing shifted encoder mapping
 //void process_indicator_update(uint8_t idx, uint8_t value)
+// Stores the ring byte the host sent for a V-Pot. The byte goes in the indicator
+// buffer as it stands, and update_vpot_display() decodes it when drawing, so a
+// V-Pot needs no storage of its own.
+static void process_vpot_ring_update(uint8_t idx, uint8_t ring, uint8_t rx_msg_shifted_mapping)
+{
+	uint8_t bank = idx / 16;
+	uint8_t encoder = idx % 16;
+	uint8_t current_shift_state = encoder_is_in_shift_state(bank, encoder);
+
+	if (current_shift_state == rx_msg_shifted_mapping) {
+		indicator_value_buffer[bank][encoder] = ring;
+	}
+}
+
+// Moves one Mackie fader to the position the host sent. This mirrors
+// process_indicator_update(), with the 14 bit value of a fader in place of the
+// 7 bit value of a CC.
+static void process_fader_update(uint8_t idx, uint16_t bend, uint8_t rx_msg_shifted_mapping)
+{
+	uint8_t bank = idx / 16;
+	uint8_t encoder = idx % 16;
+	uint8_t current_shift_state = encoder_is_in_shift_state(bank, encoder);
+	uint8_t virtual_encoder_id = idx + (rx_msg_shifted_mapping ? BANKED_ENCODERS : 0);
+
+	// An encoder the user is turning keeps its own value, as a CC one does. So
+	// the host echo of a move cannot fight the hand that made it.
+	if ((bank == current_encoder_bank()) && encoder_is_active(encoder)) {
+		return;
+	}
+
+	raw_encoder_value[virtual_encoder_id] = pitchbend_to_raw(bend);
+	if (current_shift_state == rx_msg_shifted_mapping) {
+		indicator_value_buffer[bank][encoder] = scale_encoder_value(raw_encoder_value[virtual_encoder_id]);
+	}
+}
+
+// Pitch bend carries no number, so a fader is addressed by its channel alone.
+void process_pitchbend_midi(uint8_t channel, uint16_t bend)
+{
+	for (uint8_t i = 0; i < BANKED_ENCODERS; ++i) {
+		if (encoder_settings[i].encoder_midi_type != SEND_MCU_FADER) { continue; }
+
+		if (encoder_settings[i].encoder_midi_channel == channel) {
+			process_fader_update(i, bend, 0);
+		} else if (encoder_settings[i].encoder_shift_midi_channel == channel) {
+			process_fader_update(i, bend, 1);
+		}
+	}
+}
+
 void process_indicator_update(uint8_t idx, uint8_t value, uint8_t rx_msg_shifted_mapping) // !Summer2016Update: Added MIDI Feedback for Shifted Encoders
 {		
 	if (encoder_settings[idx].has_detent && value == 0) {
@@ -1877,6 +2203,47 @@ bool animation_buffer_conflict_exists(uint8_t bank, uint8_t encoder) {
 	}
 }
 
+// Draws a V-Pot from the ring byte the host sent. The byte holds the mode in
+// bits 5-4, the position in bits 3-0 and the center LED in bit 6, so the host
+// owns the ring style and not the encoder's own setting.
+static void update_vpot_display(const uint8_t idx, uint8_t ring, uint8_t banked_encoder_idx)
+{
+	uint8_t mode = (ring >> 4) & 0x03;
+	uint8_t ring_pos = ring & 0x0F;
+	bool center_led = (ring & 0x40) != 0;
+	uint16_t type;
+	uint8_t position;
+
+	if (mode == MCU_RING_SPREAD) {
+		// Spread carries a half width of 0 to 6, where the others carry 1 to 11.
+		// Treating it like the others would read at half scale.
+		if (ring_pos > 5) { ring_pos = 5; }
+		type = SPREAD_BAR;
+		position = (uint8_t)(1 + (((uint16_t)ring_pos * 126u) / 5u));
+	} else if (ring_pos == 0) {
+		type = (mode == MCU_RING_BOOST_CUT) ? CENTER_BAR : DOT;
+		position = 0;                       // all off
+	} else if (mode == MCU_RING_BOOST_CUT) {
+		type = CENTER_BAR;
+		// Position 6 is the center, so 63 plus the offset in LED steps.
+		position = (uint8_t)(63 + (((int16_t)ring_pos - 6) * 127) / 10);
+	} else {
+		type = (mode == MCU_RING_DOT) ? DOT : BLENDED_BAR;
+		position = (uint8_t)(((uint16_t)ring_pos * 127u) / 11u);
+	}
+
+	set_encoder_indicator(idx, position, false, type, 0);
+
+	// The center LED is the host's to command, so it lights the detent LED. A
+	// detent the device invents does not. This must follow the ring write, which
+	// clears the detent lane.
+	if (center_led) {
+		set_encoder_indent(idx, encoder_settings[banked_encoder_idx].detent_color);
+	} else {
+		clear_encoder_indent(idx);
+	}
+}
+
 static void update_encoder_display_single(const uint8_t idx)
 {
 	if(native_mode_update_encoder_display_single(idx))
@@ -1885,7 +2252,7 @@ static void update_encoder_display_single(const uint8_t idx)
 //#define FORCE_UPDATE
 #ifdef FORCE_UPDATE
 	#warning FORCE UPDATE is Enabled, may impede some LED Operations
-	set_encoder_indicator(idx, indicator_value_buffer[encoder_bank][idx], encoder_settings[idx].has_detent,
+	set_encoder_indicator(idx, indicator_value_buffer[encoder_bank][idx], encoder_shows_detent(idx),
 	encoder_settings[idx].indicator_display_type,
 	encoder_settings[idx].detent_color);
 	set_encoder_rgb(idx, switch_color_buffer[encoder_bank][idx]);
@@ -1895,14 +2262,26 @@ static void update_encoder_display_single(const uint8_t idx)
 	uint8_t currentValue = indicator_value_buffer[encoder_bank][idx];
 	uint8_t banked_encoder_idx = idx + encoder_bank*PHYSICAL_ENCODERS;				
 	if (currentValue != prevIndicatorValue[idx]) {
-		set_encoder_indicator(idx, currentValue, encoder_settings[banked_encoder_idx].has_detent,
-								encoder_settings[banked_encoder_idx].indicator_display_type,
+		if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_MCU_VPOT) {
+			// The buffer holds the host's ring byte for a V-Pot, not a position.
+			update_vpot_display(idx, currentValue, banked_encoder_idx);
+		} else {
+			set_encoder_indicator(idx, currentValue, encoder_shows_detent(banked_encoder_idx),
+								mcu_fader_display_type(banked_encoder_idx),
 								encoder_settings[banked_encoder_idx].detent_color);
+		}
 		prevIndicatorValue[idx] = currentValue;
 	}
 	
-	// Next the RGB display
+	// Next the RGB display. A V-Pot shows the assignment mode instead of its own
+	// color, because the protocol names no color and the mode is what the encoder
+	// is doing. A fader keeps its switch color, which under MCU_BUTTON is already
+	// the lamp the host lit.
 	currentValue = switch_color_buffer[encoder_bank][idx];
+	{
+		int8_t mcu_color = mcu_mode_color(banked_encoder_idx);
+		if (mcu_color >= 0) { currentValue = (uint8_t)mcu_color; }
+	}
 	if (currentValue != prevSwitchColorValue[idx]) {
 		set_encoder_rgb(idx, currentValue);
 		prevSwitchColorValue[idx] = currentValue;
@@ -1925,7 +2304,7 @@ static void update_encoder_display_single(const uint8_t idx)
 		run_encoder_animation(idx, encoder_bank, currentValue, switch_color_buffer[encoder_bank][idx]);
 		prevEncoderAnimationValue[idx] = currentValue;
 	} else if (prevEncoderAnimationValue[idx]) {
-		set_encoder_indicator(idx, indicator_value_buffer[encoder_bank][idx], encoder_settings[banked_encoder_idx].has_detent,
+		set_encoder_indicator(idx, indicator_value_buffer[encoder_bank][idx], encoder_shows_detent(banked_encoder_idx),
 				encoder_settings[banked_encoder_idx].indicator_display_type,
 				encoder_settings[banked_encoder_idx].detent_color);
 		prevEncoderAnimationValue[idx] = 0;
@@ -2111,7 +2490,7 @@ bool encoder_is_in_shift_state(uint8_t bank, uint8_t encoder)
 bool encoder_midi_type_is_relative(uint8_t encoder) 
 {
 	uint8_t banked_encoder_idx = encoder + encoder_bank*PHYSICAL_ENCODERS;				
-	if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_REL_ENC || encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_DRAG || encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_SCROLL){
+	if (encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_REL_ENC || encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_DRAG || encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_REL_ENC_MOUSE_EMU_SCROLL || encoder_settings[banked_encoder_idx].encoder_midi_type == SEND_MCU_VPOT){
 		return true;
 	}
 	else{

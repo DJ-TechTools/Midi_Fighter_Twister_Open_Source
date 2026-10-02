@@ -126,7 +126,7 @@
 	// mode, where the banks use all of bank_arena.
 	//
 	// Every sequencer entry point must test this. It is not an optimization:
-	// in 8 bank mode the sequencer buffers are null, thus an untested call
+	// in 8 bank mode the sequencer buffers are null, so an untested call
 	// writes to address zero. Refer to sequencer_alloc().
 	extern bool g_seq_available;
 
@@ -137,7 +137,7 @@
 	extern seq_state_t seq_state;
 
 	// These were tentative definitions, which the linker merged as COMMON
-	// symbols. A COMMON symbol cannot go in the arena, thus each one is now an
+	// symbols. A COMMON symbol cannot go in the arena, so each one is now an
 	// extern declaration here, with one definition in sequencer.c.
 
 	// The 12 default patterns
@@ -211,7 +211,7 @@
 	// Forces clock sync
 	void sync_clock(void);
 	
-	// Shifts the pattern for a slot forwards (true) or back 1 step 
+	// Shifts the pattern for a slot forward (true) or back 1 step 
 	void shift_pattern(uint8_t slot, bool direction);
 	
 	// If true doubles the playback speed, if false halves it

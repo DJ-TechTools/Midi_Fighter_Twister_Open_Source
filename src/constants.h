@@ -31,8 +31,8 @@
 //#define DEVICE_VERSION  		((DEVICE_VERSION_YEAR << 16) | (DEVICE_VERSION_MONTH << 8) | DEVICE_VERSION_DAY)
 
 #define DEVICE_VERSION_YEAR 	0x2026
-#define DEVICE_VERSION_MONTH	0x09
-#define DEVICE_VERSION_DAY		0x28
+#define DEVICE_VERSION_MONTH	0x10
+#define DEVICE_VERSION_DAY		0x01
 #define DEVICE_VERSION  		((DEVICE_VERSION_YEAR << 16) | (DEVICE_VERSION_MONTH << 8) | DEVICE_VERSION_DAY)
 
 // 14bit device family ID, LSB first
@@ -84,7 +84,7 @@
 //
 // The two modes cannot be in memory at the same time. 8 banks needs 1652 more
 // bytes than 4 banks. That gives a total of 8379 bytes, and the part has 8192.
-// Thus the live mode holds all of the storage, and the other mode has none.
+// The live mode holds all of the storage, and the other mode has none.
 //
 // NUM_BANKS is therefore a variable. Refer to encoders.h. Use MAX_BANKS where
 // you must have a compile time bound.
@@ -97,7 +97,7 @@
 
 // Runtime device identity. USE_ALTERNATE_ID above is the compile time default
 // for a new unit. A unit set in setup mode reads its identity from EEPROM.
-// Eight identities add 0x4007..0x7007 to the four PIDs. Thus one binary
+// Eight identities add 0x4007..0x7007 to the four PIDs. One binary
 // replaces the four hand built variants.
 #define NUM_DEVICE_IDS				8
 
@@ -111,17 +111,17 @@
 #define EE_MIDI_CHANNEL				0x0001  //The Base MIDI Channel
 // Runtime selected USB identity, 0..NUM_DEVICE_IDS-1. Page 0 is free from
 // 0x0012 to 0x001F. This byte is outside the ranges that the factory resets
-// clear, thus a reset does not change the number of the unit. An unwritten byte
+// clear, so a reset does not change the number of the unit. An unwritten byte
 // reads 0xFF, and the unit then uses 0.
 #define EE_DEVICE_IDENTITY			0x0012
 
 // Runtime bank mode. Page 0 is free from 0x0013 to 0x001F. Like the identity
-// above, this byte is outside the ranges that a factory reset clears. Thus a
+// above, this byte is outside the ranges that a factory reset clears. A
 // reset keeps the mode that the user selected.
 //
 // Only the value EE_BANK_MODE_8 selects 8 banks. All other values, which
 // include the 0xFF of an unwritten byte, select 4 banks and the sequencer.
-// Thus a new unit and all units in the field keep the usual behavior.
+// A new unit and all units in the field keep the usual behavior.
 #define EE_BANK_MODE				0x0013
 #define EE_BANK_MODE_8				0xA8
 
@@ -150,17 +150,24 @@
 #define EE_BANK_ANIMATIONS_ENABLED	0x0011	// Bank change animations on/off
 // Detent size (low 4 bits) + dead zone size (high 4 bits), each 0 to 11. The
 // layout version did not change for this byte. A nibble above 11 cannot be
-// stored, thus an unwritten 0xFF gives the defaults.
+// stored, so an unwritten 0xFF gives the defaults.
 #define EE_DETENT_SETTINGS			0x0015
 
-// Shift switches send no MIDI, and their channel and number belong to the
-// shift layer.
-// Only 1 enables it, thus an unwritten 0xFF reads as off.
+// 0x001C is free. It held the Mackie strip color switch, which the MCU_BUTTON
+// lamps made redundant: a fader switch already reports the state its own bank
+// controls, in the color the user picked.
+
+// 0x001D and 0x001E are free. They held the learned 0 dB position of a Mackie
+// fader, which nobody used: every host puts 0 dB somewhere else, so the point
+// had to be learned again for each one.
+
+// Shift switches send no MIDI, and their number belongs to the shift layer.
+// Only 1 enables it, so an unwritten 0xFF reads as off.
 #define EE_DISABLE_SHIFT_SW_MIDI	0x001B
 
 // The end of the white balance calibration, 0x0016 to 0x001A. Refer to
 // EE_CAL_EXTRA_START. Like the identity, a factory reset does not write these
-// bytes, thus the calibration survives it. 0x001B to 0x001F are free.
+// bytes, so the calibration survives it. 0x001B to 0x001F are free.
 
 #define PACK_SLEEP_SETTINGS(timeout, anim)   (((timeout) & 0x3F) | (((anim) & 0x03) << 6))
 #define GET_SLEEP_TIMEOUT(val)               ((val) & 0x3F)
@@ -196,7 +203,7 @@
 // bank modes, and 5 bytes in page 0. With 8 banks the encoder settings reach
 // page 32, and with 4 banks the sequencer reaches page 62. The block has its
 // own check and does not use EEPROM_LAYOUT, and a factory reset does not write
-// it. Thus a new layout version resets the user configuration but keeps the LED
+// it. A new layout version resets the user configuration but keeps the LED
 // calibration of the unit.
 //
 // Format 2 holds one 6 bit level for each encoder and channel, packed LSB
@@ -238,7 +245,7 @@
 // The factory white point. The old defaults (R 140, G and B at the top) showed
 // a pink white on two units, and a calibration by eye on one of them needed
 // less red and less blue. These are most of that correction. All three are
-// levels, thus they are exact.
+// levels, so they are exact.
 #define DEF_CAL_TRIM_R				88
 #define DEF_CAL_TRIM_G				CAL_TRIM_MAX
 #define DEF_CAL_TRIM_B				116
@@ -270,7 +277,7 @@
 #define DEF_BANK_ANIMATIONS_ENABLED	true
 #define DEF_DISABLE_SHIFT_SW_MIDI	false
 // Pulses to leave the center detent and the 0/127 end stops. The encoder
-// leaves when the count exceeds the size, thus 8 needs 9 pulses.
+// leaves when the count exceeds the size, so 8 needs 9 pulses.
 #define DEF_DETENT_SIZE				8
 #define DEF_DEAD_ZONE_SIZE			2
 #define MAX_DETENT_SIZE				11		// One ring LED per step in setup mode

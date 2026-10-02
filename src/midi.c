@@ -369,6 +369,40 @@ void midi_stream_raw_program_change(const uint8_t channel, const uint8_t program
 	}
 }
 
+// Mackie Control device query, answered without touching the DJTT SysEx parser.
+//
+// A surface is addressed with Mackie's manufacturer ID, so these messages are
+// not DJTT ones and that parser rejects them, as it should. This watches the
+// same byte stream for one fixed message and holds no buffer: a host also
+// streams LCD text and timecode on this ID, and a mismatch resets the matcher
+// at the first differing byte.
+static const uint8_t mackie_query[] = { 0xF0, 0x00, 0x00, 0x66, 0x14, 0x00, 0xF7 };
+static uint8_t mackie_match = 0;
+
+static void mackie_sysex_byte(uint8_t byte)
+{
+	if (byte == mackie_query[mackie_match]) {
+		mackie_match++;
+		if (mackie_match == sizeof(mackie_query)) {
+			mackie_match = 0;
+			// F0 00 00 66 14 01 <7 byte serial> <4 byte challenge> F7. Hosts
+			// check neither value, so the serial names the device and the
+			// challenge is zero.
+			uint8_t reply[] = {
+				0xF0, 0x00, 0x00, 0x66, 0x14, 0x01,
+				'M', 'F', 'T', 'W', 'S', 'T', 'R',
+				0x00, 0x00, 0x00, 0x00,
+				0xF7
+			};
+			midi_stream_sysex(sizeof(reply), reply);
+		}
+		return;
+	}
+
+	// Start over, and let a stray 0xF0 begin the next attempt.
+	mackie_match = (byte == mackie_query[0]) ? 1 : 0;
+}
+
 void midi_stream_raw_pitchbend(const uint8_t channel, const uint16_t value)
 {
 	const uint8_t command = 0xe0;  // the control change command
@@ -533,34 +567,54 @@ void process_midi_packet(MIDI_EventPacket_t input_event) // Midi Feedback - Pack
 			
 			// Handle Sequencer Controls in here
 			// This is also how CC 15 on the sequencer channel starts the
-			// sequencer. Refer to the SEQ_ENABLE_CC handler. Thus the test
+			// sequencer. Refer to the SEQ_ENABLE_CC handler. The test
 			// keeps 8 bank mode out of the sequencer, and not only quiet.
 			if (g_seq_available && channel == SEQ_CHANNEL){
 				process_seq_midi(cc_number, cc_value);
 			}
 		}
 		break;
+		case 0xE :
+		{
+			// A Pitch Bend event. Mackie faders use it for their 14 bit position,
+			// and nothing else on this device reads it.
+			uint8_t channel = input_event.Data1 & 0x0f;
+			uint16_t bend = (uint16_t)(input_event.Data2 & 0x7F)
+			              | ((uint16_t)(input_event.Data3 & 0x7F) << 7);
+
+			process_pitchbend_midi(channel, bend);
+		}
+		break;
 		case 0x4 :
 		{
 			// 3 byte sysex start or continue
+			mackie_sysex_byte(input_event.Data1);
+			mackie_sysex_byte(input_event.Data2);
+			mackie_sysex_byte(input_event.Data3);
 			sysex_handle_3sc(&input_event);
 		}
 		break;
 		case 0x5 :
 		{
 			// One byte sysex end or system common
+			mackie_sysex_byte(input_event.Data1);
 			sysex_handle_1e(&input_event);
 		}
 		break;
 		case 0x6 :
 		{
 			// 2 byte sysex end
+			mackie_sysex_byte(input_event.Data1);
+			mackie_sysex_byte(input_event.Data2);
 			sysex_handle_2e(&input_event);
 		}
 		break;
 		case 0x7 :
 		{
 			// 3 byte sysex end
+			mackie_sysex_byte(input_event.Data1);
+			mackie_sysex_byte(input_event.Data2);
+			mackie_sysex_byte(input_event.Data3);
 			sysex_handle_3e(&input_event);
 		}
 		break;

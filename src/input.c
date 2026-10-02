@@ -110,7 +110,7 @@ void do_task(void);
  *
  * The two sides are mirror images. The left column runs top to bottom as PA.2,
  * PA.1, PA.0, and the right column as PA.3, PA.4, PA.5. This is the connector
- * layout and not a mistake. Thus update_side_switch_state() must set the state
+ * layout and not a mistake. Update_side_switch_state() must set the state
  * bits one at a time, and cannot shift a port read.
  *
  * (An earlier version of this comment listed SW1 = PA.5 down to SW6 = PA.0.

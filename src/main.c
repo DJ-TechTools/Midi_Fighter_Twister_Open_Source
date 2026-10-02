@@ -249,7 +249,7 @@ void main_loop(void) {
 
 int main (void)
 {	
-	// A watchdog reset does not clear WDT.CTRL on this part, thus the timeout
+	// A watchdog reset does not clear WDT.CTRL on this part, so the timeout
 	// that caused the reset is still running now. setup_reboot() uses 16 ms,
 	// which start up can pass before the first wdt_reset(), and more so with 8
 	// banks, where encoders_init() reads 128 encoder settings and not 64. The

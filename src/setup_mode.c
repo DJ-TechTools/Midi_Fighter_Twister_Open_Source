@@ -37,7 +37,7 @@
 // native mode toggle.
 //
 // Entry is at boot only, by design. The user must connect the unit again and
-// hold the button, thus the user cannot enter setup mode during use. Do not add
+// hold the button, so the user cannot enter setup mode during use. Do not add
 // a runtime combo for it.
 #define SETUP_SW_ENTER				SW_RIGHT_BOT
 
@@ -59,7 +59,7 @@
 
 // Detent page. Row 1: a demo encoder with a detent, two blanks, the detent
 // size. Row 2: a demo encoder without a detent, two blanks, the dead zone size.
-// The demos use the values on the page, thus the user feels a change before
+// The demos use the values on the page, so the user feels a change before
 // the save.
 #define DETENT_ENC_DEMO				0
 #define DETENT_ENC_SIZE				3
@@ -74,7 +74,7 @@
 #define SETUP_DETENT_DOT_BLUE		127
 
 // Start values. The detent demo starts at the center, as encoders_init() sets
-// it. The plain demo starts at 127, thus the user tries the dead zone first.
+// it. The plain demo starts at 127, so the user tries the dead zone first.
 #define DETENT_DEMO_CENTER			6300
 #define DETENT_DEMO_PLAIN_START		12700
 
@@ -91,8 +91,8 @@
 #define SETUP_BOOTLOADER_PATTERN	0xAAA0
 
 // Hold time to start the bootloader. Only the Utility, a DFU tool, or a power
-// cycle leaves the bootloader again. Thus one press must not start it. The
-// loop waits 2 ms on each pass, thus this is approximately one second.
+// cycle leaves the bootloader again. One press must not start it. The
+// loop waits 2 ms on each pass, so this is approximately one second.
 #define SETUP_BOOTLOADER_HOLD		500
 
 // Save confirmation color. It is the same green as the encoder that starts it.
@@ -146,7 +146,7 @@ void identity_init(void)
  *
  * Call this first in main(), before config_init(). config_init() can do a
  * factory reset, which writes a number of EEPROM pages that depends on the
- * bank count, thus the count must be live before it runs.
+ * bank count, so the count must be live before it runs.
  *
  * Only EE_BANK_MODE_8 selects 8 banks. An unwritten byte reads 0xFF and gives
  * 4 banks with the sequencer, which is what a new unit and all units in the
@@ -163,10 +163,10 @@ void bank_mode_init(void)
  * Stores the bank mode and gives defaults to the banks the new mode will read.
  *
  * The caller must reset the unit after this. encoders_alloc() divides the
- * arena at boot only, thus the new count cannot take effect in place.
+ * arena at boot only, so the new count cannot take effect in place.
  *
  * The last 8 encoders of bank 8 and sequencer memory slot 1 are on the same
- * two EEPROM pages. Only one of the two modes can hold them. Thus the mode
+ * two EEPROM pages. Only one of the two modes can hold them. The mode
  * that becomes live always takes them, and the other mode loses them.
  *
  * The rest of banks 5 to 8 gets defaults one time only, and EE_BANK_HI_INIT
@@ -243,7 +243,7 @@ static uint16_t dot_pattern(uint8_t led)
 /**
  * Builds the bootloader ring, with the given number of odd LEDs lit.
  *
- * The odd LEDs are 1, 3, 5, 7, 9 and 11, thus LED number 1 + 2i. LED n is bit
+ * The odd LEDs are 1, 3, 5, 7, 9 and 11, so LED number 1 + 2i. LED n is bit
  * 16 - n, which makes the bit for each one 15 - 2i.
  */
 static uint16_t bootloader_pattern(uint8_t lit)
@@ -293,7 +293,7 @@ static void setup_draw(void)
 	build_rgb(SETUP_ENC_DISCARD, SETUP_COLOR_DISCARD, 0);
 	build_rgb(SETUP_ENC_SAVE,    SETUP_COLOR_SAVE,    0);
 
-	// Bootloader. The loop above leaves the RGB off, thus only the ring marks it.
+	// Bootloader. The loop above leaves the RGB off, so only the ring marks it.
 	// This keeps it apart from the settings and the two commands.
 	set_indicator_pattern_level(SETUP_ENC_BOOTLOADER,
 								SETUP_BOOTLOADER_PATTERN,
@@ -363,7 +363,7 @@ static void detent_demo_move(detent_demo_t *demo, int8_t pulses)
 /**
  * Paints one demo encoder. The encoder code shows 63 for all of the detent, and
  * also for the pulse that leaves it, because the exit does not update the ring.
- * Thus the demo does too.
+ * So the demo does too.
  */
 static void detent_demo_draw(uint8_t encoder, const detent_demo_t *demo)
 {
@@ -386,7 +386,7 @@ static void detent_draw(const detent_demo_t *demo, const detent_demo_t *plain)
 		set_indicator_pattern(encoder, 0x0000);
 	}
 
-	// Each demo has the color of the size on its row, thus the user sees
+	// Each demo has the color of the size on its row, so the user sees
 	// which knob changes it.
 	build_rgb(DETENT_ENC_DEMO, DETENT_COLOR_SIZE, 0);
 	detent_demo_draw(DETENT_ENC_DEMO, demo);
@@ -576,14 +576,14 @@ static void setup_shell_exit(void)
 /**
  * Resets the unit, for a setting that cannot take effect in place.
  *
- * encoders_alloc() divides the bank arena at boot, thus a change of bank count
+ * encoders_alloc() divides the bank arena at boot, so a change of bank count
  * needs this.
  *
  * sysExCmdSystem case 2 has a USB_Disable() and a wait, and this does not.
- * setup_shell_enter() already took USB down, thus the host saw the disconnect
+ * setup_shell_enter() already took USB down, so the host saw the disconnect
  * when setup mode started.
  *
- * setup_shell_enter() disabled the watchdog, thus this arms it again. Do not
+ * setup_shell_enter() disabled the watchdog, so this arms it again. Do not
  * expect it to run.
  */
 static void setup_reboot(void)
@@ -598,7 +598,7 @@ static void setup_reboot(void)
 
 /**
  * Writes all settings that the user changed. There is a test for each setting,
- * thus the unit does not write a setting that did not change.
+ * so the unit does not write a setting that did not change.
  */
 static void setup_commit_all(void)
 {
@@ -661,11 +661,11 @@ static void setup_run(uint16_t entry_mask)
 		}
 
 		// Bootloader, on a hold and not a press. Only the Utility, a DFU tool,
-		// or a power cycle leaves the bootloader again. Thus a wrong press must
+		// or a power cycle leaves the bootloader again. A wrong press must
 		// not stop the user in the middle of a set.
 		//
 		// While the user holds the encoder, the ring goes off one LED at a time.
-		// Thus the user sees what the hold does before it occurs.
+		// The user sees what the hold does before it occurs.
 		if (get_enc_switch_state() & (0x0001 << SETUP_ENC_BOOTLOADER)) {
 			if (setup_boot_held < SETUP_BOOTLOADER_HOLD) {
 				++setup_boot_held;
@@ -681,7 +681,7 @@ static void setup_run(uint16_t entry_mask)
 				// This writes nothing first. The unit is about to get new
 				// firmware, and this is not the save command.
 				//
-				// Jump_To_Bootloader() disables USB and waits 2 seconds, thus the
+				// Jump_To_Bootloader() disables USB and waits 2 seconds, so the
 				// host sees the detach. Then it forces a reset with the boot key
 				// set. Bootloader_Jump_Check() reads that key before main() runs.
 				Jump_To_Bootloader();		// does not return
@@ -741,7 +741,7 @@ static void setup_run(uint16_t entry_mask)
 			if (steps != 0) {
 				setup_banks_accum -= (int8_t)(steps * SETUP_PULSES_PER_STEP);
 
-				// Two values, thus any step to the right gives 8 banks and any
+				// Two values, so any step to the right gives 8 banks and any
 				// step to the left gives 4.
 				uint8_t banks = (steps > 0) ? MAX_BANKS : MIN_BANKS;
 
@@ -776,7 +776,7 @@ static void setup_run(uint16_t entry_mask)
 			}
 		}
 
-		// DMA sends the frame buffer out continuously, thus write it only on a
+		// DMA sends the frame buffer out continuously, so write it only on a
 		// change.
 		if (dirty) {
 			setup_draw();
@@ -788,7 +788,7 @@ static void setup_run(uint16_t entry_mask)
 
 bool check_setup_mode(void)
 {
-	// This reads the side switches directly from the pins, thus one call gives
+	// This reads the side switches directly from the pins, so one call gives
 	// the live state.
 	update_side_switch_state();
 

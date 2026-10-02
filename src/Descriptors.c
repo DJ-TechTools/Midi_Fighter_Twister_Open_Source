@@ -49,7 +49,7 @@
  */
 
 // Runtime selected USB identity. identity_init() reads it from EEPROM before
-// the unit services the host, thus the first enumeration uses it.
+// the unit services the host, so the first enumeration uses it.
 uint8_t g_device_identity = 0;
 
 /** Device descriptors, one per identity, identical but for the product ID.
@@ -427,7 +427,7 @@ const USB_Descriptor_String_t PROGMEM ManufacturerString =
  *  Descriptor.
  */
 /** Product descriptor strings, one for each identity. USB_Descriptor_String_t
- *  ends in a flexible array member, and C does not permit an array of it. Thus
+ *  ends in a flexible array member, and C does not permit an array of it. So
  *  this type copies it with a fixed length string. Header.Size holds the true
  *  length, and the host reads only that length. Slot 0 keeps the original name
  *  with no number.

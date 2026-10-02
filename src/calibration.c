@@ -1,13 +1,13 @@
 /*
  * calibration.c
  *
- * RGB white balance calibration. The three dies have different efficiency, and
- * the diffuser tints the mix. Thus #FFFFFF shows a color cast that is different
+ * RGB white balance calibration. The three dies have different efficiency and
+ * the diffuser tints the mix, so #FFFFFF shows a color cast that is different
  * on each unit, and on each LED. This stores a trim for each encoder and each
  * channel, and build_rgb() applies it to all colors.
  *
  * The trim is on EEPROM page 63, with its own magic and checksum and not
- * EEPROM_LAYOUT. Thus a change of the layout version keeps the calibration.
+ * EEPROM_LAYOUT. A change of the layout version keeps the calibration.
  *
  * DJTT - Midi Fighter Twister - Embedded Software License
  * Copyright (c) 2026: DJ TechTools
@@ -55,9 +55,9 @@
 #define CAL_SAVED_COLOR				0x00FF00
 
 // Ring readout for the channel that the user adjusts. BLENDED_BAR fades in the
-// last LED, thus each level shows. The brightness is low, because
+// last LED, so each level shows. The brightness is low, because
 // the white ring is next to the color that the user judges. The usable scale is
-// 0 to 79, thus this is approximately 40%.
+// 0 to 79, so this is approximately 40%.
 #define CAL_RING_TYPE				BLENDED_BAR
 #define CAL_RING_BRIGHTNESS			32
 
@@ -95,7 +95,7 @@ static uint8_t trim_to_level(int16_t trim)
 
 /**
  * Gives the 48 trims to the display driver. Call this after each change to a
- * level. Thus build_rgb does not do this arithmetic.
+ * level. Build_rgb does not do this arithmetic.
  */
 static void calibration_apply(void)
 {
@@ -139,7 +139,7 @@ static uint8_t calibration_check(const uint8_t *data)
 
 /**
  * Reads one packed level. Level N uses bits 6N to 6N + 5, LSB first. The window
- * reads one byte past the level, thus the buffer has one spare byte at the end.
+ * reads one byte past the level, so the buffer has one spare byte at the end.
  * A value above CAL_LEVEL_MAX cannot come from a save, and gives the top level.
  */
 static uint8_t unpack_level(const uint8_t *levels, uint8_t index)
@@ -215,7 +215,7 @@ void calibration_init(void)
 	cpu_irq_enable();
 	data[EE_CAL_DATA_BYTES] = 0;
 
-	// Format 1 first. Its page 0 bytes are unwritten, thus the format 2 check
+	// Format 1 first. Its page 0 bytes are unwritten, so the format 2 check
 	// could match by chance. An unwritten block fails both checks and keeps the
 	// defaults.
 	if ((data[0] == EE_CAL_V1_MAGIC) &&
@@ -236,7 +236,7 @@ void calibration_init(void)
 /**
  * Packs the levels and writes them: page 63 in one atomic write, as
  * save_encoder_config() does, then the bytes in page 0, with the check byte
- * last. A power loss before the check byte leaves a check that fails, thus the
+ * last. A power loss before the check byte leaves a check that fails, so the
  * unit starts with the defaults and not with a mix.
  */
 static void calibration_save(void)
@@ -275,13 +275,13 @@ static uint8_t level_to_position(uint8_t level)
 
 /**
  * Paints the calibration display. All encoders show white through the trim,
- * thus the user judges what the trim gives.
+ * so the user judges what the trim gives.
  *
  * The white ring of each encoder shows its own level for the channel that the
- * user adjusts. Thus the user sees the differences across the 16 immediately.
+ * user adjusts. The user sees the differences across the 16 immediately.
  *
  * The detent LED is a separate red and blue part. It has no bits in common with
- * the RGB ring. Thus it can show selection and limit status, and not change the
+ * the RGB ring. It can show selection and limit status, and not change the
  * white.
  */
 static void calibration_draw(int8_t single, uint8_t channel)
@@ -374,7 +374,7 @@ static void calibration_restore(int8_t single)
  * EEPROM. It returns when the user presses Back, and the setup menu that called
  * it continues. The menu controls entry, exit and the save.
  *
- * Returns true if the user changed a value. Thus the menu knows if it must
+ * Returns true if the user changed a value. The menu knows if it must
  * write the calibration when the user saves.
  */
 bool calibration_edit(void)
@@ -390,7 +390,7 @@ bool calibration_edit(void)
 	// encoder that opened this editor.
 	calibration_draw(single, channel);
 
-	// Discard the press that opened this editor, thus the first input is real.
+	// Discard the press that opened this editor, so the first input is real.
 	for (uint8_t encoder = 0; encoder < 16; ++encoder) {
 		get_encoder_value(encoder);
 	}
@@ -456,7 +456,7 @@ bool calibration_edit(void)
 			dirty   = true;
 		}
 
-		// DMA sends the frame buffer out continuously, thus write it only on a
+		// DMA sends the frame buffer out continuously, so write it only on a
 		// change.
 		if (dirty) {
 			calibration_draw(single, channel);

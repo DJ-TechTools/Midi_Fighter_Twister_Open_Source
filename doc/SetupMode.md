@@ -52,7 +52,7 @@ The Twister gives you a choice of two bank modes:
 - 4 banks with the sequencer: the default, and what all Twisters do unless you change this setting.
 - 8 banks without the sequencer: 8 banks of 16 encoders, with no sequencer.
 
-The Twister has memory for one mode only, thus you must select one of the two.
+The Twister has memory for one mode only, so you must select one of the two.
 
 1. Enter setup mode.
 2. Turn the **orange encoder** in the bottom row. Turn it to the right for 8 banks. Turn it to the left for 4 banks.
@@ -65,7 +65,7 @@ The Twister restarts when you change this setting. This is necessary, because th
 
 **Important: bank 8 and sequencer pattern memory slot 1 use the same memory.**
 
-The last 8 encoders of bank 8 and pattern memory slot 1 are in the same memory in the Twister. Only one of the two modes can keep them. Thus:
+The last 8 encoders of bank 8 and pattern memory slot 1 are in the same memory in the Twister. Only one of the two modes can keep them. So:
 
 - A change to 8 banks erases pattern memory slot 1. The other 15 slots are not affected.
 - A change to 4 banks, and then back to 8 banks, returns the last 8 encoders of bank 8 to their defaults.
@@ -74,7 +74,7 @@ Banks 5 to 8 get their default settings the first time that you select 8 banks. 
 
 Your settings for banks 1 to 4 are never affected by this setting.
 
-The Midi Fighter Utility reads the number of banks from the Twister. Thus the Utility shows 4 or 8 banks to match. Connect the Twister to the Utility again after a change of mode.
+The Midi Fighter Utility reads the number of banks from the Twister. The Utility shows 4 or 8 banks to match. Connect the Twister to the Utility again after a change of mode.
 
 ## Detent
 
@@ -97,7 +97,7 @@ Second row, first|Cyan|Turn to try the dead zone. It has no detent and starts at
 Second row, second and third|Off|Not in use.
 Second row, fourth|Cyan|Turn to set the dead zone size.
 
-The sizes are 0 to 11. The detent size is 8 and the dead zone size is 2 unless you change them. A larger size holds the encoder longer. The encoder must turn one pulse more than the size to leave. There are four pulses in one click, thus size 8 is a little more than two clicks.
+The sizes are 0 to 11. The detent size is 8 and the dead zone size is 2 unless you change them. A larger size holds the encoder longer. The encoder must turn one pulse more than the size to leave. There are four pulses in one click, so size 8 is a little more than two clicks.
 
 The detent page writes nothing. Your changes are saved with the other setup mode changes when you press the green encoder. The Twister does not restart for this setting.
 
@@ -107,7 +107,7 @@ Bootloader mode lets the Midi Fighter Utility write new firmware to the Twister.
 
 The **first encoder in the top row** starts it. The RGB stays off. The ring shows LEDs 1, 3, 5, 7, 9 and 11.
 
-You must hold this encoder, because a press is not sufficient. Only the Midi Fighter Utility, a DFU tool, or a disconnect of the cable leaves bootloader mode again. Thus the Twister asks you to show that you mean it.
+You must hold this encoder, because a press is not sufficient. Only the Midi Fighter Utility, a DFU tool, or a disconnect of the cable leaves bootloader mode again. The Twister asks you to show that you mean it.
 
 1. Enter setup mode.
 2. Hold the first encoder in the top row. The LEDs in the ring go off one at a time.
@@ -123,7 +123,7 @@ To leave bootloader mode without new firmware, use the Midi Fighter Utility, or 
 
 ## Set these from the Midi Fighter Utility
 
-The device number and the bank mode are also available as SysEx commands. Thus the Utility can set them without setup mode, and without the user at the unit.
+The device number and the bank mode are also available as SysEx commands. The Utility can set them without setup mode, and without the user at the unit.
 
 All DJTT SysEx messages have this shape:
 
@@ -163,10 +163,10 @@ The detent sizes are global settings. They go with the other global settings, in
 
 Tag|Setting|Value
 --|--|--
-39|Detent size|The size plus 1, thus `01` to `0C`.
-40|Dead zone size|The size plus 1, thus `01` to `0C`.
+39|Detent size|The size plus 1, so `01` to `0C`.
+40|Dead zone size|The size plus 1, so `01` to `0C`.
 
-The value is the size plus 1, because a push with no tag gives 0. Thus the unit keeps the stored size if the Utility does not send the tag. A value above 12 gives size 11.
+The value is the size plus 1, because a push with no tag gives 0. The unit keeps the stored size if the Utility does not send the tag. A value above 12 gives size 11.
 
 ### Write a setting
 
@@ -174,9 +174,9 @@ The two write commands write the setting, show a confirmation on the LEDs, then 
 
 - The unit ignores a value out of range. It does not reset and gives no reply.
 - The unit also ignores the bank mode command if it is in that mode already.
-- A change of device number changes the USB product ID. Thus the unit connects as a different device, and the Utility must scan the ports again.
+- A change of device number changes the USB product ID. The unit connects as a different device, and the Utility must scan the ports again.
 - On macOS the new MIDI port sometimes comes back but does not accept data. This does not occur each time. If the Utility gets no reply after the unit connects again, tell the user to disconnect the cable and connect it again.
-- A change of bank mode keeps the same product ID. Thus the unit connects again by itself, and no user action is necessary.
+- A change of bank mode keeps the same product ID. The unit connects again by itself, and no user action is necessary.
 - A change of bank mode has the same effect on EEPROM as a change in setup mode. Refer to [Bank mode](#bank-mode).
 
 ## Save and cancel

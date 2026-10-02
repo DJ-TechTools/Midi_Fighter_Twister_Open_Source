@@ -24,7 +24,7 @@ CC number (Data1)|Interaction type|Control index assignment|Control value interp
 80-95|Knob press|CC 80 + index; 0-15: row by row|127: pressed / 0: released
 96-101|Side button press|CC 96 + index; 0-2: left side / 3-5: right side|127: pressed / 0: released
 
-For knob twist, *n* is the step size. It is **1** unless the knob input mode is velocity sensitive (see [Set knob input mode](#native-mode-sysex-messages)). Thus by default a knob sends only 63 or 65. In velocity sensitive mode, *n* increases with turn speed up to 17, and the values go from 47 to 81. A relative encoder in velocity sensitive mode follows the same curve in a normal bank, outside native mode.
+For knob twist, *n* is the step size. It is **1** unless the knob input mode is velocity sensitive (see [Set knob input mode](#native-mode-sysex-messages)). By default a knob sends only 63 or 65. In velocity sensitive mode, *n* increases with turn speed up to 17, and the values go from 47 to 81. A relative encoder in velocity sensitive mode follows the same curve in a normal bank, outside native mode.
 
 Here are some examples for control input CC messages and their interpretation:
 Status (channel)|Data1|Data2 (decimal)|Interpretation
@@ -49,7 +49,7 @@ Set top left knob indicator position to 100%|0xB3 (4)| 0x40 (64)| 127
 Set top right knob indicator position to 0%|0xB3 (4)| 0x43 (67)| 0
 
 ### The system channel
-Native mode uses the system channel, thus an integration must know its value. The user can change the system channel, and the default is 4.
+Native mode uses the system channel, so an integration must know its value. The user can change the system channel, and the default is 4.
 
 **On connect**, request the device configuration:
 
@@ -61,7 +61,7 @@ The device replies with a list of tag and value pairs. The value for tag `0x00` 
 
 **On factory reset** the device enumerates again over USB. Open the port again and request the configuration.
 
-SysEx messages have no MIDI channel. Thus a change of the system channel cannot break this path.
+SysEx messages have no MIDI channel. A change of the system channel cannot break this path.
 
 ### Native mode SysEx messages
 
@@ -90,7 +90,7 @@ Here the individual bytes \<*content*\> HEX bytes are two-letter literals:
 *mm*|Input mode|0: raw detents / 1: velocity sensitive
 *ss*|Maximum step|0: firmware default (17) / 1-17: cap the velocity step, ignored if *mm* is 0
 
-The *00* byte in *ii mm00ss* is reserved. Always send it as zero. Velocity sensitive mode changes only the step size of each twist message, and never the number of messages. Thus a host that already adds up 63 and 65 needs no protocol change. Use *ss* to keep fast turns in a range that your parameter can accept.
+The *00* byte in *ii mm00ss* is reserved. Always send it as zero. Velocity sensitive mode changes only the step size of each twist message, and never the number of messages. A host that already adds up 63 and 65 needs no protocol change. Use *ss* to keep fast turns in a range that your parameter can accept.
 
 Here are some useful example SysEx messages:
 Action|SysEx HEX bytes
